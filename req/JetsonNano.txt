@@ -1,1 +1,0 @@
-1. Always shutdown the JetsonNano correctly. Do not just unplug the powersupply!
