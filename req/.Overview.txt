@@ -1,0 +1,15 @@
+Base nodes:
+- Sensors:
+	- Emergency button
+	- Xbox gamepad
+	- Accelerometer
+	- Camera
+	- Lidar
+	- tbd: Battery
+- Actors:
+	- Drivetrain
+- Diagnostic:
+	- Diagnostic
+	
+Addons:
+tbd
