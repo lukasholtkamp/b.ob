@@ -1,4 +1,5 @@
 Base nodes:
+- JetsonNano
 - Sensors:
 	- Emergency button
 	- Xbox gamepad
