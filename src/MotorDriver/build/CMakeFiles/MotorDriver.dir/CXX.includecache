@@ -1,0 +1,18 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/bertrandt/BOB/library/MotorDriver/include/MotorDriver.h
+JetsonGPIO.h
+-
+stdint.h
+-
+
+/home/bertrandt/BOB/library/MotorDriver/src/MotorDriver.cpp
+/home/bertrandt/BOB/library/MotorDriver/include/MotorDriver.h
+-
+

@@ -1,0 +1,2 @@
+bob:motor_driver_library
+-DCATKIN_DEVEL_PREFIX=/home/bertrandt/BOB/catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/home/bertrandt/BOB/catkin_ws/install -G Unix Makefiles

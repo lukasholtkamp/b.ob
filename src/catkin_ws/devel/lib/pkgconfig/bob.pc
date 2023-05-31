@@ -1,0 +1,8 @@
+prefix=/home/bertrandt/BOB/catkin_ws/devel
+
+Name: bob
+Description: Description of bob
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: joy roscpp rospy std_msgs geometry_msgs motor_driver_library
