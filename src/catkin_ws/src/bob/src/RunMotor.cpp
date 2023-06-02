@@ -1,70 +1,87 @@
 #include "MotorDriver.h"
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
-//#include <JetsonGPIO.h>
-
+#include <ros/console.h>
 
 // motor(directionPin, PwmPin, minSpeed, maxSpeed)
-MD::Motor leftMotor(31, 32, -255.0, 255.0);
-//MD::Motor rightMotor(35, 33, -255, 255);
+MD::Motor leftMotor(31, 32, 0.0, 100.0);
+MD::Motor rightMotor(35, 33, 0.0, 100.0);
 
-int leftMotorPwmPin = leftMotor.getPwmPin();
-//int rightMotorPwmPin = rightMotor.getPwmPin();
+int leftMotorPwmPin = 32; // leftMotor.getPwmPin();
+int rightMotorPwmPin = 33 // rightMotor.getPwmPin();
 
-float linearVelocityX;
-float angularVelocityZ;
+int leftMotorDirection = leftMotor.getDirection();
+int rightMotorDirection = rightMotor.getDirection();
 
-//ros::NodeHandle nh;
-//geometry_msgs::Twist msg;
+GPIO::PWM leftMotorPWMPin(32, 1000); // for GPIO::BOARD
+GPIO::PWM rightMotorPWMPin(33, 1000);
+
+double leftWheel = leftMotor.getSpeed();
+double rightWheel = rightMotor.getSpeed();
 
 void messageCallback(const geometry_msgs::Twist& cmd_vel) {
-	GPIO::PWM leftMotorPWMPin(leftMotorPwmPin, 1000); // for GPIO::BOARD
-	//GPIO::PWM rightMotorPWMPin(rightMotorPwmPin, 100);
 	
-	leftMotorPWMPin.start(0.0);
-	//rightMotorPWMPin.start(10.0);
-
-	linearVelocityX = cmd_vel.linear.x;
-	angularVelocityZ = cmd_vel.angular.z;
+	double linearVelocityX = cmd_vel.linear.x;
+	double angularVelocityZ = cmd_vel.angular.z;
 	
-	float leftWheel = (linearVelocityX - angularVelocityZ) * 100;
-	//int rightWheel = (linearVelocityX + angularVelocityZ) * 100;
+	leftWheel = (linearVelocityX - angularVelocityZ) * 100.0;
+	rightWheel = (linearVelocityX + angularVelocityZ) * 100.0;
 	
 	leftMotor.setSpeed(leftWheel);
-	//rightMotor.setSpeed(rightWheel);
+	rightMotor.setSpeed(rightWheel);
 	
-	float newLeftWheel = leftMotor.getSpeed();
-	//int newRightWheel = rightMotor.getSpeed();
+	double newLeftWheel = leftMotor.getSpeed();
+	double newRightWheel = rightMotor.getSpeed();
+	
+	
 	
 	leftMotorPWMPin.ChangeDutyCycle(newLeftWheel);
-	//rightMotorPWMPin.ChangeDutyCycle(newRightWheel);
+	rightMotorPWMPin.ChangeDutyCycle(newRightWheel);
 	
-	if (newLeftWheel == 0.0) {
+	ROS_INFO_STREAM("------------------------------------");
+	ROS_INFO_STREAM("Linear velocity: " << linearVelocityX);
+	ROS_INFO_STREAM("Angular velocity: " << angularVelocityZ);
+	ROS_INFO_STREAM("Left wheel speed: " << leftWheel);
+	ROS_INFO_STREAM("New left wheelSpeed: " << newLeftWheel);
+	ROS_INFO_STREAM("Right wheel speed: " << rightWheel);
+	ROS_INFO_STREAM("New right wheelSpeed: " << newRightWheel);
+	
+    if(linearVelocityX > 0 && angularVelocityZ < 0) {
+		ROS_INFO_STREAM("Forward right");
+	} else if(linearVelocityX > 0 && angularVelocityZ > 0) {
+		ROS_INFO_STREAM("Forward left");
+	} else if(linearVelocityX < 0 && angularVelocityZ < 0) {
+		ROS_INFO_STREAM("Backwards right");
+	} else if(linearVelocityX < 0 && angularVelocityZ > 0) {
+		ROS_INFO_STREAM("Backwards left");
+	} else if(linearVelocityX == 0 && angularVelocityZ == 1) {
+		ROS_INFO_STREAM("Left");
+	} else if(linearVelocityX == 1 && angularVelocityZ == 0) {
+		ROS_INFO_STREAM("Forward");
+	} else if(linearVelocityX == -1 && angularVelocityZ == 0) {
+		ROS_INFO_STREAM("Backwards");
+	} else if(linearVelocityX == 0 && angularVelocityZ == -1) {
+		ROS_INFO_STREAM("Right");
+	} else {
 		leftMotor.stop();
-		//rightMotor.stop();
-		
-		leftMotorPWMPin.stop();
-		//rightMotorPWMPin.stop();
-		
-		
+		rightMotor.stop();
+		ROS_INFO_STREAM("Not moving");
 	}
+	
+	ROS_INFO_STREAM("------------------------------------");
 }
 
-float linx, angZ;
-
 int main(int argc, char** argv) {
+		leftMotorPWMPin.start(0.0);
+		rightMotorPWMPin.start(0.0);
 	
-	ros::init(argc, argv, "run_motor");
-	ros::NodeHandle nh;
-	
-	geometry_msgs::Twist msg;
-	msg.linear.x = linx;     
-	msg.angular.z = angZ;
-	//ros::Subscriber <geometry_msgs::Twist> sub("/cmd_vel", &messageCallback);
-	ros::Subscriber sub = nh.subscribe("/cmd_vel", 10, &messageCallback);
-	
-	ROS_INFO_STREAM("Subscriber velocities:"<<" linear="<<linx<<" angular="<<angZ);
-	
-	ros::spin();
-	GPIO::cleanup();
+		ros::init(argc, argv, "run_motor");
+		ros::NodeHandle nh;
+		
+		ros::Subscriber sub = nh.subscribe("cmd_vel", 1000, &messageCallback);	
+		
+		ROS_INFO_STREAM("Left pwm pin: " << leftMotorPwmPin);
+		ROS_INFO_STREAM("Right pwm pin: " << rightMotorPwmPin);
+		
+		ros::spin();
 }

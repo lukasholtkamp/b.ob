@@ -29,7 +29,7 @@ XBoxController::XBoxController():
   nh.param("scale_angular", a_scale, a_scale);
   nh.param("scale_linear", l_scale, l_scale);
 
-  vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
+  vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 
   joy_sub = nh.subscribe<sensor_msgs::Joy>("joy", 10, &XBoxController::joyCallback, this);
 }

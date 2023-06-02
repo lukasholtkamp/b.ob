@@ -13,6 +13,8 @@ ros/ros.h
 -
 geometry_msgs/Twist.h
 -
+ros/console.h
+-
 
 /home/bertrandt/BOB/catkin_ws/src/motor_driver_library/include/motor_driver_library/MotorDriver.h
 JetsonGPIO.h

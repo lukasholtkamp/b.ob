@@ -9,11 +9,11 @@ namespace MD{
 	class Motor {
 	private:
 		int m_directionPin, m_pwmPin;
-		float m_minSpeed, m_maxSpeed;
-		float m_speed; 
+		double m_minSpeed, m_maxSpeed;
+		double m_speed; 
 		bool m_direction;
 	public:
-		Motor(int directionPin, int pwmPin, float minSpeed, float maxSpeed);
+		Motor(int directionPin, int pwmPin, double minSpeed, double maxSpeed);
 
 		// --- Pwm pin ---
 		int getPwmPin();
@@ -21,18 +21,18 @@ namespace MD{
 		
 		// --- Wheel direction ---
 		
-		// Cw: true, CCW: false
-		void setDirection(float speed);
-		// bool getDirection();
+		// Cw: !0, CCW: 0
+		void setDirection(int direction);
+		bool getDirection();
 		int getDirectionPin();
 		// --- End of wheel direction ---
 		
 		// --- Control of motor actions ---
-		void setSpeed(float speed);
-		float getSpeed();
-		void setMinSpeed(float minSpeed);
+		void setSpeed(double speed);
+		double getSpeed();
+		void setMinSpeed(double minSpeed);
 		// int getMinSpeed();
-		void setMaxSpeed(float maxSpeed);
+		void setMaxSpeed(double maxSpeed);
 		// int getMaxSpeed();
 		// void startMotor(int speed);    
 		void stop();
