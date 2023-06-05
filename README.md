@@ -3,6 +3,14 @@
   <h1>B.ob - Bertrandt office bot</h1>
 <h2>Goal for 2023-06-19:<br></h2>
 <strong>Control b.ob with the XBox to drive Forward, Backward and turn on point.</strong>
+  </p> Safety: Input Sensitivity
+  </p> Remote Stop All
+  </p> User Manual: What button does what?
+  </p> Forward Driving
+  </p> Backward Driving
+  </p> Turn on Point
+  </p> MC-Electronics
+  </p> Emergency Button
 
 <h2>PASSED for 2023-06-05:<br></h2>
 <strong>Have one wheel turning, controlled by XBox.</strong>
