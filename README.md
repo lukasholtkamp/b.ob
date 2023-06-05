@@ -2,7 +2,7 @@
 <div style="text-align: center;">
   <h1>B.ob - Bertrandt office bot</h1>
 <h2>Goal for 2023-06-19:<br></h2>
-<strong></strong>
+<strong>Control b.ob with the XBox to drive Forward, Backward and turn on point.</strong>
 
 <h2>PASSED for 2023-06-05:<br></h2>
 <strong>Have one wheel turning, controlled by XBox.</strong>
