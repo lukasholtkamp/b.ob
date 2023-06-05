@@ -12,12 +12,12 @@ Control was too sensitive which might be unsafe. There needs to be a limit, so t
 </div>
 
 <h1>Definition of Done</h1>
-With each new increment, b.ob needs to fulfill the following points:
-<strong>Safety: b.ob cannot move two cotton blocks stacked on top of each other.</strong>
-<strong>Safety: b.obs internat components are safe</strong>
-<strong>After adding the new feature: run a system test with a colleague</strong>
-<strong>Merge the new code for the increment with a pull request</strong>
-<strong>Get a code review by one of your team members (Clean Code)</strong>
+With each new increment, b.ob needs to fulfill the following points:</p>
+<strong>Safety: b.ob cannot move two cotton blocks stacked on top of each other.</strong></p>
+<strong>Safety: b.obs internat components are safe</strong></p>
+<strong>After adding the new feature: run a system test with a colleague</strong></p>
+<strong>Merge the new code for the increment with a pull request</strong></p>
+<strong>Get a code review by one of your team members (Clean Code)</strong></p>
 <h1>Team Agreements</h1>
 As a team we hold each other accountable to the following rules:<p>
   <h2>We will be in office three times a week, on Monday, Tuesday and Wednesday.</h2>
