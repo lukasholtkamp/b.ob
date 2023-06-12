@@ -1,8 +1,0 @@
-prefix=/home/bertrandt/BOB/catkin_ws/install
-
-Name: motor_driver_library
-Description: Description of motor_driver_library
-Version: 0.0.0
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib -lmotor_driver_library
-Requires: roscpp
