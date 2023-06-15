@@ -6,6 +6,13 @@ class Motor:
         self._maxSpeed = maxSpeed
         self._speed = 0
         self._direction = True
+        
+        # Pin configurations for JetsonGPIO
+        GPIO.setmode(GPIO.BOARD)  # GPIO.BCM or GPIO.BOARD
+        GPIO.setup(32, GPIO.OUT, initial=GPIO.HIGH)  # Left motor
+        GPIO.setup(33, GPIO.OUT, initial=GPIO.HIGH)  # Right motor
+        GPIO.setup(31, GPIO.OUT, initial=GPIO.HIGH)  # Left direction
+        GPIO.setup(35, GPIO.OUT, initial=GPIO.HIGH)  # Right direction
 
     @property
     def directionPin(self):
