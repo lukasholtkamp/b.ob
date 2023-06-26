@@ -1,9 +1,7 @@
-<!-- Variables -->
-<div style="text-align: center;">
-  <h1>B.ob - Bertrandt office bot</h1>
-<h2>Goal for 2023-07-03:<br></h2>
-<h2><strong>Control b.ob over bluetooth with full directions control.</strong></h2>
-</p><strong>Will be tested by the PO with the user manual.</strong>
+<h1>B.ob - Bertrandt office bot</h1>
+<h2>Goal for 2023-07-03:<br>
+<strong>Control b.ob over bluetooth with full directions control.</strong></h2>
+<strong>Will be tested by the PO with the user manual.</strong>
 
 <h2>Last goal for 2023-06-19: <span style="color:red">FAILED</span><br></h2>
 <strong>Control b.ob with the XBox to drive Forward, Backward and turn on point.</strong>
