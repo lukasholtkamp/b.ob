@@ -7,7 +7,7 @@
   </p> Change gamepad input (more precise controls)
   </p> Screwing hardware (hold b.ob upside down, nothing falls out)
   </p> Emergency Button
-<strong>Will be tested by the PO with the user manual.</strong>
+</p><strong>Will be tested by the PO with the user manual.</strong>
 
 <h2>Last goal for 2023-06-19: FAILED<br></h2>
 <strong>Control b.ob with the XBox to drive Forward, Backward and turn on point.</strong>
