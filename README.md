@@ -1,4 +1,3 @@
-<style>h2,h3,h4 { border-bottom: 0; } </style>
 <h1>B.ob - Bertrandt office bot</h1>
 <h2>Goal for 2023-07-03:<br>
 <strong>Control b.ob over bluetooth with full directions control.</strong></h2>
