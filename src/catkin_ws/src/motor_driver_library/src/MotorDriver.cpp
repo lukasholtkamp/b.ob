@@ -51,10 +51,10 @@ int MD::Motor::getDirectionPin(){
 
 // --- Control of motor actions ---
 void MD::Motor::setSpeed(double speed) {
-    if (speed <= m_minSpeed) {
+    if (speed < m_minSpeed && speed > m_maxSpeed*-1) {
     	//sleep_for(nanoseconds(10000000));
         m_speed = speed*-1;
-    } else if (speed < m_maxSpeed*-1) {
+    } else if (speed <= m_maxSpeed*-1) {
     	//sleep_for(nanoseconds(10000000));
     	m_speed = m_maxSpeed;
     } else if (speed >= m_maxSpeed) {
@@ -86,4 +86,3 @@ void MD::Motor::stop() {
     m_speed = 0.0;
 }
 // --- End of control of motor actions ---
-
