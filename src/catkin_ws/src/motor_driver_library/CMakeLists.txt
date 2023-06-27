@@ -9,8 +9,9 @@ project(motor_driver_library)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  JetsonGPIO
 )
+
+find_package(JetsonGPIO)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -118,12 +119,13 @@ catkin_package(
 include_directories(
   include/motor_driver_library
   ${catkin_INCLUDE_DIRS}
+  /home/bertrandt/b.ob/src/JetsonGPIO/include
 )
 
 ## Declare a C++ library
   add_library(${PROJECT_NAME}
     #src/${PROJECT_NAME}/src/MotorDriver.cpp
-    /home/bertrandt/BOB/catkin_ws/src/motor_driver_library/src/MotorDriver.cpp
+    /home/bertrandt/b.ob/src/catkin_ws/src/motor_driver_library/src/MotorDriver.cpp
   )
 
 ## Add cmake target dependencies of the library

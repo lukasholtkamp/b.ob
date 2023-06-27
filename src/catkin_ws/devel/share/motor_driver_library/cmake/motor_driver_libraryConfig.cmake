@@ -67,14 +67,14 @@ set(motor_driver_library_CONFIG_INCLUDED TRUE)
 
 # set variables for source/devel/install prefixes
 if("TRUE" STREQUAL "TRUE")
-  set(motor_driver_library_SOURCE_PREFIX /home/bertrandt/BOB/catkin_ws/src/motor_driver_library)
-  set(motor_driver_library_DEVEL_PREFIX /home/bertrandt/BOB/catkin_ws/devel)
+  set(motor_driver_library_SOURCE_PREFIX /home/bertrandt/b.ob/src/catkin_ws/src/motor_driver_library)
+  set(motor_driver_library_DEVEL_PREFIX /home/bertrandt/b.ob/src/catkin_ws/devel)
   set(motor_driver_library_INSTALL_PREFIX "")
   set(motor_driver_library_PREFIX ${motor_driver_library_DEVEL_PREFIX})
 else()
   set(motor_driver_library_SOURCE_PREFIX "")
   set(motor_driver_library_DEVEL_PREFIX "")
-  set(motor_driver_library_INSTALL_PREFIX /home/bertrandt/BOB/catkin_ws/install)
+  set(motor_driver_library_INSTALL_PREFIX /home/bertrandt/b.ob/src/catkin_ws/install)
   set(motor_driver_library_PREFIX ${motor_driver_library_INSTALL_PREFIX})
 endif()
 
@@ -91,9 +91,9 @@ endif()
 # flag project as catkin-based to distinguish if a find_package()-ed project is a catkin project
 set(motor_driver_library_FOUND_CATKIN_PROJECT TRUE)
 
-if(NOT "/home/bertrandt/BOB/catkin_ws/src/motor_driver_library/include/motor_driver_library/ " STREQUAL " ")
+if(NOT "/home/bertrandt/b.ob/src/catkin_ws/src/motor_driver_library/include/motor_driver_library/ " STREQUAL " ")
   set(motor_driver_library_INCLUDE_DIRS "")
-  set(_include_dirs "/home/bertrandt/BOB/catkin_ws/src/motor_driver_library/include/motor_driver_library/")
+  set(_include_dirs "/home/bertrandt/b.ob/src/catkin_ws/src/motor_driver_library/include/motor_driver_library/")
   if(NOT " " STREQUAL " ")
     set(_report "Check the issue tracker '' and consider creating a ticket if the problem has not been reported yet.")
   elseif(NOT " " STREQUAL " ")
@@ -110,7 +110,7 @@ if(NOT "/home/bertrandt/BOB/catkin_ws/src/motor_driver_library/include/motor_dri
         message(FATAL_ERROR "Project 'motor_driver_library' specifies '${idir}' as an include dir, which is not found.  It does not exist in '${include}'.  ${_report}")
       endif()
     else()
-      message(FATAL_ERROR "Project 'motor_driver_library' specifies '${idir}' as an include dir, which is not found.  It does neither exist as an absolute directory nor in '/home/bertrandt/BOB/catkin_ws/src/motor_driver_library/${idir}'.  ${_report}")
+      message(FATAL_ERROR "Project 'motor_driver_library' specifies '${idir}' as an include dir, which is not found.  It does neither exist as an absolute directory nor in '/home/bertrandt/b.ob/src/catkin_ws/src/motor_driver_library/${idir}'.  ${_report}")
     endif()
     _list_append_unique(motor_driver_library_INCLUDE_DIRS ${include})
   endforeach()
@@ -154,7 +154,7 @@ foreach(library ${libraries})
     set(lib_path "")
     set(lib "${library}-NOTFOUND")
     # since the path where the library is found is returned we have to iterate over the paths manually
-    foreach(path /home/bertrandt/BOB/catkin_ws/devel/lib;/home/bertrandt/BOB/catkin_ws/devel/lib;/opt/ros/melodic/lib)
+    foreach(path /home/bertrandt/b.ob/src/catkin_ws/devel/lib;/home/bertrandt/b.ob/src/catkin_ws/devel/lib;/opt/ros/melodic/lib)
       find_library(lib ${library}
         PATHS ${path}
         NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)

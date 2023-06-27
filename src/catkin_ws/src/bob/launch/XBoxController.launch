@@ -12,6 +12,9 @@
 	<param name="scale_linear" value="1" type="double" />
 	<param name="scale_angular" value="1" type="double" />
 	
-	<node pkg="bob" type="XBoxController" name="xbox" />
+	<!-- Buttons -->
+	<param name="b_button" value="1" type="int" />
+	
+	<node pkg="bob" type="XBoxController" name="xbox"   />
 	<node pkg="bob" type="RunMotor" name="runMotor" output="screen" />
 </launch>

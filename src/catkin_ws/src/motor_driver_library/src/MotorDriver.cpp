@@ -1,4 +1,9 @@
 #include "MotorDriver.h"
+#include <chrono>
+#include <thread>
+
+using namespace std::this_thread; 
+using namespace std::chrono; 
 
 MD::Motor::Motor(int directionPin, int pwmPin, double minSpeed, double maxSpeed) {
     m_directionPin = directionPin;
@@ -10,10 +15,10 @@ MD::Motor::Motor(int directionPin, int pwmPin, double minSpeed, double maxSpeed)
 
 	// Pin configurations for JetsonGPIO
 	GPIO::setmode(GPIO::BOARD); // GPIO::BCM or GPIO::BOARD
-	GPIO::setup(32, GPIO::OUT, GPIO::HIGH); // Left motor
-	GPIO::setup(33, GPIO::OUT, GPIO::HIGH); // Right motor
-	GPIO::setup(31, GPIO::OUT, GPIO::HIGH); // Left direction
-	GPIO::setup(35, GPIO::OUT, GPIO::HIGH); // Right direction  
+	GPIO::setup(32, GPIO::OUT); // Left motor
+	GPIO::setup(33, GPIO::OUT); // Right motor
+	GPIO::setup(31, GPIO::OUT); // Left direction
+	GPIO::setup(35, GPIO::OUT); // Right direction  
 }
 
 // --- Pwm pin ---.
@@ -23,11 +28,15 @@ int MD::Motor::getPwmPin(){
 // --- End of Pwm pin ---
 
 // --- Wheel direction ---
-void MD::Motor::setDirection(double speed) {
-    if (speed >= 0) {
+void MD::Motor::setDirection(double speed, int pinNumber) {
+    if (speed > 0) {
+    	//sleep_for(nanoseconds(10000000));
         m_direction = true;
-    } else if (speed < 0) {
+	GPIO::output(pinNumber, GPIO::HIGH);
+    } else if (speed <= 0) {
+       	//sleep_for(nanoseconds(10000000));
         m_direction = false; 
+	GPIO::output(pinNumber, GPIO::LOW);
     }
 }
 
@@ -43,11 +52,17 @@ int MD::Motor::getDirectionPin(){
 // --- Control of motor actions ---
 void MD::Motor::setSpeed(double speed) {
     if (speed <= m_minSpeed) {
-        m_speed = m_minSpeed;
+    	//sleep_for(nanoseconds(10000000));
+        m_speed = speed*-1;
+    } else if (speed < m_maxSpeed*-1) {
+    	//sleep_for(nanoseconds(10000000));
+    	m_speed = m_maxSpeed;
     } else if (speed >= m_maxSpeed) {
+    	//sleep_for(nanoseconds(10000000));
         m_speed = m_maxSpeed;
     } else {
-    	m_speed = speed;
+    	//sleep_for(nanoseconds(10000000));
+   		m_speed = speed;
     }
 }
 

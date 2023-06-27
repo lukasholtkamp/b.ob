@@ -1,8 +1,8 @@
-prefix=/home/bertrandt/BOB/catkin_ws/devel
+prefix=/home/bertrandt/b.ob/src/catkin_ws/devel
 
 Name: motor_driver_library
 Description: Description of motor_driver_library
 Version: 0.0.0
-Cflags: -I/home/bertrandt/BOB/catkin_ws/src/motor_driver_library/include/motor_driver_library/
+Cflags: -I/home/bertrandt/b.ob/src/catkin_ws/src/motor_driver_library/include/motor_driver_library/
 Libs: -L${prefix}/lib -lmotor_driver_library
 Requires: roscpp

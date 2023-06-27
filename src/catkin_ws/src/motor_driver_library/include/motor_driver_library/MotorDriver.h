@@ -22,7 +22,7 @@ namespace MD{
 		// --- Wheel direction ---
 		
 		// Cw: !0, CCW: 0
-		void setDirection(int direction);
+		void setDirection(double direction,int pinNumber);
 		bool getDirection();
 		int getDirectionPin();
 		// --- End of wheel direction ---
