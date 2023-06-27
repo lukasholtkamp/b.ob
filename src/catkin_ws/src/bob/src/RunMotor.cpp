@@ -5,16 +5,16 @@
 #include <ros/console.h>
 #include <JetsonGPIO.h>
 
-#define LEFT_DIRECTION_PIN 31
-#define RIGHT_DIRECTION_PIN 35
+#define LEFT_DIRECTION_PIN 	31
+#define LEFT_PWM_PIN 		32
+#define RIGHT_DIRECTION_PIN 	35
+#define RIGHT_PWM_PIN		33
 
 // motor(directionPin, PwmPin, minSpeed, maxSpeed)
-MD::Motor leftMotor(LEFT_DIRECTION_PIN, 32, 0.0, 100.0);
-MD::Motor rightMotor(RIGHT_DIRECTION_PIN, 33, 0.0, 100.0);
+MD::Motor leftMotor(LEFT_DIRECTION_PIN, LEFT_PWM_PIN, 0.0, 100.0);
+MD::Motor rightMotor(RIGHT_DIRECTION_PIN, RIGHT_PWM_PIN, 0.0, 100.0);
 
-//int leftMotorPwmPin = 32; 
  int leftMotorPwmPin = leftMotor.getPwmPin();
-//int rightMotorPwmPin = 33; 
  int rightMotorPwmPin = rightMotor.getPwmPin();
 
 int leftMotorDirection = leftMotor.getDirection();
@@ -23,54 +23,51 @@ int rightMotorDirection = rightMotor.getDirection();
 GPIO::PWM leftMotorPWMPin(leftMotorPwmPin, 1000); // for GPIO::BOARD
 GPIO::PWM rightMotorPWMPin(rightMotorPwmPin, 1000);
 
-double leftWheel = leftMotor.getSpeed();
-double rightWheel = rightMotor.getSpeed();
+double leftWheelSpeed = leftMotor.getSpeed();
+double rightWheelSpeed = rightMotor.getSpeed();
 
 
 void messageCallback(const geometry_msgs::Twist& cmd_vel) {
 
-	//double linearVelocityX = (1+ (cmd_vel.linear.x*-1))/2;
 	double linearVelocityX = cmd_vel.linear.x;
 	double angularVelocityZ = cmd_vel.angular.z;
 
-	leftWheel = (linearVelocityX - angularVelocityZ) * 100.0;
-	rightWheel = (linearVelocityX + angularVelocityZ) * 100.0;
+	leftWheelSpeed = (linearVelocityX - angularVelocityZ) * 100.0;
+	rightWheelSpeed = (linearVelocityX + angularVelocityZ) * 100.0;
 
-	leftMotor.setSpeed(leftWheel);
-	rightMotor.setSpeed(rightWheel);
+	leftMotor.setSpeed(leftWheelSpeed);
+	rightMotor.setSpeed(rightWheelSpeed);
 
-	double newLeftWheel = leftMotor.getSpeed();
-	double newRightWheel = rightMotor.getSpeed();
+	double newLeftWheelSpeed = leftMotor.getSpeed()/10;
+	double newRightWheelSpeed = rightMotor.getSpeed()/10;
 	
-	
 
-	leftMotor.setDirection(leftWheel, LEFT_DIRECTION_PIN);
-	rightMotor.setDirection(rightWheel, RIGHT_DIRECTION_PIN);
+	leftMotor.setDirection(leftWheelSpeed, LEFT_DIRECTION_PIN);
+	rightMotor.setDirection(rightWheelSpeed, RIGHT_DIRECTION_PIN);
+
 	
 	bool LeftWheelDirection = leftMotor.getDirection();
-		
-	bool RightWheelDirection = rightMotor.getDirection();
+	bool RightWheelDirection = !rightMotor.getDirection(); // reversed to mirror the left motor
 	
-	//LeftWheelDirection ? GPIO::output(31, GPIO::HIGH) : GPIO::output(31, GPIO::LOW);
 
-	//RightWheelDirection ? GPIO::output(35, GPIO::HIGH) : GPIO::output(35, GPIO::LOW);
-
-	leftMotorPWMPin.ChangeDutyCycle(newLeftWheel);
-	rightMotorPWMPin.ChangeDutyCycle(newRightWheel);
+	leftMotorPWMPin.ChangeDutyCycle(newLeftWheelSpeed);
+	rightMotorPWMPin.ChangeDutyCycle(newRightWheelSpeed);
 	
 
 	ROS_INFO_STREAM("------------------------------------");
 	ROS_INFO_STREAM("Linear velocity: " << linearVelocityX);
 	ROS_INFO_STREAM("Angular velocity: " << angularVelocityZ);
-	ROS_INFO_STREAM("Left wheel speed: " << leftWheel);
-	ROS_INFO_STREAM("New left wheelSpeed: " << newLeftWheel);
-	ROS_INFO_STREAM("Right wheel speed: " << rightWheel);
-	ROS_INFO_STREAM("New right wheelSpeed: " << newRightWheel);
+
+	ROS_INFO_STREAM("Left wheel speed: " << leftWheelSpeed);
+	ROS_INFO_STREAM("New left wheelSpeed: " << newLeftWheelSpeed);
+
+	ROS_INFO_STREAM("Right wheel speed: " << rightWheelSpeed);
+	ROS_INFO_STREAM("New right wheelSpeed: " << newRightWheelSpeed);
 	
 	ROS_INFO_STREAM("Left Wheel Direction: " << LeftWheelDirection);
 	ROS_INFO_STREAM("Right Wheel Direction: " << RightWheelDirection);
 
-    if(linearVelocityX > 0 && angularVelocityZ < 0) {
+	if(linearVelocityX > 0 && angularVelocityZ < 0) {
 		ROS_INFO_STREAM("Forward right");
 	} else if(linearVelocityX > 0 && angularVelocityZ > 0) {
 		ROS_INFO_STREAM("Forward left");
@@ -91,7 +88,6 @@ void messageCallback(const geometry_msgs::Twist& cmd_vel) {
 		rightMotor.stop();
 		ROS_INFO_STREAM("Not moving");
 	}
-	
 	ROS_INFO_STREAM("------------------------------------");
 }
 
