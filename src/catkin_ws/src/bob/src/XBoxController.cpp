@@ -70,6 +70,7 @@ void XBoxController::joyCallback(const sensor_msgs::Joy::ConstPtr& joy)
   if(b_button == 1){
   	twist.linear.x = 0;
   	twist.angular.z = 0;
+	vel_pub.publish(twist);
 	ros::shutdown();
   }
   if(y_button == 1){
