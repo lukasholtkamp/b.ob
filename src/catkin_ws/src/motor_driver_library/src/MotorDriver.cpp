@@ -1,7 +1,8 @@
 #include "MotorDriver.h"
 #include <chrono>
 #include <thread>
-
+#include <wiringPi.h>
+#include <softPwm.h>
 using namespace std::this_thread; 
 using namespace std::chrono; 
 
@@ -12,13 +13,19 @@ MD::Motor::Motor(int directionPin, int pwmPin, double minSpeed, double maxSpeed)
     m_maxSpeed = maxSpeed;
     m_speed = 0.0;
     m_direction = 0;
-
+	wiringPiSetup();
 	// Pin configurations for JetsonGPIO
-	GPIO::setmode(GPIO::BOARD); // GPIO::BCM or GPIO::BOARD
-	GPIO::setup(32, GPIO::OUT); // Left motor
-	GPIO::setup(33, GPIO::OUT); // Right motor
-	GPIO::setup(31, GPIO::OUT); // Left direction
-	GPIO::setup(35, GPIO::OUT); // Right direction  
+	//GPIO::setmode(GPIO::BOARD); // GPIO::BCM or GPIO::BOARD
+	//GPIO::setup(32, GPIO::OUT); // Left motor
+	pinMode(23, OUTPUT); // Right motor
+	softPwmCreate(23,0,100);
+	pinMode(26, OUTPUT);
+	softPwmCreate(26,0,100);
+//	pwmSetMode(PWM_MODE_MS);
+//	pwmSetClock(19200);
+//	pwmSetRange(500);
+	pinMode(22, OUTPUT); // Left direction
+	pinMode(24, OUTPUT); // Right direction  
 }
 
 // --- Pwm pin ---.
@@ -30,13 +37,13 @@ int MD::Motor::getPwmPin(){
 // --- Wheel direction ---
 void MD::Motor::setDirection(double speed, int pinNumber) {
     if (speed > 0) {
-    	//sleep_for(nanoseconds(10000000));
+//    	sleep_for(nanoseconds(1000));
         m_direction = true;
-	GPIO::output(pinNumber, GPIO::HIGH);
+	digitalWrite(pinNumber, HIGH);
     } else if (speed <= 0) {
-       	//sleep_for(nanoseconds(10000000));
+//       	sleep_for(nanoseconds(1000));
         m_direction = false; 
-	GPIO::output(pinNumber, GPIO::LOW);
+	digitalWrite(pinNumber, LOW);
     }
 }
 
@@ -52,16 +59,16 @@ int MD::Motor::getDirectionPin(){
 // --- Control of motor actions ---
 void MD::Motor::setSpeed(double speed) {
     if (speed < m_minSpeed && speed > m_maxSpeed*-1) {
-    	//sleep_for(nanoseconds(10000000));
+//    	sleep_for(nanoseconds(1000));
         m_speed = speed*-1;
     } else if (speed <= m_maxSpeed*-1) {
-    	//sleep_for(nanoseconds(10000000));
+//    	sleep_for(nanoseconds(1000));
     	m_speed = m_maxSpeed;
     } else if (speed >= m_maxSpeed) {
-    	//sleep_for(nanoseconds(10000000));
+//    	sleep_for(nanoseconds(1000));
         m_speed = m_maxSpeed;
     } else {
-    	//sleep_for(nanoseconds(10000000));
+//    	sleep_for(nanoseconds(1000));
    		m_speed = speed;
     }
 }

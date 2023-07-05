@@ -1,9 +1,9 @@
 #ifndef MOTOR_DRIVER_H
 #define MOTOR_DRIVER_H
 
-#include <JetsonGPIO.h>
+//#include <JetsonGPIO.h>
 #include <stdint.h>
-
+#include <wiringPi.h>
 // MD: Motor Driver
 namespace MD{
 	class Motor {

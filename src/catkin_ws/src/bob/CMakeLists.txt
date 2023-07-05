@@ -143,6 +143,9 @@ include_directories(
 # add_executable(${PROJECT_NAME}_node src/bob_node.cpp)
 add_executable(XBoxController src/XBoxController.cpp)
 add_executable(RunMotor src/RunMotor.cpp)
+find_library(WIRINGPI_LIBRARIES NAMES wiringpi)
+#target_link_libraries(XBoxController ${WIRINGPI_LIBRARIES})
+target_link_libraries(RunMotor ${WIRINGPI_LIBRARIES})
 target_link_libraries(XBoxController ${catkin_LIBRARIES} motor_driver_library)
 target_link_libraries(RunMotor ${catkin_LIBRARIES} motor_driver_library)
 

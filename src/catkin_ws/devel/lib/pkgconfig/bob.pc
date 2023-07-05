@@ -1,4 +1,4 @@
-prefix=/home/bertrandt/b.ob/src/catkin_ws/devel
+prefix=/home/ubuntu/BOB/src/catkin_ws/devel
 
 Name: bob
 Description: Description of bob

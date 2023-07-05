@@ -6,11 +6,6 @@
 //#include <JetsonGPIO.h>
 #include <wiringPi.h>
 #include <softPwm.h>
-#include <chrono>
-#include <thread>
-using namespace std::this_thread;
-using namespace std::chrono; 
-
 #define LEFT_DIRECTION_PIN 	22
 #define LEFT_PWM_PIN 		26
 #define RIGHT_DIRECTION_PIN 	24
@@ -96,8 +91,6 @@ void messageCallback(const geometry_msgs::Twist& cmd_vel) {
 		ROS_INFO_STREAM("Not moving");
 	}
 	ROS_INFO_STREAM("------------------------------------");
-	//sleep_for(nanoseconds(10000));
-
 }
 
 int main(int argc, char** argv) {
@@ -114,11 +107,7 @@ int main(int argc, char** argv) {
 
 	ros::spin();
 	ROS_INFO_STREAM("spin");
-	/*softPwmWrite(LEFT_PWM_PIN,0);
+	softPwmWrite(LEFT_PWM_PIN,0);
 	digitalWrite(LEFT_PWM_PIN,LOW);
-	softPwmWrite(RIGHT_PWM_PIN,0);
-	digitalWrite(RIGHT_PWM_PIN,LOW);
-	digitalWrite(RIGHT_DIRECTION_PIN,LOW);
-	digitalWrite(LEFT_DIRECTION_PIN,LOW);*/
 	ROS_INFO_STREAM("clean");
 }

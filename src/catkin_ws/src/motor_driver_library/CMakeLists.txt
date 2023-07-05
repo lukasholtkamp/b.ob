@@ -11,8 +11,9 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
 )
 
-find_package(JetsonGPIO)
-
+#find_package(JetsonGPIO)
+find_package(WiringPi REQUIRED)
+find_package(Threads REQUIRED)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -107,7 +108,7 @@ catkin_package(
    LIBRARIES motor_driver_library
    CATKIN_DEPENDS roscpp
 #   DEPENDS system_lib
-   DEPENDS JetsonGPIO::JetsonGPIO 
+#   DEPENDS JetsonGPIO::JetsonGPIO 
 )
 
 ###########
@@ -119,13 +120,15 @@ catkin_package(
 include_directories(
   include/motor_driver_library
   ${catkin_INCLUDE_DIRS}
-  /home/bertrandt/b.ob/src/JetsonGPIO/include
+  #/home/bertrandt/b.ob/src/JetsonGPIO/include
 )
+include_directories(
+  ${WIRINGPI_INCLUDE_DIRS})
 
 ## Declare a C++ library
   add_library(${PROJECT_NAME}
     #src/${PROJECT_NAME}/src/MotorDriver.cpp
-    /home/bertrandt/b.ob/src/catkin_ws/src/motor_driver_library/src/MotorDriver.cpp
+    /home/ubuntu/BOB/src/catkin_ws/src/motor_driver_library/src/MotorDriver.cpp
   )
 
 ## Add cmake target dependencies of the library
@@ -147,11 +150,13 @@ include_directories(
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
+  find_library(WIRINGPI_LIBRARIES NAMES wiringPi)
 ## Specify libraries to link a library or executable target against
   target_link_libraries(${PROJECT_NAME}
     ${catkin_LIBRARIES} 
-    JetsonGPIO::JetsonGPIO
+  )
+  target_link_libraries(${PROJECT_NAME}
+    ${WIRINGPI_LIBRARIES}
   )
   
   #target_link_libraries(MotorDriver ${PROJECT_NAME})
