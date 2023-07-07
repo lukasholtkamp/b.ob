@@ -1,95 +1,89 @@
 #include "MotorDriver.h"
-#include <chrono>
-#include <thread>
-#include <wiringPi.h>
-#include <softPwm.h>
-using namespace std::this_thread; 
-using namespace std::chrono; 
 
-MD::Motor::Motor(int directionPin, int pwmPin, double minSpeed, double maxSpeed) {
-    m_directionPin = directionPin;
-    m_pwmPin = pwmPin;
-    m_minSpeed = minSpeed;
-    m_maxSpeed = maxSpeed;
-    m_speed = 0.0;
-    m_direction = 0;
+MD::Motor::Motor(int directionPin,int pwmPin, double minSpeed, double maxSpeed) {
+	mDirectionPin = directionPin;
+	mPwmPin = pwmPin;
+	mMinSpeed = minSpeed;
+	mMaxSpeed = maxSpeed;
+	mSpeed = 0.0;
+	mDirection = 0;
 	wiringPiSetup();
 	// Pin configurations for JetsonGPIO
 	//GPIO::setmode(GPIO::BOARD); // GPIO::BCM or GPIO::BOARD
-	//GPIO::setup(32, GPIO::OUT); // Left motor
-	pinMode(23, OUTPUT); // Right motor
-	softPwmCreate(23,0,100);
-	pinMode(26, OUTPUT);
-	softPwmCreate(26,0,100);
-//	pwmSetMode(PWM_MODE_MS);
-//	pwmSetClock(19200);
-//	pwmSetRange(500);
-	pinMode(22, OUTPUT); // Left direction
-	pinMode(24, OUTPUT); // Right direction  
+	//GPIO::setup(32, GPIO::OUT); // Left PWM
+	//GPIO::setup(31, GPIO::OUT); // Left direction
+	//GPIO::setup(33, GPIO::OUT); // Right PWM
+	//GPIO::setup(35, GPIO::OUT); // Right direction
+
+	// --- Left Motor ---
+	pinMode(LEFT_PWM_PIN, OUTPUT);		// Left PWM
+	softPwmCreate(LEFT_PWM_PIN,0,100);
+	pinMode(LEFT_DIRECTION_PIN, OUTPUT); 		// Left direction
+	// --- Right Motor ---
+	pinMode(RIGHT_PWM_PIN, OUTPUT);		// Right PWM
+	softPwmCreate(RIGHT_PWM_PIN,0,100);
+	pinMode(RIGHT_DIRECTION_PIN, OUTPUT); 		// Right direction
 }
 
 // --- Pwm pin ---.
 int MD::Motor::getPwmPin(){
-    return m_pwmPin;
+	return mPwmPin;
 }
 // --- End of Pwm pin ---
 
 // --- Wheel direction ---
-void MD::Motor::setDirection(double speed, int pinNumber) {
-    if (speed > 0) {
-//    	sleep_for(nanoseconds(1000));
-        m_direction = true;
-	digitalWrite(pinNumber, HIGH);
-    } else if (speed <= 0) {
-//       	sleep_for(nanoseconds(1000));
-        m_direction = false; 
-	digitalWrite(pinNumber, LOW);
-    }
+void MD::Motor::setDirection(double speed, int directionPin) {
+	if (speed > mMinSpeed) {
+		mDirection = true;
+		digitalWrite(directionPin, HIGH);
+	} else if (speed <= mMinSpeed) {
+		mDirection = false;
+		digitalWrite(directionPin, LOW);
+	}
 }
 
 bool MD::Motor::getDirection() {
-	return m_direction;
+	return mDirection;
 }
 
 int MD::Motor::getDirectionPin(){
-    return m_directionPin;
+	return mDirectionPin;
 }
 // --- End of wheel direction ---
 
 // --- Control of motor actions ---
 void MD::Motor::setSpeed(double speed) {
-    if (speed < m_minSpeed && speed > m_maxSpeed*-1) {
-//    	sleep_for(nanoseconds(1000));
-        m_speed = speed*-1;
-    } else if (speed <= m_maxSpeed*-1) {
-//    	sleep_for(nanoseconds(1000));
-    	m_speed = m_maxSpeed;
-    } else if (speed >= m_maxSpeed) {
-//    	sleep_for(nanoseconds(1000));
-        m_speed = m_maxSpeed;
-    } else {
-//    	sleep_for(nanoseconds(1000));
-   		m_speed = speed;
-    }
+	if (speed < mMinSpeed && speed > mMaxSpeed*-1) {
+        	mSpeed = speed*-1;
+	}
+	else if (speed <= mMaxSpeed*-1) {
+    		mSpeed = mMaxSpeed;
+    	}
+	else if (speed >= mMaxSpeed) {
+        	mSpeed = mMaxSpeed;
+	}
+	else {
+		mSpeed = speed;
+    	}
 }
 
 double MD::Motor::getSpeed() {
-    return m_speed;
+	return mSpeed;
 }
 
 void MD::Motor::setMinSpeed(double minSpeed) {
-    m_minSpeed = minSpeed;
+	mMinSpeed = minSpeed;
 }
 
 // int Motor::getMinSpeed() {return 0;}
 
 void MD::Motor::setMaxSpeed(double maxSpeed) {
-    m_maxSpeed = maxSpeed;
+	mMaxSpeed = maxSpeed;
 }
 
 // int Motor::getMaxSpeed() {return 0;}
 
 void MD::Motor::stop() {
-    m_speed = 0.0;
+	mSpeed = 0.0;
 }
 // --- End of control of motor actions ---

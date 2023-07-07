@@ -1,61 +1,46 @@
 #include "MotorDriver.h"
-#include <ros/ros.h>
-#include <geometry_msgs/Twist.h>
-#include <sensor_msgs/Joy.h>
-#include <ros/console.h>
-//#include <JetsonGPIO.h>
-#include <wiringPi.h>
-#include <softPwm.h>
-#include <chrono>
-#include <thread>
-using namespace std::this_thread;
-using namespace std::chrono; 
+#include "RunMotor.h"
 
-#define LEFT_DIRECTION_PIN 	22
-#define LEFT_PWM_PIN 		26
-#define RIGHT_DIRECTION_PIN 	24
-#define RIGHT_PWM_PIN		23
 
 // motor(directionPin, PwmPin, minSpeed, maxSpeed)
-MD::Motor leftMotor(LEFT_DIRECTION_PIN, LEFT_PWM_PIN, 0.0, 100.0);
-MD::Motor rightMotor(RIGHT_DIRECTION_PIN, RIGHT_PWM_PIN, 0.0, 100.0);
+MD::Motor leftMotor(LEFT_DIRECTION_PIN, LEFT_PWM_PIN, MIN_SPEED, MAX_SPEED);
+MD::Motor rightMotor(RIGHT_DIRECTION_PIN, RIGHT_PWM_PIN, MIN_SPEED, MAX_SPEED);
 
- int leftMotorPwmPin = leftMotor.getPwmPin();
- int rightMotorPwmPin = rightMotor.getPwmPin();
+// just for debugging
+int leftMotorPwmPin = leftMotor.getPwmPin();
+int rightMotorPwmPin = rightMotor.getPwmPin();
 
-int leftMotorDirection = leftMotor.getDirection();
-int rightMotorDirection = rightMotor.getDirection();
-
-//GPIO::PWM leftMotorPWMPin(leftMotorPwmPin, 1000); // for GPIO::BOARD
-//GPIO::PWM rightMotorPWMPin(rightMotorPwmPin, 1000);
-
-double leftWheelSpeed = leftMotor.getSpeed();
-double rightWheelSpeed = rightMotor.getSpeed();
+// Setup PWM for Jetson Nano   (leave in for now!)
+// GPIO::PWM leftMotorPWMPin(leftMotorPwmPin, FREQUENCY); // for GPIO::BOARD
+// GPIO::PWM rightMotorPWMPin(rightMotorPwmPin, FREQUENCY);
 
 
 void messageCallback(const geometry_msgs::Twist& cmd_vel) {
-
+// Getting Velocity from XboxController.cpp and calculating Speed and direction
 	double linearVelocityX = cmd_vel.linear.x;
 	double angularVelocityZ = cmd_vel.angular.z;
 
-	leftWheelSpeed = (linearVelocityX - angularVelocityZ) * 100.0;
-	rightWheelSpeed = (linearVelocityX + angularVelocityZ) * 100.0;
+	double leftWheelSpeed = (linearVelocityX - angularVelocityZ) * VELOCITY_MULTIPLIER;
+	double rightWheelSpeed = (linearVelocityX + angularVelocityZ) * VELOCITY_MULTIPLIER;
 
 	leftMotor.setSpeed(leftWheelSpeed);
 	rightMotor.setSpeed(rightWheelSpeed);
 
+	leftMotor.setDirection(leftWheelSpeed, LEFT_DIRECTION_PIN);
+        rightMotor.setDirection(-1*rightWheelSpeed, RIGHT_DIRECTION_PIN);
+
+        bool LeftWheelDirection = leftMotor.getDirection();
+        bool RightWheelDirection = rightMotor.getDirection(); // reversed to mirror the left motor
+
+// Speed after putting it on Range of 0-100
 	double newLeftWheelSpeed = leftMotor.getSpeed();
 	double newRightWheelSpeed = rightMotor.getSpeed();
 
 
-	leftMotor.setDirection(leftWheelSpeed, LEFT_DIRECTION_PIN);
-	rightMotor.setDirection(-1*rightWheelSpeed, RIGHT_DIRECTION_PIN);
 
 
-	bool LeftWheelDirection = leftMotor.getDirection();
-	bool RightWheelDirection = rightMotor.getDirection(); // reversed to mirror the left motor
-
-
+// Writing speed to Pwm Pin to Control the Speed
+// PWM takes speed to set power of Motor in %
 	//leftMotorPWMPin.ChangeDutyCycle(newLeftWheelSpeed);
 	//rightMotorPWMPin.ChangeDutyCycle(newRightWheelSpeed);
 	softPwmWrite(LEFT_PWM_PIN,newLeftWheelSpeed);
@@ -96,7 +81,6 @@ void messageCallback(const geometry_msgs::Twist& cmd_vel) {
 		ROS_INFO_STREAM("Not moving");
 	}
 	ROS_INFO_STREAM("------------------------------------");
-	//sleep_for(nanoseconds(10000));
 
 }
 
@@ -107,18 +91,20 @@ int main(int argc, char** argv) {
 	ros::init(argc, argv, "run_motor");
 	ros::NodeHandle nh;
 
-	ros::Subscriber sub = nh.subscribe("cmd_vel", 1000, &messageCallback);	
+	ros::Subscriber sub = nh.subscribe("cmd_vel", FREQUENCY, &messageCallback);	
 
 	ROS_INFO_STREAM("Left pwm pin: " << leftMotorPwmPin);
 	ROS_INFO_STREAM("Right pwm pin: " << rightMotorPwmPin);
 
 	ros::spin();
 	ROS_INFO_STREAM("spin");
-	/*softPwmWrite(LEFT_PWM_PIN,0);
+// Equivalent of JetsonGpio  GPIO.Cleanup();
+	softPwmWrite(LEFT_PWM_PIN,0);
 	digitalWrite(LEFT_PWM_PIN,LOW);
 	softPwmWrite(RIGHT_PWM_PIN,0);
 	digitalWrite(RIGHT_PWM_PIN,LOW);
 	digitalWrite(RIGHT_DIRECTION_PIN,LOW);
-	digitalWrite(LEFT_DIRECTION_PIN,LOW);*/
+	digitalWrite(LEFT_DIRECTION_PIN,LOW);
+
 	ROS_INFO_STREAM("clean");
 }
