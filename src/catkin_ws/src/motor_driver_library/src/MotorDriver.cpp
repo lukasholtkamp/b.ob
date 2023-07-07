@@ -1,12 +1,20 @@
 #include "MotorDriver.h"
 
+/**
+ * @brief Construct a new MD::Motor::Motor object
+ * 
+ * @param directionPin 
+ * @param pwmPin 
+ * @param minSpeed 
+ * @param maxSpeed 
+ */
 MD::Motor::Motor(int directionPin,int pwmPin, double minSpeed, double maxSpeed) {
-	mDirectionPin = directionPin;
-	mPwmPin = pwmPin;
-	mMinSpeed = minSpeed;
-	mMaxSpeed = maxSpeed;
-	mSpeed = 0.0;
-	mDirection = 0;
+	m_DirectionPin = directionPin;
+	m_PwmPin = pwmPin;
+	m_MinSpeed = minSpeed;
+	m_MaxSpeed = maxSpeed;
+	m_Speed = 0.0;
+	m_Direction = 0;
 	wiringPiSetup();
 	// Pin configurations for JetsonGPIO
 	//GPIO::setmode(GPIO::BOARD); // GPIO::BCM or GPIO::BOARD
@@ -25,65 +33,92 @@ MD::Motor::Motor(int directionPin,int pwmPin, double minSpeed, double maxSpeed) 
 	pinMode(RIGHT_DIRECTION_PIN, OUTPUT); 		// Right direction
 }
 
-// --- Pwm pin ---.
+/// @brief Returns the pwm pin of the motor
+/// @return int 
 int MD::Motor::getPwmPin(){
-	return mPwmPin;
+	return m_PwmPin;
 }
-// --- End of Pwm pin ---
 
-// --- Wheel direction ---
+/**
+ * @brief Set the direction of the object
+ * 
+ * @param speed 
+ * @param pinNumber 
+ * @details This function is used to set the direction of the motor. If the speed is positive, the direction is forward. If the speed is negative, the direction is backward.
+ */
 void MD::Motor::setDirection(double speed, int directionPin) {
-	if (speed > mMinSpeed) {
-		mDirection = true;
+	if (speed > m_MinSpeed) {
+		m_Direction = true;
 		digitalWrite(directionPin, HIGH);
-	} else if (speed <= mMinSpeed) {
-		mDirection = false;
+	} else if (speed <= m_MinSpeed) {
+		m_Direction = false;
 		digitalWrite(directionPin, LOW);
 	}
 }
 
+/**
+ * @brief Get the direction of the object
+ * 
+ * @return true 
+ * @return false 
+ */
 bool MD::Motor::getDirection() {
-	return mDirection;
+	return m_Direction;
 }
 
+/// @brief Returns the direction pin of the motor
 int MD::Motor::getDirectionPin(){
-	return mDirectionPin;
+	return m_DirectionPin;
 }
-// --- End of wheel direction ---
 
-// --- Control of motor actions ---
+/**
+ * @brief Set the Speed of the object
+ * 
+ * @param speed 
+ */
 void MD::Motor::setSpeed(double speed) {
-	if (speed < mMinSpeed && speed > mMaxSpeed*-1) {
-        	mSpeed = speed*-1;
-	}
-	else if (speed <= mMaxSpeed*-1) {
-    		mSpeed = mMaxSpeed;
-    	}
-	else if (speed >= mMaxSpeed) {
-        	mSpeed = mMaxSpeed;
-	}
-	else {
-		mSpeed = speed;
-    	}
+    if (speed < m_MinSpeed && speed > m_MaxSpeed*-1) { // If the speed is less than the minimum speed and greater than the maximum speed, the speed is set to the minimum speed
+        m_Speed = speed*-1;
+    } else if (speed <= m_MaxSpeed*-1) { // If the speed is less than the maximum speed, the speed is set to the maximum speed
+    	m_Speed = m_MaxSpeed;
+    } else if (speed >= m_MaxSpeed) {  // If the speed is greater than the maximum speed, the speed is set to the maximum speed
+        m_Speed = m_MaxSpeed;
+    } else {                        // If the speed is greater than the minimum speed and less than the maximum speed, the speed is set to the speed
+   		m_Speed = speed;
+    }
 }
 
+/**
+ * @brief Get the Speed of the object
+ * 
+ * @return double 
+ */
 double MD::Motor::getSpeed() {
-	return mSpeed;
+	return m_Speed;
 }
 
+/**
+ * @brief Set the Min Speed of the object
+ * 
+ * @return double 
+ */
 void MD::Motor::setMinSpeed(double minSpeed) {
-	mMinSpeed = minSpeed;
+	m_MinSpeed = minSpeed;
 }
 
-// int Motor::getMinSpeed() {return 0;}
-
+/**
+ * @brief Set the Max Speed of the object
+ * 
+ * @return double 
+ */
 void MD::Motor::setMaxSpeed(double maxSpeed) {
-	mMaxSpeed = maxSpeed;
+	m_MaxSpeed = maxSpeed;
 }
 
-// int Motor::getMaxSpeed() {return 0;}
-
+/**
+ * @brief Stop the motor
+ * 
+ */
 void MD::Motor::stop() {
-	mSpeed = 0.0;
+	m_Speed = 0.0;
 }
-// --- End of control of motor actions ---
