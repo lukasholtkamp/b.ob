@@ -150,7 +150,7 @@ include_directories(
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-  find_library(WIRINGPI_LIBRARIES NAMES wiringPi)
+#  find_library(WIRINGPI_LIBRARIES NAMES wiringPi)
 ## Specify libraries to link a library or executable target against
   target_link_libraries(${PROJECT_NAME}
     ${catkin_LIBRARIES} 

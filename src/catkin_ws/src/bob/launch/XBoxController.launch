@@ -1,7 +1,6 @@
 <launch>
 	<!-- joy node -->
-	<node respawn="true" pkg="joy"
-			type="joy_node" name="BobCore" >
+	<node respawn="true" pkg="joy" type="joy_node" name="BobCore" >
 		<param name="dev" type="string" value="/dev/input/js0" />
 		<param name="deadzone" value="0.12" />
 	</node>
@@ -17,5 +16,5 @@
 	<param name="y_button" value="1" type="int" />
 	
 	<node pkg="bob" type="XBoxController" name="xbox" respawn="true" respawn_delay="3"/>
-	<node pkg="bob" type="RunMotor" name="runMotor"  output="screen" />
+	<node pkg="bob" type="RunMotor" name="runMotor" output="screen" />
 </launch>

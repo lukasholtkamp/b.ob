@@ -7,9 +7,16 @@
 #ifndef MOTOR_DRIVER_H
 #define MOTOR_DRIVER_H
 
-//#include <JetsonGPIO.h>
-#include <stdint.h>
-#include <wiringPi.h>
+//#include <JetsonGPIO.h> //<-- Used to control the GPIO pins on the Jetson Nano
+#include <wiringPi.h> //<-- Used to control the GPIO pins on the Raspberry Pi
+#include <softPwm.h> //<-- Used to control the PWM pins on the Raspberry Pi
+#include <stdint.h> //<-- Used to define the uint8_t type
+
+#define LEFT_DIRECTION_PIN      22 //<-- Pin number for the direction of the left motor
+#define LEFT_PWM_PIN            26 //<-- Pin number for the pwm of the left motor
+#define RIGHT_DIRECTION_PIN     24 //<-- Pin number for the direction of the right motor
+#define RIGHT_PWM_PIN           23 //<-- Pin number for the pwm of the right motor
+
 // MD: Motor Driver
 namespace MD{
 	/**
@@ -18,10 +25,10 @@ namespace MD{
 	 */
 	class Motor {
 	private:
-		int m_directionPin, m_pwmPin; //<-- Pin numbers
-		double m_minSpeed, m_maxSpeed; //<-- Speed limits
-		double m_speed; //<-- Current speed
-		bool m_direction; //<-- Current direction
+		int m_DirectionPin, m_PwmPin; //<-- Pin numbers
+		double m_MinSpeed, m_MaxSpeed; //<-- Speed limits
+		double m_Speed; //<-- Current speed
+		bool m_Direction; //<-- Current direction
 	public:
 		/**
 		 * @brief Constructor

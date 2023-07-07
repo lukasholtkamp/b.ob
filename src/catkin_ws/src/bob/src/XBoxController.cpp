@@ -7,43 +7,31 @@
  * 4. The A button is used to pause the movement.
  * 5. The B button is used to stop the movement.
  */
-#include <ros/ros.h>
-#include <geometry_msgs/Twist.h>
-#include <sensor_msgs/Joy.h>
-#include <ostream>
-
-//--Button configuration according to XBoxOne Controller
-#define A_BUTTON 0
-#define B_BUTTON 1
-#define Y_BUTTON 3
-//--Axes configuration according to XBoxOne Controller
-#define ANGULAR_VEL 0
-#define JOY_AXIS_RT 5
-#define JOY_AXIS_LT 2
+#include <XBoxController.h>
 
 /**
  * @brief This class is used to control the robot using XBoxOne Controller
- * 
+ * @details Class reads Controller Inputs and calculates Velocity then publishes it to RunMotor.cpp 
  */
 class XBoxController
 {
 public:
-  XBoxController();
+	XBoxController();
 
 private:
-  /**
+	/**
    * @brief Callback function for the joystick
    * @param joy 
    */
   void joyCallback(const sensor_msgs::Joy::ConstPtr& joy);
 
-  ros::NodeHandle nh; //<-- Node handle
+	ros::NodeHandle nh; //<-- Node handle
 
-  int linear, angular; //<-- Linear and angular values
-  int b_button; //<-- Button value
-  double l_scale, a_scale;  //<-- Scale values
-  ros::Publisher vel_pub; //<-- Publisher
-  ros::Subscriber joy_sub; //<-- Subscriber
+	int linear, angular; //<-- Linear and angular values
+	int bButton; //<-- Button value
+	double lScale, aScale; //<-- Scale values
+	ros::Publisher velPub; //<-- Publisher
+	ros::Subscriber joy_sub; //<-- Subscriber
 };
 
 /**
@@ -52,21 +40,18 @@ private:
  * 
  */
 XBoxController::XBoxController():
-  linear(JOY_AXIS_RT), //linear(AXIS_LINEAR),
-  angular(ANGULAR_VEL), //angular(AXIS_ANGULAR),
-  b_button(B_BUTTON) //b_button(BUTTONS)
+	linear(JOY_AXIS_RT), 
+	angular(ANGULAR_VEL)
 {
-
   // Getting the parameters from the parameter server
-  nh.param("axis_linear", linear, linear); 
-  nh.param("axis_angular", angular, angular);
-  nh.param("scale_angular", a_scale, a_scale);
-  nh.param("scale_linear", l_scale, l_scale);
-  nh.param("buttons", b_button, b_button);
+	nh.param("axis_linear", linear, linear);
+	nh.param("axis_angular", angular, angular);
+	nh.param("scale_angular", aScale, aScale);
+	nh.param("scale_linear", lScale, lScale);
 
-  vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 10); //<-- Publisher
+	velPub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 10); //<-- Publisher
 
-  joy_sub = nh.subscribe<sensor_msgs::Joy>("joy", 10, &XBoxController::joyCallback, this); //<-- Subscriber
+	joy_sub = nh.subscribe<sensor_msgs::Joy>("joy", 10, &XBoxController::joyCallback, this); //<-- Subscriber
 }
 
 /**
