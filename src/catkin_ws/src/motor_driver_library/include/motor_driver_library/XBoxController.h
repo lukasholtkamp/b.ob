@@ -1,20 +1,13 @@
-#ifndef X_BOX_CONTROLLER_H
-#define X_BOX_CONTROLLER_H
-
-#include <ros/ros.h> //<-- Used for the ROS environment
-#include <geometry_msgs/Twist.h> //<-- Used to receive messages from the cmd_vel topic
-#include <sensor_msgs/Joy.h> //<-- Used to receive messages from the joy topic
-#include <ostream> //<-- Used to print to the console
+#ifndef BOB_MOTOR_DRIVER_LIBRARY_XBOXCONTROLLER_H
+#define BOB_MOTOR_DRIVER_LIBRARY_XBOXCONTROLLER_H
 
 //--Button configuration according to XBoxOne Controller
-#define A_BUTTON 0 
-#define B_BUTTON 1 
-#define Y_BUTTON 3
+const int kAButton = 0; 
+const int kBButton = 1; 
+const int kYButton = 3;
 //--Axes configuration according to XBoxOne Controller
-#define ANGULAR_VEL 0 
-#define JOY_AXIS_RT 5
-#define JOY_AXIS_LT 2
+const int kAngularVel = 0; 
+const int kJoyAxisRT = 5;
+const int kJoyAxisLT = 2;
 
-
-#endif // MOTOR_DRIVER_H
-
+#endif // BOB_MOTOR_DRIVER_LIBRARY_XBOXCONTROLLER_H
