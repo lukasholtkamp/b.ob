@@ -1,6 +1,6 @@
 #include "MotorDriver.h"
-#include "RunMotor.h"
 
+#include "RunMotor.h"
 
 // motor(directionPin, PwmPin, minSpeed, maxSpeed)
 MD::Motor leftMotor(LEFT_DIRECTION_PIN, LEFT_PWM_PIN, MIN_SPEED, MAX_SPEED);
@@ -83,6 +83,13 @@ void messageCallback(const geometry_msgs::Twist& cmd_vel) {
 	ROS_INFO_STREAM("------------------------------------");
 
 }
+/*
+void checkTriggers(const sensor_msgs::Joy::ConstPtr& joy){
+	auto lT = joy->axes[JOY_AXIS_LT];
+        while(lT = 0){
+
+        }
+}*/
 
 int main(int argc, char** argv) {
 //	leftMotorPWMPin.start(0.0);
@@ -93,11 +100,9 @@ int main(int argc, char** argv) {
 
 	ros::Subscriber sub = nh.subscribe("cmd_vel", FREQUENCY, &messageCallback);	
 
-	ROS_INFO_STREAM("Left pwm pin: " << leftMotorPwmPin);
-	ROS_INFO_STREAM("Right pwm pin: " << rightMotorPwmPin);
-
+	//ROS_INFO_STREAM("Left pwm pin: " << leftMotorPwmPin);
+	//ROS_INFO_STREAM("Right pwm pin: " << rightMotorPwmPin);
 	ros::spin();
-	ROS_INFO_STREAM("spin");
 // Equivalent of JetsonGpio  GPIO.Cleanup();
 	softPwmWrite(LEFT_PWM_PIN,0);
 	digitalWrite(LEFT_PWM_PIN,LOW);

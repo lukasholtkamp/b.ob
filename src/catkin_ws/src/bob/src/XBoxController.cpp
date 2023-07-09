@@ -1,5 +1,6 @@
 #include <XBoxController.h>
 
+auto lT = 0;
 // Class reads Controller Inputs and calculates Velocity then publishes it to RunMotor.cpp
 class XBoxController
 {
@@ -39,6 +40,7 @@ void XBoxController::joyCallback(const sensor_msgs::Joy::ConstPtr& joy)
 // Getting the linear and angular values
 	geometry_msgs::Twist twist;
 	twist.angular.z = aScale*joy->axes[ANGULAR_VEL];
+
 	int val = 0;
 // Calculating linear Velocity with acceleration and deceleration
 	switch(val){
@@ -73,6 +75,7 @@ void XBoxController::joyCallback(const sensor_msgs::Joy::ConstPtr& joy)
 
 int main(int argc, char** argv)
 {
+
 	ros::init(argc, argv, "xbox_controller");
 	XBoxController xbox_controller;
 	ros::spin();
