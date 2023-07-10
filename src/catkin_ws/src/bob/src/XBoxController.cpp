@@ -9,15 +9,11 @@
  */
 #include <XBoxController.h>
 
-<<<<<<< HEAD
-auto lT = 0;
 // Class reads Controller Inputs and calculates Velocity then publishes it to RunMotor.cpp
-=======
 /**
  * @brief This class is used to control the robot using XBoxOne Controller
  * @details Class reads Controller Inputs and calculates Velocity then publishes it to RunMotor.cpp 
  */
->>>>>>> 5f284dfaa64ed6777c4ebb61016d90093bfa7cbf
 class XBoxController
 {
 public:
@@ -68,53 +64,34 @@ XBoxController::XBoxController():
 void XBoxController::joyCallback(const sensor_msgs::Joy::ConstPtr& joy)
 {
 // Getting the linear and angular values
-<<<<<<< HEAD
-	geometry_msgs::Twist twist;
-	twist.angular.z = aScale*joy->axes[ANGULAR_VEL];
-
-	int val = 0;
-// Calculating linear Velocity with acceleration and deceleration
-	switch(val){
-		case JOY_AXIS_RT:
-			twist.linear.x = ((1+(lScale*joy->axes[JOY_AXIS_RT])*-1)/2);
-			break;
-		case JOY_AXIS_LT:
-			twist.linear.x = ((1+(lScale*joy->axes[JOY_AXIS_LT])*-1)/2);
-			break;
-		default:
-			twist.linear.x = ((1+(lScale*joy->axes[JOY_AXIS_RT])*-1)/2)-((1+(lScale*joy->axes[JOY_AXIS_LT])*-1)/2);
-	}
-
-=======
   geometry_msgs::Twist twist; //<-- Twist message
-  twist.angular.z = a_scale*joy->axes[ANGULAR_VEL]; //<-- Angular value
+  twist.angular.z = aScale*joy->axes[ANGULAR_VEL]; //<-- Angular value
   int val = 0; 
   switch(val){ // Switch case to control the linear value
 	case JOY_AXIS_RT: // If the right trigger is pressed
-		twist.linear.x = ((1+(l_scale*joy->axes[JOY_AXIS_RT])*-1)/2); // Setting the linear value
+		twist.linear.x = ((1+(lScale*joy->axes[JOY_AXIS_RT])*-1)/2); // Setting the linear value
 		break;
 	case JOY_AXIS_LT: // If the left trigger is pressed
-		twist.linear.x = ((1+(l_scale*joy->axes[JOY_AXIS_LT])*-1)/2); // Setting the linear value
+		twist.linear.x = ((1+(lScale*joy->axes[JOY_AXIS_LT])*-1)/2); // Setting the linear value
 		break;
 	default: // If no trigger is pressed
-		twist.linear.x = ((1+(l_scale*joy->axes[JOY_AXIS_RT])*-1)/2)-((1+(l_scale*joy->axes[JOY_AXIS_LT])*-1)/2); // Setting the linear value
+		twist.linear.x = ((1+(lScale*joy->axes[JOY_AXIS_RT])*-1)/2)-((1+(lScale*joy->axes[JOY_AXIS_LT])*-1)/2); // Setting the linear value
   }
   
->>>>>>> 5f284dfaa64ed6777c4ebb61016d90093bfa7cbf
 // Pause and Stop Buttons
-  auto b_button = joy->buttons[B_BUTTON]; // Getting the value of the B button
-  auto y_button = joy->buttons[Y_BUTTON]; // Getting the value of the Y button
-  if(b_button == 1){ // If the B button is pressed
+  auto butBton = joy->buttons[B_BUTTON]; // Getting the value of the B button
+  auto yButton = joy->buttons[Y_BUTTON]; // Getting the value of the Y button
+  if(bButton == 1){ // If the B button is pressed
   	twist.linear.x = 0; 
   	twist.angular.z = 0;
-	vel_pub.publish(twist); // Publishing the linear and angular values
+	velPub.publish(twist); // Publishing the linear and angular values
 	ros::shutdown(); // Shutting down the node
   }
-  if(y_button == 1){ // If the Y button is pressed
+  if(yButton == 1){ // If the Y button is pressed
   	twist.linear.x = 0;
   	twist.angular.z = 0;
   }
-  vel_pub.publish(twist); // Publishing the linear and angular values
+  velPub.publish(twist); // Publishing the linear and angular values
 }
 
 /**
@@ -127,15 +104,7 @@ void XBoxController::joyCallback(const sensor_msgs::Joy::ConstPtr& joy)
  */
 int main(int argc, char** argv)
 {
-<<<<<<< HEAD
-
-	ros::init(argc, argv, "xbox_controller");
-	XBoxController xbox_controller;
-	ros::spin();
-=======
   ros::init(argc, argv, "xbox_controller"); //<-- Initializing the ros node
   XBoxController xbox_controller; //<-- Initializing the XBoxController class
-
   ros::spin(); //<-- Spin
->>>>>>> 5f284dfaa64ed6777c4ebb61016d90093bfa7cbf
 }
