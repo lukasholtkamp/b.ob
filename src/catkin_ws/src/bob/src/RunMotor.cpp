@@ -42,10 +42,10 @@ void messageCallback(const geometry_msgs::Twist& cmd_vel) {
 	rightMotor.setSpeed(rightWheelSpeed); //<-- Set the speed of the right motor
 
 	leftMotor.setDirection(leftWheelSpeed, LEFT_DIRECTION_PIN); //<-- Set the direction of the left motor
-    rightMotor.setDirection(-1*rightWheelSpeed, RIGHT_DIRECTION_PIN); //<-- Set the direction of the right motor
+	rightMotor.setDirection(-1*rightWheelSpeed, RIGHT_DIRECTION_PIN); //<-- Set the direction of the right motor
 
-    bool LeftWheelDirection = leftMotor.getDirection();
-    bool RightWheelDirection = rightMotor.getDirection(); // reversed to mirror the left motor
+	bool LeftWheelDirection = leftMotor.getDirection();
+	bool RightWheelDirection = rightMotor.getDirection(); // reversed to mirror the left motor
 
 	// Speed after putting it on Range of 0-100
 	double newLeftWheelSpeed = leftMotor.getSpeed(); //<-- The new speed of the left wheel
@@ -95,13 +95,7 @@ void messageCallback(const geometry_msgs::Twist& cmd_vel) {
 	ROS_INFO_STREAM("------------------------------------");
 
 }
-/*
-void checkTriggers(const sensor_msgs::Joy::ConstPtr& joy){
-	auto lT = joy->axes[JOY_AXIS_LT];
-        while(lT = 0){
 
-        }
-}*/
 
 /**
  * @brief Main function
@@ -120,18 +114,13 @@ int main(int argc, char** argv) {
 
 	ros::init(argc, argv, "run_motor");
 	ros::NodeHandle nh;
-
 	ros::Subscriber sub = nh.subscribe("cmd_vel", FREQUENCY, &messageCallback);	
-
 	//ROS_INFO_STREAM("Left pwm pin: " << leftMotorPwmPin);
 	//ROS_INFO_STREAM("Right pwm pin: " << rightMotorPwmPin);
 	ros::spin();
-<<<<<<< HEAD
-// Equivalent of JetsonGpio  GPIO.Cleanup();
-=======
+
 	ROS_INFO_STREAM("spin");
 	// Equivalent of JetsonGpio  GPIO.Cleanup();
->>>>>>> 5f284dfaa64ed6777c4ebb61016d90093bfa7cbf
 	softPwmWrite(LEFT_PWM_PIN,0);
 	digitalWrite(LEFT_PWM_PIN,LOW);
 	softPwmWrite(RIGHT_PWM_PIN,0);
