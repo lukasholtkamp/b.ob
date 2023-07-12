@@ -1,4 +1,5 @@
 #include "MotorDriver.h"
+#include "RunMotor.h"
 
 /**
  * @brief Construct a new MD::Motor::Motor object
@@ -40,17 +41,73 @@ int MD::Motor::getPwmPin(){
 }
 
 /**
+ *
+ *
+ *
+ *
+ */
+
+double MD::Motor::LinearAndAngularVelocities(double linearVelocityX, double angularVelocityZ) {
+
+	double speed = (linearVelocityX) * VELOCITY_MULTIPLIER;
+
+        if(linearVelocityX > 0 && angularVelocityZ < 0 && ( (angularVelocityZ*-1) <= linearVelocityX) ){
+                speed = (linearVelocityX + angularVelocityZ) * VELOCITY_MULTIPLIER;
+		return speed; 
+        }
+        else if(linearVelocityX > 0 && angularVelocityZ < 0 && ( (angularVelocityZ *-1) > linearVelocityX) ){
+                speed = 0;
+		return speed;
+        }
+        else if(linearVelocityX > 0 && angularVelocityZ > 0 && (angularVelocityZ <= linearVelocityX) ){
+                speed  = (linearVelocityX - angularVelocityZ) * VELOCITY_MULTIPLIER;
+                return speed;
+        }
+        else if(linearVelocityX > 0 &&  angularVelocityZ > 0 && (angularVelocityZ > linearVelocityX) ) {
+                speed = 0;
+                return speed;
+        }
+
+
+        else if(linearVelocityX < 0 && angularVelocityZ < 0 && ( (angularVelocityZ*-1) <= (linearVelocityX*-1) ) ){
+                speed = (linearVelocityX - angularVelocityZ) * VELOCITY_MULTIPLIER; 
+                return speed;
+        }
+        else if(linearVelocityX < 0 &&  angularVelocityZ < 0 && ( (angularVelocityZ *-1) > (linearVelocityX*-1) ) ){
+                speed = 0;
+                return speed;
+        }
+        else if(linearVelocityX < 0 && angularVelocityZ > 0 && (angularVelocityZ <= (linearVelocityX*-1) ) ){
+                speed = (linearVelocityX + angularVelocityZ) * VELOCITY_MULTIPLIER;
+                return speed;
+        }
+        else if(linearVelocityX < 0 && angularVelocityZ > 0 && (angularVelocityZ > (linearVelocityX*-1) ) ) {
+                speed = 0;
+                return speed;
+        }
+        else if(linearVelocityX == 0 && angularVelocityZ < 0){
+        	speed = (linearVelocityX - angularVelocityZ) * VELOCITY_MULTIPLIER;
+        	return speed;
+        }
+	else if(linearVelocityX == 0 && angularVelocityZ > 0){
+        	speed = (linearVelocityX - angularVelocityZ) * VELOCITY_MULTIPLIER;
+        	return speed;
+        }
+}
+
+
+/**
  * @brief Set the direction of the object
  * 
+
  * @param speed 
  * @param pinNumber 
- * @details This function is used to set the direction of the motor. If the speed is positive, the direction is forward. If the speed is negative, the direction is backward.
- */
+ * @details This function is used to set the direction of the motor. If the speed is positive, the direction is forward. If the speed is negative, the direction is backward. */
 void MD::Motor::setDirection(double speed, int directionPin) {
 	if (speed > m_MinSpeed) {
 		m_Direction = true;
 		digitalWrite(directionPin, HIGH);
-	} else if (speed <= m_MinSpeed) {
+	} else if (speed < m_MinSpeed) {
 		m_Direction = false;
 		digitalWrite(directionPin, LOW);
 	}
