@@ -43,11 +43,17 @@ namespace MD{
 		int getPwmPin(); //<-- Returns the pwm pin number
 		
 		/**
+		*
+		 */
+		double LinearAndAngularVelocities(double linearVelocityX, double angularVelocityZ);
+		
+		/**
 		 * @brief Set the Direction object	
 		 * 
 		 * @param direction 
 		 * @param pinNumber 
 		 */
+		  
 		void setDirection(double direction,int pinNumber); 
 		bool getDirection(); //<-- Returns the direction of the motor
 		int getDirectionPin(); //<-- Returns the direction pin number
