@@ -31,14 +31,14 @@ int rightMotorPwmPin = rightMotor.getPwmPin(); //<-- The GPIO pin number for the
 */
 void messageCallback(const geometry_msgs::Twist& cmd_vel) {
 	// Getting Velocity from XboxController.cpp and calculating Speed and direction
-	double linearVelocityX = cmd_vel.linear.x; //<-- The linear velocity of the robot
-	double angularVelocityZ = cmd_vel.angular.z; //<-- The angular velocity of the robot
+	double linearVelocityX = cmd_vel.linear.x * VELOCITY_MULTIPLIER; //<-- The linear velocity of the robot
+	double angularVelocityZ = cmd_vel.angular.z * VELOCITY_MULTIPLIER ; //<-- The angular velocity of the robot
 
 	//double leftWheelSpeed = (linearVelocityX - angularVelocityZ) * VELOCITY_MULTIPLIER; //<-- The desired speed of the left wheel
 	//double rightWheelSpeed = (linearVelocityX + angularVelocityZ) * VELOCITY_MULTIPLIER; //<-- The desired speed of the right wheel
 
 	double leftWheelSpeed = leftMotor.LinearAndAngularVelocities(linearVelocityX, angularVelocityZ);
-	double rightWheelSpeed = rightMotor.LinearAndAngularVelocities(linearVelocityX, angularVelocityZ);
+	double rightWheelSpeed = rightMotor.LinearAndAngularVelocities(linearVelocityX, angularVelocityZ*-1);
 
 
 	leftMotor.setSpeed(leftWheelSpeed); //<-- Set the speed of the left motor
@@ -51,8 +51,8 @@ void messageCallback(const geometry_msgs::Twist& cmd_vel) {
 	bool RightWheelDirection = rightMotor.getDirection(); // reversed to mirror the left motor
 
 	// Speed after putting it on Range of 0-100
-	double newLeftWheelSpeed = leftMotor.getSpeed()/5; //<-- The new speed of the left wheel
-	double newRightWheelSpeed = rightMotor.getSpeed()/5; //<-- The new speed of the right wheel
+	double newLeftWheelSpeed = leftMotor.getSpeed(); //<-- The new speed of the left wheel
+	double newRightWheelSpeed = rightMotor.getSpeed(); //<-- The new speed of the right wheel
 
 	// Writing speed to Pwm Pin to Control the Speed
 	// PWM takes speed to set power of Motor in %
@@ -98,11 +98,6 @@ void messageCallback(const geometry_msgs::Twist& cmd_vel) {
 	ROS_INFO_STREAM("------------------------------------");
 
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> f4be1f7fe7ec625ab11ca576a8fbea1850a071bf
-
 /**
  * @brief Main function
  * 
@@ -121,21 +116,10 @@ int main(int argc, char** argv) {
 	ros::init(argc, argv, "run_motor");
 	ros::NodeHandle nh;
 	ros::Subscriber sub = nh.subscribe("cmd_vel", FREQUENCY, &messageCallback);	
-	//ROS_INFO_STREAM("Left pwm pin: " << leftMotorPwmPin);
-	//ROS_INFO_STREAM("Right pwm pin: " << rightMotorPwmPin);
 	ros::spin();
-<<<<<<< HEAD
-//<<<<<<< HEAD
-// Equivalent of JetsonGpio  GPIO.Cleanup();
-//=======
 	ROS_INFO_STREAM("spin");
-	// Equivalent of JetsonGpio  GPIO.Cleanup();
-//>>>>>>> 5f284dfaa64ed6777c4ebb61016d90093bfa7cbf
-=======
 
-	ROS_INFO_STREAM("spin");
 	// Equivalent of JetsonGpio  GPIO.Cleanup();
->>>>>>> f4be1f7fe7ec625ab11ca576a8fbea1850a071bf
 	softPwmWrite(LEFT_PWM_PIN,0);
 	digitalWrite(LEFT_PWM_PIN,LOW);
 	softPwmWrite(RIGHT_PWM_PIN,0);
@@ -143,5 +127,4 @@ int main(int argc, char** argv) {
 	digitalWrite(RIGHT_DIRECTION_PIN,LOW);
 	digitalWrite(LEFT_DIRECTION_PIN,LOW);
 
-	ROS_INFO_STREAM("clean");
 }
