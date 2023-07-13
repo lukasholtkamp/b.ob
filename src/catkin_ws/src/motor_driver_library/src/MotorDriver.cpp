@@ -49,18 +49,17 @@ int MD::Motor::getPwmPin(){
 
 double MD::Motor::LinearAndAngularVelocities(double linearVelocityX, double angularVelocityZ) {
 
-	double speed = (linearVelocityX) * VELOCITY_MULTIPLIER;
-
-        if(linearVelocityX > 0 && angularVelocityZ < 0 && ( (angularVelocityZ*-1) <= linearVelocityX) ){
-                speed = (linearVelocityX + angularVelocityZ) * VELOCITY_MULTIPLIER;
+	double speed;
+    	/* if(linearVelocityX > 0 && angularVelocityZ < 0 && ( (angularVelocityZ*-1) <= linearVelocityX) ){ //this will slow down one wheel an speed up the other wheel  
+    	 	speed = (linearVelocityX - angularVelocityZ); 
+       		return speed;
+	 }*/
+        if(linearVelocityX > 0 && angularVelocityZ < 0 ){ //this will only affect the wheel that has to be slowed down
+                speed = linearVelocityX;
 		return speed; 
         }
-        else if(linearVelocityX > 0 && angularVelocityZ < 0 && ( (angularVelocityZ *-1) > linearVelocityX) ){
-                speed = 0;
-		return speed;
-        }
         else if(linearVelocityX > 0 && angularVelocityZ > 0 && (angularVelocityZ <= linearVelocityX) ){
-                speed  = (linearVelocityX - angularVelocityZ) * VELOCITY_MULTIPLIER;
+                speed  = (linearVelocityX - angularVelocityZ);
                 return speed;
         }
         else if(linearVelocityX > 0 &&  angularVelocityZ > 0 && (angularVelocityZ > linearVelocityX) ) {
@@ -69,30 +68,31 @@ double MD::Motor::LinearAndAngularVelocities(double linearVelocityX, double angu
         }
 
 
-        else if(linearVelocityX < 0 && angularVelocityZ < 0 && ( (angularVelocityZ*-1) <= (linearVelocityX*-1) ) ){
-                speed = (linearVelocityX - angularVelocityZ) * VELOCITY_MULTIPLIER; 
+        /*else if(linearVelocityX < 0 && angularVelocityZ < 0 && ( (angularVelocityZ*-1) <= (linearVelocityX*-1)  ){
+                speed = (linearVelocityX + angularVelocityZ); 
                 return speed;
-        }
+        }*/
+	else if (linearVelocityX < 0 && angularVelocityZ < 0) {
+		speed = linearVelocityX;
+		return speed;
+	}
         else if(linearVelocityX < 0 &&  angularVelocityZ < 0 && ( (angularVelocityZ *-1) > (linearVelocityX*-1) ) ){
                 speed = 0;
                 return speed;
         }
         else if(linearVelocityX < 0 && angularVelocityZ > 0 && (angularVelocityZ <= (linearVelocityX*-1) ) ){
-                speed = (linearVelocityX + angularVelocityZ) * VELOCITY_MULTIPLIER;
+                speed = (linearVelocityX + angularVelocityZ);
                 return speed;
         }
         else if(linearVelocityX < 0 && angularVelocityZ > 0 && (angularVelocityZ > (linearVelocityX*-1) ) ) {
                 speed = 0;
                 return speed;
         }
-        else if(linearVelocityX == 0 && angularVelocityZ < 0){
-        	speed = (linearVelocityX - angularVelocityZ) * VELOCITY_MULTIPLIER;
+        else if(linearVelocityX == 0 ){
+        	speed = (linearVelocityX - angularVelocityZ) ;
         	return speed;
         }
-	else if(linearVelocityX == 0 && angularVelocityZ > 0){
-        	speed = (linearVelocityX - angularVelocityZ) * VELOCITY_MULTIPLIER;
-        	return speed;
-        }
+
 }
 
 
