@@ -16,7 +16,7 @@
 	<param name="b_button" value="1" type="int" />
 	<param name="y_button" value="1" type="int" />
 	
-	<node pkg="bob" type="XBoxController" name="xbox" respawn="true" respawn_delay="3" />
+	<node pkg="bob" type="XBoxController" name="xbox" respawn="false" respawn_delay="3" />
 		<param name="default_trig_val" value="true" />
 	<node pkg="bob" type="RunMotor" name="runMotor" output="screen" />
 		<param name="default_trig_val" value="true" />
