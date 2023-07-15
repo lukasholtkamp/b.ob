@@ -79,13 +79,14 @@ void XBoxController::joyCallback(const sensor_msgs::Joy::ConstPtr& joy)
   }
   
 // Pause and Stop Buttons
-  auto butBton = joy->buttons[B_BUTTON]; // Getting the value of the B button
+  auto bButton = joy->buttons[B_BUTTON]; // Getting the value of the B button
   auto yButton = joy->buttons[Y_BUTTON]; // Getting the value of the Y button
   if(bButton == 1){ // If the B button is pressed
   	twist.linear.x = 0; 
   	twist.angular.z = 0;
 	velPub.publish(twist); // Publishing the linear and angular values
-	ros::shutdown(); // Shutting down the node
+	//ros::shutdown(); // Shutting down the node
+	system("rosnode kill -a");
   }
   if(yButton == 1){ // If the Y button is pressed
   	twist.linear.x = 0;
