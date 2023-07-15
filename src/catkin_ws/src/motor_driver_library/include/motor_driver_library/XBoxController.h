@@ -5,6 +5,7 @@
 #include <geometry_msgs/Twist.h> //<-- Used to receive messages from the cmd_vel topic
 #include <sensor_msgs/Joy.h> //<-- Used to receive messages from the joy topic
 #include <ostream> //<-- Used to print to the console
+#include <stdlib.h>
 
 //--Button configuration according to XBoxOne Controller
 #define A_BUTTON 0 
