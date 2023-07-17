@@ -1,6 +1,6 @@
 <h1>B.ob - Bertrandt office bot</h1>
 <h2>Goal for 2023-07-03:<br>
-<strong>Control b.ob over bluetooth with full directions control.</strong></h2>
+<strong>Control b.ob over bluetooth with full directions control. <span style="color:green">PASSED</span></strong></h2>
 <strong>Will be tested by the PO with the user manual.</strong>
 
 <h2>Last goal for 2023-06-19: <span style="color:red">FAILED</span><br></h2>
@@ -13,7 +13,7 @@ Emergency button is still not implemented, due to missing hardware.
 
 <h1>Definition of Done</h1>
 With each new increment, b.ob needs to fulfill the following points:</p>
-<strong>Safety: b.ob cannot move two cotton blocks stacked on top of each other.</strong></p>
+<strong>Safety: b.ob cannot damage a piece of cardboard when running into it full speed.</strong></p>
 <strong>Safety: b.obs internat components are safe</strong></p>
 <strong>After adding the new feature: run a system test with a colleague</strong></p>
 <strong>Merge the new code for the increment with a pull request</strong></p>
