@@ -123,8 +123,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-#link_directories(
-#  ${catkin_INCLUDE_DIRS})
+#link_directories(motor_driver_library)
   
 #link_libraries(${catkin_LIBRARIES} motor_driver_library)
 ## Declare a C++ library
@@ -148,6 +147,7 @@ find_library(WIRINGPI_LIBRARIES NAMES wiringpi)
 target_link_libraries(RunMotor ${WIRINGPI_LIBRARIES})
 target_link_libraries(XBoxController ${catkin_LIBRARIES} motor_driver_library)
 target_link_libraries(RunMotor ${catkin_LIBRARIES} motor_driver_library)
+#target_link_libraries(${PROJECT_NAME} motor_driver_library)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
