@@ -43,6 +43,7 @@ int MD::Motor::getPwmPin(){
 
 double MD::Motor::LinearAndAngularVelocities(double linearVelocityX, double angularVelocityZ) {
 
+<<<<<<< HEAD
   double speed;
   //---Forward Driving Curve---
   /* if(linearVelocityX > 0 && angularVelocityZ < 0 && ( (angularVelocityZ*-1) <= linearVelocityX) ){ //this will slow down one wheel an speed up the other wheel
@@ -83,6 +84,52 @@ double MD::Motor::LinearAndAngularVelocities(double linearVelocityX, double angu
     speed = (linearVelocityX - angularVelocityZ);
     return speed;
   }
+=======
+	double speed;
+    	/* if(linearVelocityX > 0 && angularVelocityZ < 0 && ( (angularVelocityZ*-1) <= linearVelocityX) ){ //this will slow down one wheel an speed up the other wheel  
+    	 	speed = (linearVelocityX - angularVelocityZ); 
+       		return speed;
+	 }*/
+        if(linearVelocityX > 0 && angularVelocityZ < 0 ){ //this will only affect the wheel that has to be slowed down
+                speed = linearVelocityX;
+		return speed; 
+        }
+        else if(linearVelocityX > 0 && angularVelocityZ > 0 && (angularVelocityZ <= linearVelocityX) ){
+                speed  = (linearVelocityX - angularVelocityZ);
+                return speed;
+        }
+        else if(linearVelocityX > 0 &&  angularVelocityZ > 0 && (angularVelocityZ > linearVelocityX) ) {
+                speed = 0;
+                return speed;
+        }
+
+
+        /*else if(linearVelocityX < 0 && angularVelocityZ < 0 && ( (angularVelocityZ*-1) <= (linearVelocityX*-1)  ){
+                speed = (linearVelocityX + angularVelocityZ); 
+                return speed;
+        }*/
+	else if (linearVelocityX < 0 && angularVelocityZ < 0) {
+		speed = linearVelocityX;
+		return speed;
+	}
+        else if(linearVelocityX < 0 &&  angularVelocityZ < 0 && ( (angularVelocityZ *-1) > (linearVelocityX*-1) ) ){
+                speed = 0;
+                return speed;
+        }
+        else if(linearVelocityX < 0 && angularVelocityZ > 0 && (angularVelocityZ <= (linearVelocityX*-1) ) ){
+                speed = (linearVelocityX + angularVelocityZ);
+                return speed;
+        }
+        else if(linearVelocityX < 0 && angularVelocityZ > 0 && (angularVelocityZ > (linearVelocityX*-1) ) ) {
+                speed = 0;
+                return speed;
+        }
+        else if(linearVelocityX == 0 ){
+        	speed = (linearVelocityX - angularVelocityZ) ;
+        	return speed;
+        }
+
+>>>>>>> e2e3b9bb5f8f35e25d20103397357cec4b69d929
 }
 
 

@@ -20,8 +20,11 @@
 	
 	<node pkg="bob" type="XBoxController" name="xbox" respawn="false" respawn_delay="3" />
 		<param name="default_trig_val" value="true" />
+<<<<<<< HEAD
 		<param name="autorepeat_rate" value="0" />
 
+=======
+>>>>>>> e2e3b9bb5f8f35e25d20103397357cec4b69d929
 	<node pkg="bob" type="RunMotor" name="runMotor" output="screen" />
 		<param name="default_trig_val" value="true" />
 </launch>

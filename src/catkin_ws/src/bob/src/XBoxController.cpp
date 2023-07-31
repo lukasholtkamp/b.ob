@@ -111,6 +111,7 @@ double XB::XBoxController::setLinearSpeed(geometry_msgs::Twist twist, const sens
     default: // If no trigger is pressed
       twist.linear.x = ((1+(lScale*joy->axes[JOY_AXIS_RT])*-1)/2)-((1+(lScale*joy->axes[JOY_AXIS_LT])*-1)/2); // Setting the linear value
   }
+<<<<<<< HEAD
   return twist.linear.x/gearChanger;
 }
 
@@ -120,6 +121,18 @@ void XB::XBoxController::setGearChanger(int &gearChanger, int shoulderButton){
     if(gearChanger > 1){
       gearChanger-- ;
     }
+=======
+  
+// Pause and Stop Buttons
+  auto bButton = joy->buttons[B_BUTTON]; // Getting the value of the B button
+  auto yButton = joy->buttons[Y_BUTTON]; // Getting the value of the Y button
+  if(bButton == 1){ // If the B button is pressed
+  	twist.linear.x = 0; 
+  	twist.angular.z = 0;
+	velPub.publish(twist); // Publishing the linear and angular values
+	//ros::shutdown(); // Shutting down the node
+	system("rosnode kill -a");
+>>>>>>> e2e3b9bb5f8f35e25d20103397357cec4b69d929
   }
   if(shoulderButton == LEFT_SHOULDER_BUTTON){
     if(gearChanger < 5){
