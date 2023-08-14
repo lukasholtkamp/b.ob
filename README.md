@@ -1,12 +1,7 @@
 <h1>B.ob - Bertrandt office bot</h1>
-<h2>Goal for 2023-07-03:<br>
-<strong>Control b.ob over bluetooth with full directions control. <span style="color:green">PASSED</span></strong></h2>
+<h2>Goal for 2023-08-14:<br>
+<strong>Control b.ob loops 3 QR-Codes. </strong></h2>
 <strong>Will be tested by the PO with the user manual.</strong>
-
-<h2>Last goal for 2023-06-19: <span style="color:red">FAILED</span><br></h2>
-<strong>Control b.ob with the XBox to drive Forward, Backward and turn on point.</strong>
-PWM on Jetson Nano is not working -> no motor movement. Start working on RaspberryPi until the Jetson will work again, start of creating a cross platform code.
-Emergency button is still not implemented, due to missing hardware.
 
 <h1>Links</h1>
 <a href="https://trello.com/invite/b/9bnDGKDw/ATTIb2f8bac1cc84f8cdd39532f89ddc5d4d0D2FEDB1/bob-project">Trello Backlog</a>
