@@ -1,6 +1,6 @@
 <h1>B.ob - Bertrandt office bot</h1>
-<h2>Goal for 2023-08-14:<br>
-<strong>Control b.ob loops 3 QR-Codes. </strong></h2>
+<h2>Goal for 2023-10-11:<br>
+<strong>Start bob via website, stop via obstacle and update the status on the website.</strong></h2>
 <strong>Will be tested by the PO with the user manual.</strong>
 
 <h1>Links</h1>
