@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.0.2)
-project(bob)
+make_minimum_required(VERSION 3.0.2)
+project(bob2)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -9,11 +9,14 @@ project(bob)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   joy
+  cv_bridge
   roscpp
   rospy
+  sensor_msgs
   std_msgs
   geometry_msgs
   motor_driver_library
+  rplidar_ros
 )
 
 ## System dependencies are found with CMake's conventions
@@ -108,7 +111,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES bob
-   CATKIN_DEPENDS joy roscpp rospy std_msgs geometry_msgs motor_driver_library
+   CATKIN_DEPENDS joy roscpp rospy std_msgs sensor_msgs geometry_msgs motor_driver_library rplidar_ros
 #  DEPENDS system_lib
 )
 
@@ -121,15 +124,21 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  ~/rplidar/catkin_ws/src/rplidar_ros/sdk/include
+  ~/rplidar/catkin_ws/src/rplidar_ros/sdk/src
 )
 
-#link_directories(motor_driver_library)
+#link_directories(
+#  ${catkin_INCLUDE_DIRS})
   
 #link_libraries(${catkin_LIBRARIES} motor_driver_library)
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/bob.cpp
 # )
+
+
+
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -142,12 +151,15 @@ include_directories(
 # add_executable(${PROJECT_NAME}_node src/bob_node.cpp)
 add_executable(XBoxController src/XBoxController.cpp)
 add_executable(RunMotor src/RunMotor.cpp)
+add_executable(Gyroscope src/Gyroscope.cpp)
+#add_executable(Lidar src/Lidar.cpp)
 find_library(WIRINGPI_LIBRARIES NAMES wiringpi)
 #target_link_libraries(XBoxController ${WIRINGPI_LIBRARIES})
 target_link_libraries(RunMotor ${WIRINGPI_LIBRARIES})
 target_link_libraries(XBoxController ${catkin_LIBRARIES} motor_driver_library)
+#target_link_libraries(Lidar ${catkin_LIBRARIES} motor_driver_library)
 target_link_libraries(RunMotor ${catkin_LIBRARIES} motor_driver_library)
-#target_link_libraries(${PROJECT_NAME} motor_driver_library)
+target_link_libraries(Gyroscope ${WIRINGPI_LIBRARIES} ${catkin_LIBRARIES} motor_driver_library)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -218,3 +230,6 @@ target_link_libraries(RunMotor ${catkin_LIBRARIES} motor_driver_library)
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+
+
