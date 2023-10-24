@@ -1,3 +1,4 @@
+
 #ifndef X_BOX_CONTROLLER_H
 #define X_BOX_CONTROLLER_H
 
@@ -12,13 +13,13 @@
   #define B_BUTTON 1
   #define Y_BUTTON 3
   #define X_BUTTON 2
-  #define RIGHT_SHOULDER_BUTTON 5
-  #define LEFT_SHOULDER_BUTTON 4
+  #define RIGHT_SHOULDER_BUTTON 7
+  #define LEFT_SHOULDER_BUTTON 6
 
   //--Axes configuration according to XBoxOne Controller
   #define ANGULAR_VEL 0
-  #define JOY_AXIS_RT 5
-  #define JOY_AXIS_LT 2
+  #define JOY_AXIS_RT 4
+  #define JOY_AXIS_LT 5
 
   namespace XB{
     /**
@@ -39,11 +40,10 @@
     public:
 
       XBoxController();
-      void setGearChanger(int &gearChanger, int shoulderButton);
-      int getGearChanger();
+      //void setGearChanger(int &gearChanger, int shoulderButton);
+      //int getGearChanger();
       double setLinearSpeed(geometry_msgs::Twist twist, const sensor_msgs::Joy::ConstPtr& joy);
     };
   }
 
 #endif // MOTOR_DRIVER_H
-
