@@ -1,4 +1,4 @@
-make_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.0.2)
 project(bob2)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
@@ -17,7 +17,9 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   motor_driver_library
   rplidar_ros
+  message_generation
 )
+
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -128,6 +130,8 @@ include_directories(
   ~/rplidar/catkin_ws/src/rplidar_ros/sdk/src
 )
 
+
+
 #link_directories(
 #  ${catkin_INCLUDE_DIRS})
   
@@ -137,9 +141,6 @@ include_directories(
 #   src/${PROJECT_NAME}/bob.cpp
 # )
 
-
-
-
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
@@ -148,10 +149,12 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/bob_node.cpp)
 add_executable(XBoxController src/XBoxController.cpp)
 add_executable(RunMotor src/RunMotor.cpp)
 add_executable(Gyroscope src/Gyroscope.cpp)
+add_executable(Motor_Speed_Node src/Motor_Speed_Node.cpp)
+add_executable(WebsiteReceive src/bobToWeb.cpp)
+
 #add_executable(Lidar src/Lidar.cpp)
 find_library(WIRINGPI_LIBRARIES NAMES wiringpi)
 #target_link_libraries(XBoxController ${WIRINGPI_LIBRARIES})
@@ -160,6 +163,9 @@ target_link_libraries(XBoxController ${catkin_LIBRARIES} motor_driver_library)
 #target_link_libraries(Lidar ${catkin_LIBRARIES} motor_driver_library)
 target_link_libraries(RunMotor ${catkin_LIBRARIES} motor_driver_library)
 target_link_libraries(Gyroscope ${WIRINGPI_LIBRARIES} ${catkin_LIBRARIES} motor_driver_library)
+target_link_libraries(Motor_Speed_Node ${WIRINGPI_LIBRARIES} ${catkin_LIBRARIES} motor_driver_library)
+target_link_libraries(WebsiteReceive ${catkin_LIBRARIES} )
+
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -230,6 +236,3 @@ target_link_libraries(Gyroscope ${WIRINGPI_LIBRARIES} ${catkin_LIBRARIES} motor_
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
-
-
-
