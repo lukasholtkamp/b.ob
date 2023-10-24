@@ -1,4 +1,4 @@
-/**
+**
  * @file MotorDriver.h
  * @brief Motor driver library for the Jetson Nano and the Raspberry Pi
  * @details This library is used to control the motors of the robot. The library is used to set the speed and direction of the motors.
@@ -16,6 +16,11 @@
   #define RIGHT_DIRECTION_PIN     24 //<-- Pin number for the direction of the right motor
   #define RIGHT_PWM_PIN           23 //<-- Pin number for the pwm of the right motor
 
+  #define PWR_MGMT_1   0x6B
+  #define SMPLRT_DIV   0x19
+  #define CONFIG       0x1A
+  #define GYRO_CONFIG  0x1B
+  #define INT_ENABLE   0x38
   // MD: Motor Driver
   namespace MD{
     /**
@@ -70,6 +75,15 @@
 
       void stop(); //<-- Stops the motor
     };
-  }
+class GY521 {
+        public:
+        explicit GY521(int deviceAddress);
+        void Initialize();
+        short ReadRawData(int registerAddress);
+
+        private:
+        int device_file_descriptor_;
+};
+}
 
 #endif // MOTOR_DRIVER_H
