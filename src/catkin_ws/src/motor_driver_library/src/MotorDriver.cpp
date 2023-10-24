@@ -1,6 +1,8 @@
+# GNU nano 4.8                                                                                                                                                                                                                                                                                                                                                                                                                                                       MotorDriver.cpp                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
 #include "MotorDriver.h"
 #include "RunMotor.h"
-
+#include <wiringPi.h>
+#include <wiringPiI2C.h>
 /**
  * @brief Construct a new MD::Motor::Motor object
  * 
@@ -19,13 +21,13 @@ MD::Motor::Motor(int directionPin,int pwmPin, double minSpeed, double maxSpeed) 
   wiringPiSetup();
 
   // --- Left Motor Setup---
-  pinMode(LEFT_PWM_PIN, OUTPUT);		// Left PWM
+  pinMode(LEFT_PWM_PIN, OUTPUT);                // Left PWM
   softPwmCreate(LEFT_PWM_PIN,0,100);
-  pinMode(LEFT_DIRECTION_PIN, OUTPUT); 		// Left direction
+  pinMode(LEFT_DIRECTION_PIN, OUTPUT);          // Left direction
   // --- Right Motor Setup---
-  pinMode(RIGHT_PWM_PIN, OUTPUT);		// Right PWM
+  pinMode(RIGHT_PWM_PIN, OUTPUT);               // Right PWM
   softPwmCreate(RIGHT_PWM_PIN,0,100);
-  pinMode(RIGHT_DIRECTION_PIN, OUTPUT); 	// Right direction
+  pinMode(RIGHT_DIRECTION_PIN, OUTPUT);         // Right direction
 }
 
 /// @brief Returns the pwm pin of the motor
@@ -53,12 +55,8 @@ double MD::Motor::LinearAndAngularVelocities(double linearVelocityX, double angu
     speed = linearVelocityX;
     return speed;
   }
-  else if(linearVelocityX > 0 && angularVelocityZ > 0 && (angularVelocityZ <= linearVelocityX) ){
+  else if(linearVelocityX > 0 && angularVelocityZ > 0 ){
     speed = (linearVelocityX - angularVelocityZ);
-    return speed;
-  }
-  else if(linearVelocityX > 0 &&  angularVelocityZ > 0 && (angularVelocityZ > linearVelocityX) ) {
-    speed = 0;
     return speed;
   }
   //---Backwards Driving Curve---
@@ -173,4 +171,21 @@ void MD::Motor::setMaxSpeed(double maxSpeed) {
  */
 void MD::Motor::stop() {
   m_Speed = 0.0;
+}
+MD::GY521::GY521(int deviceAddress) : device_file_descriptor_(wiringPiI2CSetup(deviceAddress)) {}
+
+void MD::GY521::Initialize() {
+    wiringPiI2CWriteReg8(device_file_descriptor_, SMPLRT_DIV, 0x07);
+    wiringPiI2CWriteReg8(device_file_descriptor_, PWR_MGMT_1, 0x01);
+    wiringPiI2CWriteReg8(device_file_descriptor_, CONFIG, 0);
+    wiringPiI2CWriteReg8(device_file_descriptor_, GYRO_CONFIG, 24);
+    wiringPiI2CWriteReg8(device_file_descriptor_, INT_ENABLE, 0x01);
+}
+
+short MD::GY521::ReadRawData(int registerAddress) {
+    short high_byte, low_byte, value;
+    high_byte = wiringPiI2CReadReg8(device_file_descriptor_, registerAddress);
+    low_byte = wiringPiI2CReadReg8(device_file_descriptor_, registerAddress + 1);
+    value = (high_byte << 8) | low_byte;
+    return value;
 }
