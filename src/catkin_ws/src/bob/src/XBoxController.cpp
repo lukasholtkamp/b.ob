@@ -15,14 +15,13 @@
  * @brief This class is used to control the robot using XBoxOne Controller
  * @details Class reads Controller Inputs and calculates Velocity then publishes it to RunMotor.cpp 
  */
-int gearChanger=5;
-int rightButtonState = 0;
-int leftButtonState = 0;
 /**
  * @brief Constructor
  * @details This constructor is used to initialize the XBoxController class. The constructor is used to set the linear and angular values, the scale values and the button value.
  * 
  */
+int int_value = 0;
+int y_button_state = 0;
 XB::XBoxController::XBoxController():
   linear(JOY_AXIS_RT),
   angular(ANGULAR_VEL)
@@ -55,22 +54,28 @@ void XB::XBoxController::joyCallback(const sensor_msgs::Joy::ConstPtr& joy){
 
   //Set Linear and Angular Velocity
   geometry_msgs::Twist twist;  //<-- Twist message
-  twist.angular.z = aScale*joy->axes[ANGULAR_VEL]/gearChanger;  //<-- Angular value
-  twist.linear.x = setLinearSpeed(twist, joy);  //<-- Linear Value
+  twist.angular.z = aScale*joy->axes[ANGULAR_VEL];  //<-- Angular value
+//  twist.linear.x = setLinearSpeed(twist, joy);  //<-- Linear Value
+ int val = 0;
+  switch(val){ // Switch case to control the linear value
+    case JOY_AXIS_RT: // If the right trigger is pressed
+      twist.linear.x = (((1+(lScale*joy->axes[JOY_AXIS_RT])*-1)/2)); // Setting the linear value
+      //twist.linear.x = lScale*joy->axes[JOY_AXIS_RT];
+        std::cout << "linear: " << twist.linear.x << std::endl;
+         break;
+    case JOY_AXIS_LT: // If the left trigger is pressed
+      twist.linear.x = ((1+(lScale*joy->axes[JOY_AXIS_LT])*-1)/2); // Setting the linear value
+      //twist.linear.x = lScale*joy->axes[JOY_AXIS_LT];
+         break;
+    default: // If no trigger is pressed
+      twist.linear.x = ((1+(lScale*joy->axes[JOY_AXIS_RT])*-1)/2)-((1+(lScale*joy->axes[JOY_AXIS_LT])*-1)/2); // Setting the linear value
+      //twist.linear.x = lScale*joy->axes[JOY_AXIS_RT]-lScale*joy->axes[JOY_AXIS_LT];
+  }
+
+  velPub.publish(twist);
 
   //--Setting all of the Buttons--
   //Right shoulder button to increase Speed
-  if(rightShoulderButton == 1){
-    if(rightShoulderButton != rightButtonState){
-      setGearChanger(gearChanger, RIGHT_SHOULDER_BUTTON);
-    }
-  }
-  //Left shoulder button to decrease Speed
-  if(leftShoulderButton == 1){
-    if(leftShoulderButton != leftButtonState){
-      setGearChanger(gearChanger, LEFT_SHOULDER_BUTTON);
-    }
-  }
   //B Button to exit the program
   if(bButton == 1){
     twist.linear.x = 0;
@@ -78,11 +83,26 @@ void XB::XBoxController::joyCallback(const sensor_msgs::Joy::ConstPtr& joy){
     velPub.publish(twist);
     system("rosnode kill -a"); // Shutting down the program
   }
-  //Y Button to set Speed to 0
   if(yButton == 1){
-    twist.linear.x = 0;
-    twist.angular.z = 0;
+        if(y_button_state == 0)
+        {
+                y_button_state = 1;
+                if(int_value == 0)
+                {
+                        int_value = 1;
+                        int_msg.data = 1;
+                        autonomous_pub.publish(int_msg);
+                }
+                else if(int_value == 1)
+                {
+                        int_value = 0;
+                        int_msg.data = 0;
+                         autonomous_pub.publish(int_msg);
+                }
+        }
+
   }
+
   //X Button to stop the node
   if(xButton == 1){
     twist.linear.x = 0;
@@ -93,10 +113,8 @@ void XB::XBoxController::joyCallback(const sensor_msgs::Joy::ConstPtr& joy){
 
 
   // Publishing the linear and angular values
-  velPub.publish(twist);
   // Setting Buttonstate for Button debouncing
-  rightButtonState = rightShoulderButton;
-  leftButtonState = leftShoulderButton;
+  y_button_state = 0;
 }
 
 double XB::XBoxController::setLinearSpeed(geometry_msgs::Twist twist, const sensor_msgs::Joy::ConstPtr& joy){
@@ -111,23 +129,9 @@ double XB::XBoxController::setLinearSpeed(geometry_msgs::Twist twist, const sens
     default: // If no trigger is pressed
       twist.linear.x = ((1+(lScale*joy->axes[JOY_AXIS_RT])*-1)/2)-((1+(lScale*joy->axes[JOY_AXIS_LT])*-1)/2); // Setting the linear value
   }
-  return twist.linear.x/gearChanger;
+  return twist.linear.x;
 }
 
-//Set Gear up or down depending on which ShoulderButton is pressed
-void XB::XBoxController::setGearChanger(int &gearChanger, int shoulderButton){
-  if(shoulderButton == RIGHT_SHOULDER_BUTTON){
-    if(gearChanger > 1){
-      gearChanger-- ;
-    }
-  
-
-  if(shoulderButton == LEFT_SHOULDER_BUTTON){
-    if(gearChanger < 5){
-      gearChanger++ ;
-    }
-  }
-}
 
 /**
  * @brief Main function
