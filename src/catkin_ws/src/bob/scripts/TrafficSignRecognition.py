@@ -12,15 +12,15 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 
 # Load the TensorFlow model
-MODEL_FILE = "/home/ubuntu/Desktop/FIles for cnn/FIles for raspberry/abcd.h5"
+MODEL_FILE = "/home/ubuntu/Desktop/FIles for cnn/FIles for raspberry/karim1.h5"
 model = load_model(MODEL_FILE)
 
 # Load labels
-labels_df = pd.read_csv('/home/ubuntu/Desktop/FIles for cnn/FIles for raspberry/Labels/labelscam.csv')
+labels_df = pd.read_csv('/home/ubuntu/Desktop/FIles for cnn/FIles for raspberry/Labels/labels.csv')
 
 bridge = CvBridge()
 
-def prediction(img_array, threshold=0.96):
+def prediction(img_array, threshold=0.90):
     # Normalize the image array
     img_array = img_array / 255.0
     img_array = np.expand_dims(img_array, axis=0)
@@ -50,7 +50,7 @@ def image_callback(msg):
         return
 
     # Resize the image to match the model input size
-    resized_frame = cv2.resize(cv_image, (64, 64))
+    resized_frame = cv2.resize(cv_image, (32, 32))
 
     # Get the predicted label and confidence score for the resized frame
     pred_str, confidence = prediction(resized_frame)
@@ -59,7 +59,7 @@ def image_callback(msg):
     result_msg = String()
 
     # Filter out predictions with low confidence scores using a threshold
-    if confidence >= 0.96:
+    if confidence >= 0.90:
         result_msg.data = pred_str
     else:
         result_msg.data = "ahead"
@@ -75,7 +75,7 @@ def traffic_sign_recognition_node():
 
     # Publish the detection result on a new topic
     global detection_pub
-    detection_pub = rospy.Publisher('/traffic_sign_detection', String, queue_size=10)
+    detection_pub = rospy.Publisher('/Predicted_Sign', String, queue_size=10)
 
     rospy.spin()
 
