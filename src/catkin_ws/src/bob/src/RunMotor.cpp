@@ -479,6 +479,23 @@ void motorSpeedCallback(const std_msgs::Int32::ConstPtr& msg) {
     std::cout << "Traveled distance: "<< traveled_distance << "meters" << std::endl;
 }
 
+void signCallback(const std_msgs::String::ConstPtr& sign_msg) {
+    string sign = sign_msg->data;
+    
+    if (sign == "Stop") {
+        // Stop the robot for 3 seconds
+        MovementSetting(0, 0);
+        sleep_for(seconds(3));
+    } else if (sign == "ahead") {
+        // Continue driving at a constant speed
+        MovementSetting(baseSpeed, 0);
+    } else if (sign == "Turn right ahead") {
+        moveBob(1);
+        // Turn 90 degrees on the right
+        rotateBob(-90);
+    }
+}
+
 void publishRobotState(ros::Publisher& pub, State state)
 {
     std_msgs::String state_msg;
@@ -528,6 +545,7 @@ int main(int argc, char** argv) {
         ros::Subscriber qr_sub = nh.subscribe<std_msgs::Int32>("/usb_webcam/qr_data", 10 ,&qrCallback);
         ros::Subscriber laser_sub = nh.subscribe<sensor_msgs::LaserScan>("/scan", 1000, scanCallback);
         ros::Subscriber autonomous_sub = nh.subscribe<std_msgs::Int32>("auto_data",10,&autoCallback);
+        ros::Subscriber sign_sub = nh.subscribe<std_msgs::String>("Predicted_Sign", 10, &signCallback);
         state_bob = idle;  
 
         // Publish the robot's state
