@@ -1,0 +1,1 @@
+1. The JetsonNano must be shutdown properly. Do not simply disconnect the power supply!
