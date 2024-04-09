@@ -1,4 +1,0 @@
-1. The Xbox Gamepad is to be used as a manual input device.
-2. The assignment of the buttons must be documented to exclude duplicate use.
-3. The main program must be able to be started and stopped via the Xbox gamepad.
-4. A software emergency stop is to be triggered via the Xbox gamepad, which switches off the actuators on the software side.

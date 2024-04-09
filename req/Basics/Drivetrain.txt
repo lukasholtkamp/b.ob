@@ -1,5 +1,0 @@
-1. The drive train must control the motors via the motor drivers.
-2. The drive train must be robustly designed and must not throw a fault.
-3. Input and output values must be limited.
-4. The drive train must determine the speed and output it to the motor drivers based on the speed and steering values.
-5. The drive train must determine the direction of travel and output it to the motor drivers based on the speed and steering values.

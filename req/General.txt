@@ -1,2 +1,0 @@
-1. A hardware architecture is to be created that represents the connections.
-2. An instruction manual is to be created so that everyone can operate b.ob.

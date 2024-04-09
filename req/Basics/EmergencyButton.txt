@@ -1,3 +1,0 @@
-1. The emergency stop switch must be quickly accessible.
-2. The emergency stop switch must switch off all actuators on the hardware side.
-3. The emergency stop circuit must be implemented as normally closed.
