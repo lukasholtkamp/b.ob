@@ -1,0 +1,3 @@
+1. The battery must not be short-circuited under any circumstances.
+2. The battery voltage per cell must be greater than 3.3V and smaller than 4.2V.
+3. The Battery should not be stored on 4.2V (100%) over a longer period, for better battery health.

@@ -1,0 +1,2 @@
+1. The camera must provide images for further processing.
+2. The images must not be saved continuously to the SD card at runtime to avoid damage.
