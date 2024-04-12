@@ -134,7 +134,7 @@ void Motor::setSpeed(double speed) {
     m_Speed = m_MaxSpeed;
   }
   
-  auto intValue = static_cast<uint8_t>(255 * abs(speed));
+  auto intValue = static_cast<uint8_t>(255 * abs(m_MaxSpeed*(speed/100)));
   gpioPWM(m_PwmPin, intValue);
 
 }

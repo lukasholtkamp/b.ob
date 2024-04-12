@@ -11,9 +11,9 @@ include_directories(src)
 
 add_library(${PROJECT_NAME} src/MotorDriver.cpp)
 
-add_executable(motor_controller_test test/motor_controller_test.cpp)
+add_executable(motor_driver_test test/motor_driver_test.cpp)
 
-target_include_directories(motor_controller_test PRIVATE include)
+target_include_directories(motor_driver_test PRIVATE include)
 
-target_link_libraries(motor_controller_test fmt::fmt)
-target_link_libraries(motor_controller_test pigpio)
+target_link_libraries(motor_driver_test fmt::fmt)
+target_link_libraries(motor_driver_test pigpio)
