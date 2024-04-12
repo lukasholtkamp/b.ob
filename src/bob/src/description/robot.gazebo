@@ -72,11 +72,10 @@
     </gazebo>
 
     <gazebo reference="lidar_frame">
-
         <material>Gazebo/Red</material>
 
-        <sensor name="lidar" type="ray">
-            <pose> 0 0 0.0125 0 0 0 </pose>
+        <sensor name="laser" type="ray">
+            <pose> 0 0 0 0 0 0 </pose>
             <visualize>false</visualize>
             <update_rate>10</update_rate>
             <ray>
@@ -88,16 +87,16 @@
                     </horizontal>
                 </scan>
                 <range>
-                    <min>0.5</min>
-                    <max>20</max>
+                    <min>0.3</min>
+                    <max>12</max>
                 </range>
             </ray>
-            <plugin name="lidar_controller" filename="libgazebo_ros_laser.so">
+            <plugin name="laser_controller" filename="libgazebo_ros_ray_sensor.so">
                 <ros>
                     <argument>~/out:=scan</argument>
                 </ros>
-                <topicName>sensor_msgs/LaserScan</topicName>
-                <frameName>lidar_frame</frameName>
+                <output_type>sensor_msgs/LaserScan</output_type>
+                <frame_name>lidar_frame</frame_name>
             </plugin>
         </sensor>
     </gazebo>
@@ -108,7 +107,7 @@
 
         <sensor name="camera" type="camera">
             <pose> camera_radius 0 0 0 0 0 </pose>
-            <visualize>false</visualize>
+            <visualize>true</visualize>
             <update_rate>10</update_rate>
             <camera>
                 <horizontal_fov>1.089</horizontal_fov>
@@ -124,7 +123,7 @@
             </camera>
 
             <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
-                <frameName>camera_optical_frame</frameName>
+                <frame_name>camera_optical_frame</frame_name>
             </plugin>
         </sensor>
 

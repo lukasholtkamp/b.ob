@@ -8,6 +8,7 @@
 /home/jkan67/jkan67/b.ob/src/bob/install/bob/share/bob/description/robot.urdf.xacro
 /home/jkan67/jkan67/b.ob/src/bob/install/bob/share/bob/description/robot_core.xacro
 /home/jkan67/jkan67/b.ob/src/bob/install/bob/share/bob/launch/launch_sim.launch.py
+/home/jkan67/jkan67/b.ob/src/bob/install/bob/share/bob/launch/rplidar.launch.py
 /home/jkan67/jkan67/b.ob/src/bob/install/bob/share/bob/launch/rsp.launch.py
 /home/jkan67/jkan67/b.ob/src/bob/install/bob/share/bob/worlds/empty.world
 /home/jkan67/jkan67/b.ob/src/bob/install/bob/share/bob/worlds/obstacles.world
