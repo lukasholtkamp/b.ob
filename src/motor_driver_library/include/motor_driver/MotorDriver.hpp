@@ -19,6 +19,7 @@
 
 #define CCW 1
 #define CW 0
+#define IDLE 2
 
 // MD: Motor Driver
 namespace MD{
@@ -35,6 +36,7 @@ namespace MD{
     double m_Speed; //<-- Current speed
     bool m_Direction; //<-- Current direction
     bool m_FDirection; //<-- Direction considered as Forward
+    u_int PWM_Range;
 
   public:
   /**
@@ -48,6 +50,10 @@ namespace MD{
     Motor(int directionPin, int pwmPin, double minSpeed, double maxSpeed, int direction);
 
     int getPwmPin() const; //<-- Returns the pwm pin number
+
+    u_int getPWMRange() const;
+
+    void setPWMRange(uint range);
 
     double LinearAndAngularVelocities(double linearVelocityX, double angularVelocityZ);
 

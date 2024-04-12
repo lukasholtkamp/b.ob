@@ -20,7 +20,9 @@ Motor::Motor(int directionPin,int pwmPin, double minSpeed, double maxSpeed,int d
   m_MaxSpeed = maxSpeed;
   m_FDirection = direction;
   m_Speed = 0.0;
-  m_Direction = direction;
+  m_Direction = IDLE;
+  PWM_Range = 255;
+
   
   gpioSetMode(directionPin,PI_OUTPUT);
   gpioSetMode(pwmPin,PI_OUTPUT);
@@ -32,6 +34,14 @@ Motor::Motor(int directionPin,int pwmPin, double minSpeed, double maxSpeed,int d
 /// @return int
 int Motor::getPwmPin() const{
   return m_PwmPin;
+}
+
+u_int Motor::getPWMRange() const{
+  return PWM_Range
+}
+
+void Motor::setPWMRange(uint range){
+  PWM_Range= range;
 }
 
 double Motor::LinearAndAngularVelocities(double linearVelocityX, double angularVelocityZ) {
@@ -97,16 +107,16 @@ void Motor::switchDirection() {
  * @return false
  */
 std::string Motor::getDirection() const{
-  bool dir;
 
-  dir = !(std::signbit(m_Direction) ^ std::signbit(m_FDirection));
-
-  if (dir){
+  if (m_Direction == m_FDirection){
     return "FORWARD";
   }
-  else
+  else if (m_Direction != m_FDirection)
   {
     return "BACKWARD";
+  }
+  else if (m_Direction == IDLE){
+    return "IDLE"
   }
 }
 
@@ -120,21 +130,32 @@ int Motor::getDirectionPin() const{
  * @param speed
  */
 void Motor::setSpeed(double speed) {
-  bool change_dir;
 
-  change_dir = std::signbit(speed) ^ std::signbit(m_Speed);
-
-  if (change_dir){
-    switchDirection();
+  if (speed > m_MinSpeed){
+    if(m_Direction != m_FDirection){
+      // direction change
+      gpioPWM(m_PwmPin, 1);
+      switchDirection();
+    }
+  }
+  else if (speed < m_MinSpeed){
+    if(m_Direction == m_FDirection){
+      // direction change
+      gpioPWM(m_PwmPin, 1);
+      switchDirection();
+    }
+  }
+  else if (speed == m_MinSpeed){
+    gpioPWM(m_PwmPin, 1);
+    m_Direction = IDLE;
+  }
+  else if (speed>m_MaxSpeed){
+    m_Speed = m_MaxSpeed;
   }
 
   m_Speed = speed;
 
-  if (speed>m_MaxSpeed){
-    m_Speed = m_MaxSpeed;
-  }
-  
-  auto intValue = static_cast<uint8_t>(255 * abs(m_MaxSpeed*(speed/100)));
+  auto intValue = static_cast<uint8_t>( PWM_Range * abs(m_Speed/m_MaxSpeed));
   gpioPWM(m_PwmPin, intValue);
 
 }
