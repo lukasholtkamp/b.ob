@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/jkan67/b.ob_sim/b.ob/src/bob/src
+CMAKE_SOURCE_DIR = /home/jkan67/jkan67/b.ob/src/bob/src
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/jkan67/b.ob_sim/b.ob/src/bob/build/bob
+CMAKE_BINARY_DIR = /home/jkan67/jkan67/b.ob/src/bob/build/bob
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -142,9 +142,9 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/jkan67/b.ob_sim/b.ob/src/bob/build/bob/CMakeFiles /home/jkan67/b.ob_sim/b.ob/src/bob/build/bob//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/jkan67/jkan67/b.ob/src/bob/build/bob/CMakeFiles /home/jkan67/jkan67/b.ob/src/bob/build/bob//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/jkan67/b.ob_sim/b.ob/src/bob/build/bob/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/jkan67/jkan67/b.ob/src/bob/build/bob/CMakeFiles 0
 .PHONY : all
 
 # The main clean target

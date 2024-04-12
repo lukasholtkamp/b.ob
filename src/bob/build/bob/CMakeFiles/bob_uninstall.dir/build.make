@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/jkan67/b.ob_sim/b.ob/src/bob/src
+CMAKE_SOURCE_DIR = /home/jkan67/jkan67/b.ob/src/bob/src
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/jkan67/b.ob_sim/b.ob/src/bob/build/bob
+CMAKE_BINARY_DIR = /home/jkan67/jkan67/b.ob/src/bob/build/bob
 
 # Utility rule file for bob_uninstall.
 
@@ -67,7 +67,7 @@ include CMakeFiles/bob_uninstall.dir/compiler_depend.make
 include CMakeFiles/bob_uninstall.dir/progress.make
 
 CMakeFiles/bob_uninstall:
-	/usr/bin/cmake -P /home/jkan67/b.ob_sim/b.ob/src/bob/build/bob/ament_cmake_uninstall_target/ament_cmake_uninstall_target.cmake
+	/usr/bin/cmake -P /home/jkan67/jkan67/b.ob/src/bob/build/bob/ament_cmake_uninstall_target/ament_cmake_uninstall_target.cmake
 
 bob_uninstall: CMakeFiles/bob_uninstall
 bob_uninstall: CMakeFiles/bob_uninstall.dir/build.make
@@ -82,6 +82,6 @@ CMakeFiles/bob_uninstall.dir/clean:
 .PHONY : CMakeFiles/bob_uninstall.dir/clean
 
 CMakeFiles/bob_uninstall.dir/depend:
-	cd /home/jkan67/b.ob_sim/b.ob/src/bob/build/bob && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/jkan67/b.ob_sim/b.ob/src/bob/src /home/jkan67/b.ob_sim/b.ob/src/bob/src /home/jkan67/b.ob_sim/b.ob/src/bob/build/bob /home/jkan67/b.ob_sim/b.ob/src/bob/build/bob /home/jkan67/b.ob_sim/b.ob/src/bob/build/bob/CMakeFiles/bob_uninstall.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/jkan67/jkan67/b.ob/src/bob/build/bob && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/jkan67/jkan67/b.ob/src/bob/src /home/jkan67/jkan67/b.ob/src/bob/src /home/jkan67/jkan67/b.ob/src/bob/build/bob /home/jkan67/jkan67/b.ob/src/bob/build/bob /home/jkan67/jkan67/b.ob/src/bob/build/bob/CMakeFiles/bob_uninstall.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/bob_uninstall.dir/depend
 

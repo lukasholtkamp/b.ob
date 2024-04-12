@@ -1,1 +1,1 @@
-/home/jkan67/b.ob_sim/b.ob/src/bob/build/bob/ament_cmake_environment_hooks/local_setup.zsh
+/home/jkan67/jkan67/b.ob/src/bob/build/bob/ament_cmake_environment_hooks/local_setup.zsh
