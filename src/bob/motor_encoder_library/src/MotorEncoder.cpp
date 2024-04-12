@@ -20,9 +20,9 @@ Encoder::Encoder(int gpio){
   _new=1.0-_weighting;
   _old=_weighting;
 
-  _high_tick = NULL;
-  _period = NULL;
-  _high = NULL;
+  _high_tick = 0;
+  _period = 0;
+  _high = 0;
   
   gpioSetMode(gpio,PI_INPUT);
   gpioSetPullUpDown(gpio,PI_PUD_UP);
@@ -42,10 +42,10 @@ void Encoder::_pulse(int gpio, int level,uint32_t tick){
 
   if(level == 1){
 
-    if(_high_tick != NULL){
+    if(_high_tick != 0){
         t = _tick_diff(_high_tick,tick);
 
-        if(_period != NULL){
+        if(_period != 0){
           _period = (_old*_period)+(_new*t);
         }
         else{
@@ -57,10 +57,10 @@ void Encoder::_pulse(int gpio, int level,uint32_t tick){
 
   else if(level == 0){
 
-    if(_high_tick != NULL){
+    if(_high_tick != 0){
         t = _tick_diff(_high_tick,tick);
 
-        if(_high != NULL){
+        if(_high != 0){
           _high = (_old*_high)+(_new*t);
         }
         else{
@@ -84,7 +84,7 @@ u_int32_t Encoder::_tick_diff(u_int32_t o_tick, u_int32_t c_tick){
 }
 
 double Encoder::getFreq() const{
-  if(_period != NULL){
+  if(_period != 0){
     return 1000000.0/_period;
   }
   else{
