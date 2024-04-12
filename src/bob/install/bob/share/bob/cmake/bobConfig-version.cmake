@@ -1,0 +1,1 @@
+/home/jkan67/b.ob_sim/b.ob/src/bob/build/bob/ament_cmake_core/bobConfig-version.cmake
