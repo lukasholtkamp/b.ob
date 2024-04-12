@@ -13,6 +13,7 @@
 #define LEFT_ENCODER_PIN      3 //<-- Pin number for the direction of the left motor
 #define RIGHT_ENCODER_PIN     4 //<-- Pin number for the pwm of the left motor
 
+typedef void (*encoderCB_t)(int);
 
 // ME: Motor Encoder
 namespace ENC{
@@ -27,6 +28,9 @@ namespace ENC{
     int e_Pin; //<-- encoder Pin numbers
     double _weighting,_new,_old;
     u_int32_t _high_tick,_period,_high;
+    uint pos;
+
+    encoderCB_t mycallback;
 
     void _pulse(int gpio, int level, uint32_t tick);
 
@@ -44,7 +48,7 @@ namespace ENC{
    * @param minSpeed Minimum speed of the motor
    * @param maxSpeed Maximum speed of the motor
    */
-    Encoder(int gpio);
+    Encoder(int gpio, encoderCB_t callback);
 
     void re_cancel(void);
 

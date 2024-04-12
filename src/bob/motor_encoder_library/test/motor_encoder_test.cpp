@@ -19,6 +19,18 @@ void signalHandler(int signal)
     isRunning = false;
 }
 
+void callbackleft(int way){
+    static int leftpos=0;
+    leftpos+=way;
+    std::cout << fmt::format("Motors pos on left: {} ", leftpos) << std::endl;
+}
+
+void callbackright(int way){
+    static int rightpos=0;
+    rightpos+=way;
+    std::cout << fmt::format("Motors pos on rightft: {} ", rightpos) << std::endl;
+}
+
 int main()
 {
     int gpioResult = 0;
@@ -49,22 +61,18 @@ int main()
     signal(SIGINT, signalHandler);
 
     std::cout << fmt::format("Configuring Left Encoder on GPIO {}... ", LEFT_ENCODER_PIN);
-    ENC::Encoder leftEncoder(LEFT_ENCODER_PIN);
+    ENC::Encoder leftEncoder(LEFT_ENCODER_PIN,callbackleft);
     std::cout << "SUCCESS" << std::endl;
 
     std::cout << fmt::format("Configuring Right Motor on GPIO {}... ", RIGHT_ENCODER_PIN);
-    ENC::Encoder rightEncoder(RIGHT_ENCODER_PIN);    
+    ENC::Encoder rightEncoder(RIGHT_ENCODER_PIN,callbackright);    
     std::cout << "SUCCESS" << std::endl;
 
     isRunning = true;
     
     while (isRunning)
-    {
-        
+    {   
         printStatus(leftEncoder, rightEncoder);
-
-        std::this_thread::sleep_for(std::chrono::seconds(4));
-
     }
 
     std::cout << "Cleaning up resources" << std::endl << std::flush;

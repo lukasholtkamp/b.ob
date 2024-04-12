@@ -13,8 +13,11 @@
 
 namespace ENC{
 	
-Encoder::Encoder(int gpio){
+Encoder::Encoder(int gpio, encoderCB_t callback){
   e_Pin = gpio;
+  mycallback = callback;
+
+  pos=0;
 
   _weighting=0;
   _new=1.0-_weighting;
@@ -47,6 +50,7 @@ void Encoder::_pulse(int gpio, int level,uint32_t tick){
 
         if(_period != 0){
           _period = (_old*_period)+(_new*t);
+          (mycallback)(1);
         }
         else{
           _period = t;
@@ -96,5 +100,6 @@ double Encoder::getFreq() const{
 double Encoder::getMotorSpeed() const{
   return (60*getFreq())/(15*6);
 }
+
 
 }
