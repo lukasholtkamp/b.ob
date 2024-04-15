@@ -1,5 +1,5 @@
 #include <iostream>
-#include <fmt/core.h> // For improved string formatting
+#include <fmt/core.h>
 #include <chrono>
 #include <thread>
 
@@ -7,7 +7,6 @@
 
 #include "MotorDriver.hpp"
 #include "MotorDriver.cpp"
-#include "RunMotor.hpp"
 
 void printStatus(const MD::Motor& left, const MD::Motor& right);
 
@@ -48,6 +47,8 @@ int main()
 
     signal(SIGINT, signalHandler);
 
+    // Setting up motors
+
     std::cout << fmt::format("Configuring Left Motor on GPIO {}, & {}... ", LEFT_DIRECTION_PIN, LEFT_PWM_PIN);
     MD::Motor leftMotor(LEFT_DIRECTION_PIN, LEFT_PWM_PIN, MAX_SPEED,CCW);
     std::cout << "SUCCESS" << std::endl;
@@ -58,6 +59,7 @@ int main()
 
     isRunning = true;
 
+    // Run motor from 0 to 100% of max speed both foward and backward
     while (isRunning)
     {
     
@@ -94,9 +96,10 @@ int main()
 
     
     }
-
-    leftMotor.setSpeed(0);
-    rightMotor.setSpeed(0);
+    
+    // stop motors
+    leftMotor.stop();
+    rightMotor.stop();
     system("clear");
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     printStatus(leftMotor, rightMotor);

@@ -3,6 +3,5 @@
 
 CMakeFiles/motor_driver_test.dir/test/motor_driver_test.cpp.o
  ../include/motor_driver/MotorDriver.hpp
- ../include/motor_driver/RunMotor.hpp
  ../src/MotorDriver.cpp
  /home/ubuntu/b.ob/src/motor_driver_library/test/motor_driver_test.cpp

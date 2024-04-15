@@ -11,18 +11,12 @@ pigpio.h
 -
 stdint.h
 -
-cmath
--
 string
 -
-
-../include/motor_driver/RunMotor.hpp
 
 ../src/MotorDriver.cpp
 MotorDriver.hpp
 ../src/MotorDriver.hpp
-RunMotor.hpp
-../src/RunMotor.hpp
 
 /home/ubuntu/b.ob/src/motor_driver_library/test/motor_driver_test.cpp
 iostream
@@ -39,6 +33,4 @@ MotorDriver.hpp
 /home/ubuntu/b.ob/src/motor_driver_library/test/MotorDriver.hpp
 MotorDriver.cpp
 /home/ubuntu/b.ob/src/motor_driver_library/test/MotorDriver.cpp
-RunMotor.hpp
-/home/ubuntu/b.ob/src/motor_driver_library/test/RunMotor.hpp
 

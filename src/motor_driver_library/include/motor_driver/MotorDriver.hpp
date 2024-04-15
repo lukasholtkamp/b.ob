@@ -1,15 +1,13 @@
 /**
  * @file MotorDriver.h
- * @brief Motor driver library for the Jetson Nano and the Raspberry Pi
- * @details This library is used to control the motors of the robot. The library is used to set the speed and direction of the motors.
- * The library is used by the RunMotor.cpp program, which is used to control the motors of the robot. 
+ * @brief Motor driver library for the Raspberry Pi
+ * @details This library is used to control the motors of the robot. The library is used to set the speed of the motors.
  */
 #ifndef MOTOR_DRIVER_HPP
 #define MOTOR_DRIVER_HPP
 
 #include <pigpio.h> //<-- Used to create the PWM pins on the Raspberry Pi
-#include <stdint.h> //<-- Used to define the uint8_t type
-#include <cmath> //<-- Used to check when there is a change in direction
+#include <stdint.h> //<-- Used to define the uint
 #include <string>
 
 #define LEFT_DIRECTION_PIN      6 //<-- Pin number for the direction of the left motor
@@ -17,8 +15,10 @@
 #define RIGHT_DIRECTION_PIN     19 //<-- Pin number for the direction of the right motor
 #define RIGHT_PWM_PIN           12 //<-- Pin number for the pwm of the right motor
 
-#define CCW 1
-#define CW 0
+#define MAX_SPEED               100.0 //<-- The maximum speed of the robot
+
+#define CCW 1 //<-- Value to be written to direction pin for motor to go counterclockwise
+#define CW 0 //<-- Value to be written to direction pin for motor to go clockwise
 
 // MD: Motor Driver
 namespace MD{
@@ -35,7 +35,7 @@ namespace MD{
     double m_Speed; //<-- Current speed
     bool m_Direction; //<-- Current direction
     bool m_FDirection; //<-- Direction considered as Forward
-    u_int PWM_Range;
+    u_int PWM_Range; //<-- PWM range. Default is 255 but a bigger range can be chosen to get finer speed tuning
 
   public:
   /**
@@ -49,17 +49,17 @@ namespace MD{
 
     int getPwmPin() const; //<-- Returns the pwm pin number
 
-    u_int getPWMRange() const;
+    u_int getPWMRange() const; //<-- Returns the pwm range
 
-    void setPWMRange(uint range);
+    void setPWMRange(uint range); //<-- Sets the pwm range
 
-    void switchDirection(); 
+    void switchDirection(); //<-- Changes motor direction 
 
     std::string getDirection() const; //<-- Returns the direction of the motor
 
     int getDirectionPin() const; //<-- Returns the direction pin number
 
-    void setSpeed(double speed);
+    void setSpeed(double speed); //<-- Sets motor speed
 
     double getSpeed() const; //<-- Returns the speed of the motor
 
