@@ -33,6 +33,7 @@
 -- Symlinking: /home/jkan67/jkan67/b.ob/src/bob/install/bob/share/bob/description/robot.gazebo
 -- Symlinking: /home/jkan67/jkan67/b.ob/src/bob/install/bob/share/bob/description/robot.urdf.xacro
 -- Symlinking: /home/jkan67/jkan67/b.ob/src/bob/install/bob/share/bob/description/robot_core.xacro
+-- Symlinking: /home/jkan67/jkan67/b.ob/src/bob/install/bob/share/bob/launch/camera.launch.py
 -- Symlinking: /home/jkan67/jkan67/b.ob/src/bob/install/bob/share/bob/launch/launch_sim.launch.py
 -- Symlinking: /home/jkan67/jkan67/b.ob/src/bob/install/bob/share/bob/launch/rplidar.launch.py
 -- Symlinking: /home/jkan67/jkan67/b.ob/src/bob/install/bob/share/bob/launch/rsp.launch.py
