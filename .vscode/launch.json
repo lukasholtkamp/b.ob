@@ -6,8 +6,8 @@
       "type": "lldb",
       "request": "launch",
       "args": [],
-      "cwd": "/home/jkan67/jkan67/b.ob/src/bob/motor_encoder_library/src",
-      "program": "/home/jkan67/jkan67/b.ob/src/bob/motor_encoder_library/src/build/Debug/outDebug"
+      "cwd": "/home/jkan67/jkan67/b.ob/src/bob/motor_encoder_library/test",
+      "program": "/home/jkan67/jkan67/b.ob/src/bob/motor_encoder_library/test/build/Debug/outDebug"
     },
     {
       "name": "C/C++: g++ build and debug active file",

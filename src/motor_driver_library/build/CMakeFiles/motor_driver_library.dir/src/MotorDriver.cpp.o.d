@@ -1,7 +1,7 @@
 CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o: \
- /home/jkan67/b.ob/src/motor_driver_library/src/MotorDriver.cpp \
+ /home/jkan67/jkan67/b.ob/src/motor_driver_library/src/MotorDriver.cpp \
  /usr/include/stdc-predef.h \
- /home/jkan67/b.ob/src/motor_driver_library/include/motor_driver/MotorDriver.hpp \
+ /home/jkan67/jkan67/b.ob/src/motor_driver_library/include/motor_driver/MotorDriver.hpp \
  /usr/local/include/pigpio.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stddef.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h /usr/include/stdint.h \
@@ -151,4 +151,4 @@ CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o: \
  /usr/include/x86_64-linux-gnu/bits/types/error_t.h \
  /usr/include/c++/11/bits/charconv.h \
  /usr/include/c++/11/bits/basic_string.tcc \
- /home/jkan67/b.ob/src/motor_driver_library/include/motor_driver/RunMotor.hpp
+ /home/jkan67/jkan67/b.ob/src/motor_driver_library/include/motor_driver/RunMotor.hpp

@@ -1,0 +1,1 @@
+/usr/bin/c++ -rdynamic CMakeFiles/motor_driver_test.dir/test/motor_driver_test.cpp.o -o motor_driver_test  /usr/lib/x86_64-linux-gnu/libfmt.so.8.1.1 -lpigpio -Wl,--as-needed 

@@ -1,5 +1,5 @@
-CMakeFiles/motor_controller_test.dir/test/motor_controller_test.cpp.o: \
- /home/jkan67/b.ob/src/motor_driver_library/test/motor_controller_test.cpp \
+CMakeFiles/motor_driver_test.dir/test/motor_driver_test.cpp.o: \
+ /home/jkan67/jkan67/b.ob/src/motor_driver_library/test/motor_driver_test.cpp \
  /usr/include/stdc-predef.h /usr/include/c++/11/iostream \
  /usr/include/x86_64-linux-gnu/c++/11/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/os_defines.h \
@@ -186,7 +186,7 @@ CMakeFiles/motor_controller_test.dir/test/motor_controller_test.cpp.o: \
  /usr/include/x86_64-linux-gnu/bits/types/struct_sigstack.h \
  /usr/include/x86_64-linux-gnu/bits/sigthread.h \
  /usr/include/x86_64-linux-gnu/bits/signal_ext.h \
- /home/jkan67/b.ob/src/motor_driver_library/include/motor_driver/MotorDriver.hpp \
+ /home/jkan67/jkan67/b.ob/src/motor_driver_library/include/motor_driver/MotorDriver.hpp \
  /usr/local/include/pigpio.h /usr/include/c++/11/cmath \
  /usr/include/math.h /usr/include/x86_64-linux-gnu/bits/math-vector.h \
  /usr/include/x86_64-linux-gnu/bits/libm-simd-decl-stubs.h \
@@ -209,5 +209,5 @@ CMakeFiles/motor_controller_test.dir/test/motor_controller_test.cpp.o: \
  /usr/include/c++/11/tr1/poly_hermite.tcc \
  /usr/include/c++/11/tr1/poly_laguerre.tcc \
  /usr/include/c++/11/tr1/riemann_zeta.tcc \
- /home/jkan67/b.ob/src/motor_driver_library/src/MotorDriver.cpp \
- /home/jkan67/b.ob/src/motor_driver_library/include/motor_driver/RunMotor.hpp
+ /home/jkan67/jkan67/b.ob/src/motor_driver_library/src/MotorDriver.cpp \
+ /home/jkan67/jkan67/b.ob/src/motor_driver_library/include/motor_driver/RunMotor.hpp

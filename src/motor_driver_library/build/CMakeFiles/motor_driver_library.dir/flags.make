@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/jkan67/b.ob/src/motor_driver_library/include/motor_driver -I/home/jkan67/b.ob/src/motor_driver_library/src
+CXX_INCLUDES = -I/home/jkan67/jkan67/b.ob/src/motor_driver_library/include/motor_driver -I/home/jkan67/jkan67/b.ob/src/motor_driver_library/src
 
 CXX_FLAGS = 
 

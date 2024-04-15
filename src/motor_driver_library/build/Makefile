@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/jkan67/b.ob/src/motor_driver_library
+CMAKE_SOURCE_DIR = /home/jkan67/jkan67/b.ob/src/motor_driver_library
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/jkan67/b.ob/src/motor_driver_library/build
+CMAKE_BINARY_DIR = /home/jkan67/jkan67/b.ob/src/motor_driver_library/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/jkan67/b.ob/src/motor_driver_library/build/CMakeFiles /home/jkan67/b.ob/src/motor_driver_library/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/jkan67/jkan67/b.ob/src/motor_driver_library/build/CMakeFiles /home/jkan67/jkan67/b.ob/src/motor_driver_library/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/jkan67/b.ob/src/motor_driver_library/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/jkan67/jkan67/b.ob/src/motor_driver_library/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -130,17 +130,17 @@ motor_driver_library/fast:
 .PHONY : motor_driver_library/fast
 
 #=============================================================================
-# Target rules for targets named motor_controller_test
+# Target rules for targets named motor_driver_test
 
 # Build rule for target.
-motor_controller_test: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 motor_controller_test
-.PHONY : motor_controller_test
+motor_driver_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 motor_driver_test
+.PHONY : motor_driver_test
 
 # fast build rule for target.
-motor_controller_test/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/motor_controller_test.dir/build.make CMakeFiles/motor_controller_test.dir/build
-.PHONY : motor_controller_test/fast
+motor_driver_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/motor_driver_test.dir/build.make CMakeFiles/motor_driver_test.dir/build
+.PHONY : motor_driver_test/fast
 
 src/MotorDriver.o: src/MotorDriver.cpp.o
 .PHONY : src/MotorDriver.o
@@ -166,29 +166,29 @@ src/MotorDriver.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/motor_driver_library.dir/build.make CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.s
 .PHONY : src/MotorDriver.cpp.s
 
-test/motor_controller_test.o: test/motor_controller_test.cpp.o
-.PHONY : test/motor_controller_test.o
+test/motor_driver_test.o: test/motor_driver_test.cpp.o
+.PHONY : test/motor_driver_test.o
 
 # target to build an object file
-test/motor_controller_test.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/motor_controller_test.dir/build.make CMakeFiles/motor_controller_test.dir/test/motor_controller_test.cpp.o
-.PHONY : test/motor_controller_test.cpp.o
+test/motor_driver_test.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/motor_driver_test.dir/build.make CMakeFiles/motor_driver_test.dir/test/motor_driver_test.cpp.o
+.PHONY : test/motor_driver_test.cpp.o
 
-test/motor_controller_test.i: test/motor_controller_test.cpp.i
-.PHONY : test/motor_controller_test.i
+test/motor_driver_test.i: test/motor_driver_test.cpp.i
+.PHONY : test/motor_driver_test.i
 
 # target to preprocess a source file
-test/motor_controller_test.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/motor_controller_test.dir/build.make CMakeFiles/motor_controller_test.dir/test/motor_controller_test.cpp.i
-.PHONY : test/motor_controller_test.cpp.i
+test/motor_driver_test.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/motor_driver_test.dir/build.make CMakeFiles/motor_driver_test.dir/test/motor_driver_test.cpp.i
+.PHONY : test/motor_driver_test.cpp.i
 
-test/motor_controller_test.s: test/motor_controller_test.cpp.s
-.PHONY : test/motor_controller_test.s
+test/motor_driver_test.s: test/motor_driver_test.cpp.s
+.PHONY : test/motor_driver_test.s
 
 # target to generate assembly for a file
-test/motor_controller_test.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/motor_controller_test.dir/build.make CMakeFiles/motor_controller_test.dir/test/motor_controller_test.cpp.s
-.PHONY : test/motor_controller_test.cpp.s
+test/motor_driver_test.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/motor_driver_test.dir/build.make CMakeFiles/motor_driver_test.dir/test/motor_driver_test.cpp.s
+.PHONY : test/motor_driver_test.cpp.s
 
 # Help Target
 help:
@@ -198,14 +198,14 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... motor_controller_test"
 	@echo "... motor_driver_library"
+	@echo "... motor_driver_test"
 	@echo "... src/MotorDriver.o"
 	@echo "... src/MotorDriver.i"
 	@echo "... src/MotorDriver.s"
-	@echo "... test/motor_controller_test.o"
-	@echo "... test/motor_controller_test.i"
-	@echo "... test/motor_controller_test.s"
+	@echo "... test/motor_driver_test.o"
+	@echo "... test/motor_driver_test.i"
+	@echo "... test/motor_driver_test.s"
 .PHONY : help
 
 

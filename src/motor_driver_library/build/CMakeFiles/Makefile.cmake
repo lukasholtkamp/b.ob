@@ -126,5 +126,5 @@ set(CMAKE_MAKEFILE_PRODUCTS
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/motor_driver_library.dir/DependInfo.cmake"
-  "CMakeFiles/motor_controller_test.dir/DependInfo.cmake"
+  "CMakeFiles/motor_driver_test.dir/DependInfo.cmake"
   )

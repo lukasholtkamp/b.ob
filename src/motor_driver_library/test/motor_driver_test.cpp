@@ -57,42 +57,43 @@ int main()
     std::cout << "SUCCESS" << std::endl;
 
     isRunning = true;
-    
+
     while (isRunning)
     {
     
-        leftMotor.setSpeed(50.0);
-        rightMotor.setSpeed(50.0);
+        int i;
+        for (i=0; i<255; i++) {
+            leftMotor.setSpeed(i);
+            rightMotor.setSpeed(i);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        for (i=255; i!=0; i--) {
+            leftMotor.setSpeed(i);
+            rightMotor.setSpeed(i);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
 
-        printStatus(leftMotor, rightMotor);
+        for (i=0; i > -255; i--) {
+            leftMotor.setSpeed(i);
+            rightMotor.setSpeed(i);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        for (i=-255; i!=0; i++) {
+            leftMotor.setSpeed(i);
+            rightMotor.setSpeed(i);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
 
-        std::this_thread::sleep_for(std::chrono::seconds(3));
-
-        leftMotor.setSpeed(0.0);
-        rightMotor.setSpeed(0.0);
-
-        printStatus(leftMotor, rightMotor);
-
-        std::this_thread::sleep_for(std::chrono::seconds(3));
-
-        leftMotor.setSpeed(-50.0);
-        rightMotor.setSpeed(-50.0);
-
-        printStatus(leftMotor, rightMotor);
-
-        std::this_thread::sleep_for(std::chrono::seconds(3));
-
-        leftMotor.setSpeed(0.0);
-        rightMotor.setSpeed(0.0);
-
-        printStatus(leftMotor, rightMotor);
-
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+    
     }
 
+    leftMotor.setSpeed(0);
+    rightMotor.setSpeed(0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     std::cout << "Cleaning up resources" << std::endl << std::flush;
 
-    return 0;    
+    return 0;  
+
 }
 
 void printStatus(const MD::Motor& leftMotor, const MD::Motor& rightMotor)

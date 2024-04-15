@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/jkan67/b.ob/src/motor_driver_library
+CMAKE_SOURCE_DIR = /home/jkan67/jkan67/b.ob/src/motor_driver_library
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/jkan67/b.ob/src/motor_driver_library/build
+CMAKE_BINARY_DIR = /home/jkan67/jkan67/b.ob/src/motor_driver_library/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/motor_driver_library.dir/depend.make
@@ -72,16 +72,16 @@ include CMakeFiles/motor_driver_library.dir/flags.make
 CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o: CMakeFiles/motor_driver_library.dir/flags.make
 CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o: ../src/MotorDriver.cpp
 CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o: CMakeFiles/motor_driver_library.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/jkan67/b.ob/src/motor_driver_library/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o -MF CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o.d -o CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o -c /home/jkan67/b.ob/src/motor_driver_library/src/MotorDriver.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/jkan67/jkan67/b.ob/src/motor_driver_library/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o -MF CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o.d -o CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o -c /home/jkan67/jkan67/b.ob/src/motor_driver_library/src/MotorDriver.cpp
 
 CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jkan67/b.ob/src/motor_driver_library/src/MotorDriver.cpp > CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.i
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jkan67/jkan67/b.ob/src/motor_driver_library/src/MotorDriver.cpp > CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.i
 
 CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jkan67/b.ob/src/motor_driver_library/src/MotorDriver.cpp -o CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.s
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jkan67/jkan67/b.ob/src/motor_driver_library/src/MotorDriver.cpp -o CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.s
 
 # Object files for target motor_driver_library
 motor_driver_library_OBJECTS = \
@@ -93,7 +93,7 @@ motor_driver_library_EXTERNAL_OBJECTS =
 libmotor_driver_library.a: CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o
 libmotor_driver_library.a: CMakeFiles/motor_driver_library.dir/build.make
 libmotor_driver_library.a: CMakeFiles/motor_driver_library.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/jkan67/b.ob/src/motor_driver_library/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX static library libmotor_driver_library.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/jkan67/jkan67/b.ob/src/motor_driver_library/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX static library libmotor_driver_library.a"
 	$(CMAKE_COMMAND) -P CMakeFiles/motor_driver_library.dir/cmake_clean_target.cmake
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/motor_driver_library.dir/link.txt --verbose=$(VERBOSE)
 
@@ -106,6 +106,6 @@ CMakeFiles/motor_driver_library.dir/clean:
 .PHONY : CMakeFiles/motor_driver_library.dir/clean
 
 CMakeFiles/motor_driver_library.dir/depend:
-	cd /home/jkan67/b.ob/src/motor_driver_library/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/jkan67/b.ob/src/motor_driver_library /home/jkan67/b.ob/src/motor_driver_library /home/jkan67/b.ob/src/motor_driver_library/build /home/jkan67/b.ob/src/motor_driver_library/build /home/jkan67/b.ob/src/motor_driver_library/build/CMakeFiles/motor_driver_library.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/jkan67/jkan67/b.ob/src/motor_driver_library/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/jkan67/jkan67/b.ob/src/motor_driver_library /home/jkan67/jkan67/b.ob/src/motor_driver_library /home/jkan67/jkan67/b.ob/src/motor_driver_library/build /home/jkan67/jkan67/b.ob/src/motor_driver_library/build /home/jkan67/jkan67/b.ob/src/motor_driver_library/build/CMakeFiles/motor_driver_library.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/motor_driver_library.dir/depend
 

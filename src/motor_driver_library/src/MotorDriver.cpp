@@ -37,7 +37,7 @@ int Motor::getPwmPin() const{
 }
 
 u_int Motor::getPWMRange() const{
-  return PWM_Range
+  return PWM_Range;
 }
 
 void Motor::setPWMRange(uint range){
@@ -116,7 +116,7 @@ std::string Motor::getDirection() const{
     return "BACKWARD";
   }
   else if (m_Direction == IDLE){
-    return "IDLE"
+    return "IDLE";
   }
 }
 
