@@ -49,11 +49,11 @@ int main()
     signal(SIGINT, signalHandler);
 
     std::cout << fmt::format("Configuring Left Motor on GPIO {}, & {}... ", LEFT_DIRECTION_PIN, LEFT_PWM_PIN);
-    MD::Motor leftMotor(LEFT_DIRECTION_PIN, LEFT_PWM_PIN, MIN_SPEED, MAX_SPEED,CCW);
+    MD::Motor leftMotor(LEFT_DIRECTION_PIN, LEFT_PWM_PIN, MAX_SPEED,CCW);
     std::cout << "SUCCESS" << std::endl;
 
     std::cout << fmt::format("Configuring Right Motor on GPIO {}, & {}... ", RIGHT_DIRECTION_PIN, RIGHT_PWM_PIN);
-    MD::Motor rightMotor(RIGHT_DIRECTION_PIN, RIGHT_PWM_PIN, MIN_SPEED, MAX_SPEED,CW);    
+    MD::Motor rightMotor(RIGHT_DIRECTION_PIN, RIGHT_PWM_PIN, MAX_SPEED,CW);    
     std::cout << "SUCCESS" << std::endl;
 
     isRunning = true;
@@ -62,26 +62,34 @@ int main()
     {
     
         int i;
-        for (i=0; i<255; i++) {
+        for (i=0; i<100; i++) {
             leftMotor.setSpeed(i);
             rightMotor.setSpeed(i);
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            printStatus(leftMotor, rightMotor);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            system("clear");
         }
-        for (i=255; i!=0; i--) {
+        for (i=100; i!=0; i--) {
             leftMotor.setSpeed(i);
             rightMotor.setSpeed(i);
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            printStatus(leftMotor, rightMotor);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            system("clear");
         }
 
-        for (i=0; i > -255; i--) {
+        for (i=0; i > -100; i--) {
             leftMotor.setSpeed(i);
             rightMotor.setSpeed(i);
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            printStatus(leftMotor, rightMotor);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            system("clear");
         }
-        for (i=-255; i!=0; i++) {
+        for (i=-100; i!=0; i++) {
             leftMotor.setSpeed(i);
             rightMotor.setSpeed(i);
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            printStatus(leftMotor, rightMotor);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            system("clear");
         }
 
     
@@ -89,7 +97,9 @@ int main()
 
     leftMotor.setSpeed(0);
     rightMotor.setSpeed(0);
+    system("clear");
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    printStatus(leftMotor, rightMotor);
     std::cout << "Cleaning up resources" << std::endl << std::flush;
 
     return 0;  

@@ -1,14 +1,17 @@
-
-# Consider dependencies only in project.
-set(CMAKE_DEPENDS_IN_PROJECT_ONLY OFF)
-
 # The set of languages for which implicit dependencies are needed:
 set(CMAKE_DEPENDS_LANGUAGES
+  "CXX"
   )
+# The set of files for implicit dependencies of each language:
+set(CMAKE_DEPENDS_CHECK_CXX
+  "/home/ubuntu/b.ob/src/motor_driver_library/src/MotorDriver.cpp" "/home/ubuntu/b.ob/src/motor_driver_library/build/CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o"
+  )
+set(CMAKE_CXX_COMPILER_ID "GNU")
 
-# The set of dependency files which are needed:
-set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/jkan67/jkan67/b.ob/src/motor_driver_library/src/MotorDriver.cpp" "CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o" "gcc" "CMakeFiles/motor_driver_library.dir/src/MotorDriver.cpp.o.d"
+# The include file search paths:
+set(CMAKE_CXX_TARGET_INCLUDE_PATH
+  "../include/motor_driver"
+  "../src"
   )
 
 # Targets to which this target links.

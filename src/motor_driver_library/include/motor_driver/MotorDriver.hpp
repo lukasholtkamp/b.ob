@@ -19,7 +19,6 @@
 
 #define CCW 1
 #define CW 0
-#define IDLE 2
 
 // MD: Motor Driver
 namespace MD{
@@ -32,7 +31,7 @@ namespace MD{
 
   private:
     int m_DirectionPin, m_PwmPin; //<-- Pin numbers
-    double m_MinSpeed, m_MaxSpeed; //<-- Speed limits
+    double m_MaxSpeed; //<-- Speed limits
     double m_Speed; //<-- Current speed
     bool m_Direction; //<-- Current direction
     bool m_FDirection; //<-- Direction considered as Forward
@@ -44,10 +43,9 @@ namespace MD{
    * @details This constructor is used to initialize the motor driver library. The constructor is used to set the pin numbers for the motors, the speed limits and the current speed and direction of the motors.
    * @param directionPin Pin number for the direction of the motor
    * @param pwmPin Pin number for the pwm of the motor
-   * @param minSpeed Minimum speed of the motor
    * @param maxSpeed Maximum speed of the motor
    */
-    Motor(int directionPin, int pwmPin, double minSpeed, double maxSpeed, int direction);
+    Motor(int directionPin, int pwmPin, double maxSpeed, int direction);
 
     int getPwmPin() const; //<-- Returns the pwm pin number
 
@@ -55,30 +53,15 @@ namespace MD{
 
     void setPWMRange(uint range);
 
-    double LinearAndAngularVelocities(double linearVelocityX, double angularVelocityZ);
-
-    /**
-     * @brief Set the Direction object
-     *
-     * @param direction
-     * @param pinNumber
-     */
     void switchDirection(); 
 
     std::string getDirection() const; //<-- Returns the direction of the motor
 
     int getDirectionPin() const; //<-- Returns the direction pin number
 
-    /**
-     * @brief Set the Speed object
-     * 
-     * @param speed 
-     */
     void setSpeed(double speed);
 
     double getSpeed() const; //<-- Returns the speed of the motor
-
-    void setMinSpeed(double minSpeed); //<-- Sets the minimum speed of the motor
 
     void setMaxSpeed(double maxSpeed); //<-- Sets the maximum speed of the motor
 

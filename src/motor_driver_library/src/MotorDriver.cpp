@@ -13,20 +13,20 @@
 
 namespace MD{
 	
-Motor::Motor(int directionPin,int pwmPin, double minSpeed, double maxSpeed,int direction){
+Motor::Motor(int directionPin,int pwmPin, double maxSpeed,int direction){
   m_DirectionPin = directionPin;
   m_PwmPin = pwmPin;
-  m_MinSpeed = minSpeed;
   m_MaxSpeed = maxSpeed;
   m_FDirection = direction;
   m_Speed = 0.0;
-  m_Direction = IDLE;
+  m_Direction = direction;
   PWM_Range = 255;
 
   
   gpioSetMode(directionPin,PI_OUTPUT);
   gpioSetMode(pwmPin,PI_OUTPUT);
-  
+
+  gpioWrite(m_DirectionPin, m_FDirection);
 }
 
 
@@ -42,51 +42,6 @@ u_int Motor::getPWMRange() const{
 
 void Motor::setPWMRange(uint range){
   PWM_Range= range;
-}
-
-double Motor::LinearAndAngularVelocities(double linearVelocityX, double angularVelocityZ) {
-
-  double speed;
-  //---Forward Driving Curve---
-  /* if(linearVelocityX > 0 && angularVelocityZ < 0 && ( (angularVelocityZ*-1) <= linearVelocityX) ){ //this will slow down one wheel an speed up the other wheel
-    speed = (linearVelocityX - angularVelocityZ);
-    return speed;
-  }*/
-  if(linearVelocityX > 0 && angularVelocityZ < 0){ //this will only influence the wheel that has to be slowed down 
-    speed = linearVelocityX;
-    return speed;
-  }
-  else if(linearVelocityX > 0 && angularVelocityZ > 0 ){
-    speed = (linearVelocityX - angularVelocityZ);
-    return speed;
-  }
-  //---Backwards Driving Curve---
-  else if (linearVelocityX < 0 && angularVelocityZ < 0) {
-    speed = linearVelocityX;
-    return speed;
-  }
-  /*else if(linearVelocityX < 0 && angularVelocityZ < 0 && ( (angularVelocityZ*-1) <= (linearVelocityX*-1) ) ){
-    speed = (linearVelocityX + angularVelocityZ);
-    return speed;
-  }*/
-  else if(linearVelocityX < 0 && angularVelocityZ > 0 && (angularVelocityZ <= (linearVelocityX*-1) ) ){
-    speed = (linearVelocityX + angularVelocityZ);
-    return speed;
-  }
-  else if(linearVelocityX < 0 && angularVelocityZ > 0 && (angularVelocityZ > (linearVelocityX*-1) ) ) {
-    speed = 0;
-    return speed;
-  }
-  //---Rotating---
-  else if(linearVelocityX == 0 ){
-    speed = (linearVelocityX - angularVelocityZ);
-    return speed;
-  }
-  else {
-	speed = 0;
-	return speed;  
-  }
-
 }
 
 /** @brief Set the direction of the object
@@ -108,15 +63,15 @@ void Motor::switchDirection() {
  */
 std::string Motor::getDirection() const{
 
+  if (m_Speed == 0){
+    return "IDLE";
+  }
   if (m_Direction == m_FDirection){
     return "FORWARD";
   }
   else if (m_Direction != m_FDirection)
   {
     return "BACKWARD";
-  }
-  else if (m_Direction == IDLE){
-    return "IDLE";
   }
 }
 
@@ -131,32 +86,31 @@ int Motor::getDirectionPin() const{
  */
 void Motor::setSpeed(double speed) {
 
-  if (speed > m_MinSpeed){
-    if(m_Direction != m_FDirection){
-      // direction change
-      gpioPWM(m_PwmPin, 1);
-      switchDirection();
-    }
-  }
-  else if (speed < m_MinSpeed){
-    if(m_Direction == m_FDirection){
-      // direction change
-      gpioPWM(m_PwmPin, 1);
-      switchDirection();
-    }
-  }
-  else if (speed == m_MinSpeed){
-    gpioPWM(m_PwmPin, 1);
-    m_Direction = IDLE;
-  }
-  else if (speed>m_MaxSpeed){
-    m_Speed = m_MaxSpeed;
-  }
-
   m_Speed = speed;
 
-  auto intValue = static_cast<uint8_t>( PWM_Range * abs(m_Speed/m_MaxSpeed));
-  gpioPWM(m_PwmPin, intValue);
+  if (speed > 0){
+    if(m_Direction != m_FDirection){
+      // direction change
+      switchDirection();
+    }
+  }
+  else if (speed < 0){
+    if(m_Direction == m_FDirection){
+      // direction change
+      switchDirection();
+    }
+  }
+  
+  if (speed>100){
+    m_Speed = 100;
+  }
+  else if (speed<-100){
+    m_Speed = -100;
+  }
+
+  double signal = (PWM_Range/m_MaxSpeed) * ((m_MaxSpeed/100) * abs(speed));
+
+  gpioPWM(m_PwmPin, signal);
 
 }
 
@@ -166,14 +120,6 @@ void Motor::setSpeed(double speed) {
  */
 double Motor::getSpeed() const{
   return m_Speed;
-}
-
-/** @brief Set the Min Speed of the object
- *
- * @return double
- */
-void Motor::setMinSpeed(double minSpeed) {
-  m_MinSpeed = minSpeed;
 }
 
 /** @brief Set the Max Speed of the object
@@ -192,6 +138,5 @@ void Motor::stop() {
   m_Speed = 0.0;
   setSpeed(m_Speed);
 }
-
 
 }

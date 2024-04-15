@@ -1,0 +1,26 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/motor_driver/MotorDriver.hpp
+pigpio.h
+-
+stdint.h
+-
+cmath
+-
+string
+-
+
+../include/motor_driver/RunMotor.hpp
+
+/home/ubuntu/b.ob/src/motor_driver_library/src/MotorDriver.cpp
+MotorDriver.hpp
+/home/ubuntu/b.ob/src/motor_driver_library/src/MotorDriver.hpp
+RunMotor.hpp
+/home/ubuntu/b.ob/src/motor_driver_library/src/RunMotor.hpp
+
