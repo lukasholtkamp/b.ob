@@ -22,13 +22,13 @@ void signalHandler(int signal)
 void callbackleft(int way){
     static int leftpos=0;
     leftpos+=way;
-    std::cout << fmt::format("Motors pos on left: {} ", leftpos) << std::endl;
+    // std::cout << fmt::format("Motors pos on left: {} ", leftpos) << std::endl;
 }
 
 void callbackright(int way){
     static int rightpos=0;
     rightpos+=way;
-    std::cout << fmt::format("Motors pos on rightft: {} ", rightpos) << std::endl;
+    // std::cout << fmt::format("Motors pos on rightft: {} ", rightpos) << std::endl;
 }
 
 int main()
@@ -73,6 +73,7 @@ int main()
     while (isRunning)
     {   
         printStatus(leftEncoder, rightEncoder);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         system("clear");
     }
 
