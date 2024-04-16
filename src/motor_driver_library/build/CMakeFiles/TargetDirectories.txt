@@ -1,4 +1,0 @@
-/home/ubuntu/b.ob/src/motor_driver_library/build/CMakeFiles/rebuild_cache.dir
-/home/ubuntu/b.ob/src/motor_driver_library/build/CMakeFiles/edit_cache.dir
-/home/ubuntu/b.ob/src/motor_driver_library/build/CMakeFiles/motor_driver_test.dir
-/home/ubuntu/b.ob/src/motor_driver_library/build/CMakeFiles/motor_driver_library.dir
