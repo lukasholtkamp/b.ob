@@ -9,6 +9,7 @@
 
 #include <pigpio.h> //<-- Used to create the PWM pins on the Raspberry Pi
 #include <stdint.h> //<-- Used to define the uint8_t type
+#include <stdint.h> //<-- Used to define the uint
 
 #define LEFT_ENCODER_PIN      3 //<-- Pin number for the direction of the left motor
 #define RIGHT_ENCODER_PIN     4 //<-- Pin number for the pwm of the left motor

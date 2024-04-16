@@ -1,4 +1,3 @@
-//~ # GNU nano 4.8      
 #include <iostream>                                                                                                                                                                                                                                                                                                                                                                                                                                                 MotorDriver.cpp                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
 #include "MotorEncoder.hpp"
 

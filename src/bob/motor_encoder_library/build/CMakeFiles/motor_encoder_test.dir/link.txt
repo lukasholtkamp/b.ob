@@ -1,1 +1,0 @@
-/usr/bin/c++ -rdynamic CMakeFiles/motor_encoder_test.dir/test/motor_encoder_test.cpp.o -o motor_encoder_test  /usr/lib/x86_64-linux-gnu/libfmt.so.8.1.1 -lpigpio -Wl,--as-needed 

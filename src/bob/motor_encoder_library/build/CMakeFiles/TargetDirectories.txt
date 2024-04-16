@@ -1,4 +1,0 @@
-/home/jkan67/jkan67/b.ob/src/bob/motor_encoder_library/build/CMakeFiles/motor_encoder_library.dir
-/home/jkan67/jkan67/b.ob/src/bob/motor_encoder_library/build/CMakeFiles/motor_encoder_test.dir
-/home/jkan67/jkan67/b.ob/src/bob/motor_encoder_library/build/CMakeFiles/edit_cache.dir
-/home/jkan67/jkan67/b.ob/src/bob/motor_encoder_library/build/CMakeFiles/rebuild_cache.dir
