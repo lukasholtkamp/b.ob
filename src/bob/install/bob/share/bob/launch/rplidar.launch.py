@@ -1,1 +1,0 @@
-/home/jkan67/jkan67/b.ob/src/bob/src/launch/rplidar.launch.py
