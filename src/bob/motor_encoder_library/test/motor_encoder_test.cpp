@@ -73,7 +73,7 @@ int main()
     while (isRunning)
     {   
         printStatus(leftEncoder, rightEncoder);
-        system("clear")
+        system("clear");
     }
 
     std::cout << "Cleaning up resources" << std::endl << std::flush;
