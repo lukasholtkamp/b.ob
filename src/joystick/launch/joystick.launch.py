@@ -7,11 +7,11 @@ from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
 
-    if (joy(3, 0) == true):
+    if (joy(3, 0) == True):
 
         print('Key X, Basic Drive Mode enabled!')
 
-        joy_params = os.path.join(get_package_share_directory('src'),'config','joystick,yaml')
+        joy_params = os.path.join(get_package_share_directory('joystick'),'config','joystick,yaml')
 
         joy_node = Node(
 
