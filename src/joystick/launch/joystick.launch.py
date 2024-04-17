@@ -11,7 +11,7 @@ def generate_launch_description():
 
         print('Key X, Basic Drive Mode enabled!')
 
-        joy_params = os.path.join(get_package_share_directory('joystick'),'config','joystick,yaml')
+        joy_params = os.path.join(get_package_share_directory('joystick'),'config','BasicDrive.yaml')
 
         joy_node = Node(
 
