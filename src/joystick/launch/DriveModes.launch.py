@@ -33,3 +33,17 @@ def generate_launch_description():
             joy_node,
             teleop_node,
         ])
+    
+    elif (joy(0, 0) == True):
+
+        print('Key A, Assisted Drive Mode enabled!')
+
+        #joy_params = os.path.join(get_package_share_directory('joystick'),'config','AssistedDrive.yaml')
+
+    
+    elif (joy(1, 0) == True):
+
+        print('Key B, Emergency Stop!')
+
+    else:
+        print('Button not assigned!')
