@@ -100,5 +100,13 @@ double Encoder::getMotorSpeed() const{
   return (60*getFreq())/(15*6);
 }
 
+double Encoder::getDutyCycle() const{
+  if (_high != 0){
+    return 100.0 * _high / _period;
+  }
+  else{
+    return 0.0;
+  }
+}
 
 }
