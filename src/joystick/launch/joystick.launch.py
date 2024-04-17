@@ -24,7 +24,7 @@ def generate_launch_description():
 
             package = 'teleop_twist_joy',
             executable = 'teleop_node',
-            name = 'teleop_node'
+            name = 'teleop_node',
             parameters = [joy_params],
         )
 
