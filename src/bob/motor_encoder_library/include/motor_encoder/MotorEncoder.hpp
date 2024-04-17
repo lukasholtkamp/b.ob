@@ -57,6 +57,8 @@ namespace ENC{
 
     double getMotorSpeed() const;
 
+    double getHigh() const;
+
   };
   }
 
