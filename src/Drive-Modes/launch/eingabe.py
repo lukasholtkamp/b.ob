@@ -108,21 +108,21 @@ def joy(taste,typ):
             while 1:
                 ausgabe = False
                 pygame.event.get()
-                if taste > 0 and bjoy[taste] <> 99:
+                if taste > 0 and bjoy[taste] != 99:
                     if   bjoy[taste] == 98: ausgabe = (joystick.get_axis(2) > 0) * 1
                     elif bjoy[taste] == 97: ausgabe = (joystick.get_axis(5) > 0) * 1
                     else: ausgabe = (joystick.get_button(bjoy[taste]) is 1 ) * 1
                 elif taste == 0:
                     ausgabe = [False,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
                     for a in range(1, len(bjoy) ):
-                        if bjoy[a] <> 99:
+                        if bjoy[a] != 99:
                             if   bjoy[a] == 98: ausgabe[a] = (joystick.get_axis(2) > 0) * 1
                             elif bjoy[a] == 97: ausgabe[a] = (joystick.get_axis(5) > 0) * 1
                             else: ausgabe[a] = joystick.get_button(bjoy[a])
                         if ausgabe[a] == 1: ausgabe[0] = bnames[a]
                 if typ   == 0                        : break
-                if taste >  0 and ausgabe    <> False: break
-                if taste == 0 and ausgabe[0] <> False: break
+                if taste >  0 and ausgabe    != False: break
+                if taste == 0 and ausgabe[0] != False: break
                 sleep(.1)
             return ausgabe
         
@@ -132,7 +132,7 @@ def joy(taste,typ):
             while 1:
                 ausgabe = False
                 pygame.event.get()
-                if taste > 0 and bjoy[taste] <> 99:
+                if taste > 0 and bjoy[taste] != 99:
                     if   bjoy[taste] == 98: ausgabe = (joystick.get_hat(0)[0] is 1) * 1
                     elif bjoy[taste] == 97: ausgabe = (joystick.get_hat(0)[0] is -1) * 1
                     elif bjoy[taste] == 96: ausgabe = (joystick.get_hat(0)[1] is 1) * 1
@@ -141,7 +141,7 @@ def joy(taste,typ):
                 elif taste == 0:
                     ausgabe = [False,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
                     for a in range(1, len(bjoy) ):
-                        if bjoy[a] <> 99:
+                        if bjoy[a] != 99:
                             if   bjoy[a] == 98: ausgabe[a] = (joystick.get_hat(0)[0] is 1) * 1
                             elif bjoy[a] == 97: ausgabe[a] = (joystick.get_hat(0)[0] is -1) * 1
                             elif bjoy[a] == 96: ausgabe[a] = (joystick.get_hat(0)[1] is 1) * 1
@@ -149,8 +149,8 @@ def joy(taste,typ):
                             else: ausgabe[a] = joystick.get_button(bjoy[a]) * 1
                         if ausgabe[a] == 1: ausgabe[0] = bnames[a]
                 if typ   == 0                        : break
-                if taste >  0 and ausgabe    <> False: break
-                if taste == 0 and ausgabe[0] <> False: break
+                if taste >  0 and ausgabe    != False: break
+                if taste == 0 and ausgabe[0] != False: break
                 sleep(.1)
             return ausgabe
 
@@ -167,7 +167,7 @@ def joy(taste,typ):
 if __name__ == "__main__":
     while 1:
         try:
-            print joy(0,0), joy_a()
+            print (joy(0,0), joy_a())
         except KeyboardInterrupt:
             break
         sleep(.1)
