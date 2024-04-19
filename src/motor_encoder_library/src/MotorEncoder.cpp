@@ -110,11 +110,11 @@ double Encoder::getDutyCycle() const{
 }
 
 u_int32_t Encoder::getPeriod() const{
-  return _period
+  return _period;
 }
 
 u_int32_t Encoder::getHigh() const{
-  return _high
+  return _high;
 }
 
 }
