@@ -59,6 +59,10 @@ namespace ENC{
 
     double getDutyCycle() const;
 
+    u_int32_t getPeriod() const;
+
+    u_int32_t getHigh() const;
+
   };
   }
 

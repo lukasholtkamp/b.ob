@@ -84,5 +84,6 @@ int main()
 
 void printStatus(const ENC::Encoder& leftEncoder, const ENC::Encoder& rightEncoder)
 {
-    std::cout << fmt::format("Motors speed on left: {} and right: {} ", leftEncoder.getDutyCycle(), rightEncoder.getDutyCycle()) << std::endl;
+    std::cout << fmt::format("Motors period on left: {} and right: {} ", leftEncoder.getPeriod(), rightEncoder.getPeriod()) << std::endl;
+    std::cout << fmt::format("Motors high time on left: {} and right: {} ", leftEncoder.getHigh(), rightEncoder.getHigh()) << std::endl;
 }
