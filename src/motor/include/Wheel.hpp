@@ -13,16 +13,13 @@ namespace WH{
 class Wheel
 {   
   public:
-    std::string name = "";
-    class MD::Motor;
-    class ENC::Encoder;
+    std::string name;
+    class MD::Motor Motor;
+    class ENC::Encoder Encoder;
+    double command;
+    double rads_per_tick;
 
-    double command = 0.0;
-    double rads_per_tick = 0.0;
-
-    Wheel() = default;
-
-    Wheel(const std::string &wheel_name, int ticks_per_rev);
+    Wheel(const std::string &wheel_name, int ticks_per_rev,int directionPin,int pwmPin, double maxSpeed,int direction,int EncPin, encoderCB_t callback);
 
     void setup(const std::string &wheel_name, int ticks_per_rev);
 

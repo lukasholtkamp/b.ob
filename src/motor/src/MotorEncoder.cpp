@@ -16,7 +16,7 @@ Encoder::Encoder(int gpio, encoderCB_t callback){
   e_Pin = gpio;
   mycallback = callback;
 
-  pos=0;
+  encoder_pulses=0;
 
   _weighting=0;
   _new=1.0-_weighting;
@@ -115,6 +115,10 @@ u_int32_t Encoder::getPeriod() const{
 
 u_int32_t Encoder::getHigh() const{
   return _high;
+}
+
+int Encoder::getPulseCount() const{
+  return encoder_pulses;
 }
 
 }

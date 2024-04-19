@@ -29,7 +29,7 @@ namespace ENC{
     int e_Pin; //<-- encoder Pin numbers
     double _weighting,_new,_old;
     u_int32_t _high_tick,_period,_high;
-    uint pos;
+    int encoder_pulses;
 
     encoderCB_t mycallback;
 
@@ -62,6 +62,8 @@ namespace ENC{
     u_int32_t getPeriod() const;
 
     u_int32_t getHigh() const;
+
+    int getPulseCount() const;
 
   };
   }
