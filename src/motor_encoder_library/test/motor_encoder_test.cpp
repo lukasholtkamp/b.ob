@@ -74,7 +74,7 @@ int main()
     {   
         printStatus(leftEncoder, rightEncoder);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        system("clear");
+        // system("clear");
     }
 
     std::cout << "Cleaning up resources" << std::endl << std::flush;
@@ -84,6 +84,7 @@ int main()
 
 void printStatus(const ENC::Encoder& leftEncoder, const ENC::Encoder& rightEncoder)
 {
-    std::cout << fmt::format("Motors period on left: {} and right: {} ", leftEncoder.getPeriod(), rightEncoder.getPeriod()) << std::endl;
-    std::cout << fmt::format("Motors Frequency on left: {} and right: {} ", leftEncoder.getFreq(), rightEncoder.getFreq()) << std::endl;
+    // std::cout << fmt::format("Motors speed on left: {} and right: {} ", leftEncoder.getMotorSpeed(), rightEncoder.getMotorSpeed()) << std::endl;
+    printf("%f\t",rightEncoder.getMotorSpeed());
+    printf("\n");
 }
