@@ -6,6 +6,10 @@
 
 #include <signal.h>
 
+#include <cmath>
+#include "matplotlibcpp.hpp"
+namespace plt = matplotlibcpp;
+
 #include "MotorEncoder.hpp"
 #include "MotorEncoder.cpp"
 
@@ -70,9 +74,37 @@ int main()
 
     isRunning = true;
     
+    std::vector<double> t, rspeed, lspeed;
+    int count=1;
+
     while (isRunning)
     {   
-        printStatus(leftEncoder, rightEncoder);
+        // printStatus(leftEncoder, rightEncoder);
+	    
+        t.push_back(count);
+        rspeed.push_back(rightEncoder.getMotorSpeed());
+        lspeed.push_back(leftEncoder.getMotorSpeed());
+
+        if (count % 10 == 0) {
+            // Clear previous plot
+            plt::clf();
+            // Plot line from given x and y data. Color is selected automatically.
+            plt::plot(t, rspeed);
+
+            // Set x-axis to interval [0,1000000]
+            plt::xlim(0, 1000000);
+
+            // Add graph title
+            plt::title("Speed");
+            // Enable legend.
+            plt::legend();
+            // Display plot continuously
+            plt::pause(0.01);
+        }
+
+        count++;
+	    
+
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         // system("clear");
     }
