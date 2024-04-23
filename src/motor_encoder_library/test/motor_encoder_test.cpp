@@ -6,10 +6,6 @@
 
 #include <signal.h>
 
-#include <cmath>
-#include "matplotlibcpp.hpp"
-namespace plt = matplotlibcpp;
-
 #include "MotorEncoder.hpp"
 #include "MotorEncoder.cpp"
 
@@ -75,6 +71,7 @@ int main()
     while (isRunning)
     {   
         printStatus(leftEncoder, rightEncoder);
+        system("clear");
     }
     std::cout << "Cleaning up resources" << std::endl << std::flush;
 
