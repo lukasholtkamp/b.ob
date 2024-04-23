@@ -6,12 +6,11 @@ find_package(fmt)
 list(APPEND CMAKE_MODULE_PATH "$ENV{HOME}/pigpio-master/util")
 find_package(pigpio)
 
-include_directories(include/motor_encoder)
-include_directories(include/matplotlib)
+include_directories(include/motor_alarm include/motor_encoder )
 
 include_directories(src)
 
-add_library(${PROJECT_NAME} src/MotorEncoder.cpp)
+add_library(${PROJECT_NAME} src/MotorEncoder.cpp src/MotorAlarm.cpp)
 
 add_executable(motor_encoder_test test/motor_encoder_test.cpp)
 

@@ -18,7 +18,7 @@ Encoder::Encoder(int gpio, encoderCB_t callback){
 
   pos=0;
 
-  _weighting=0;
+  _weighting=0.1;
   _new=1.0-_weighting;
   _old=_weighting;
 

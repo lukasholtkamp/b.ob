@@ -9,6 +9,9 @@
 #include "MotorEncoder.hpp"
 #include "MotorEncoder.cpp"
 
+#include "MotorAlarm.hpp"
+#include "MotorAlarm.cpp"
+
 void printStatus(const ENC::Encoder& left, const ENC::Encoder& right);
 
 
@@ -27,6 +30,14 @@ void callbackleft(int way){
 void callbackright(int way){
     static int rightpos=0;
     rightpos+=way;
+}
+
+void alarmcallbackleft(){
+    std::cout << "Left Alarm" << std::endl;
+}
+
+void alarmcallbackright(){
+    std::cout << "Right Alarm" << std::endl;
 }
 
 int main()
@@ -60,17 +71,23 @@ int main()
 
     std::cout << fmt::format("Configuring Left Encoder on GPIO {}... ", LEFT_ENCODER_PIN);
     ENC::Encoder leftEncoder(LEFT_ENCODER_PIN,callbackleft);
+    ALM::Alarm leftAlarm(LEFT_ALARM_PIN,alarmcallbackleft);
     std::cout << "SUCCESS" << std::endl;
 
     std::cout << fmt::format("Configuring Right Motor on GPIO {}... ", RIGHT_ENCODER_PIN);
-    ENC::Encoder rightEncoder(RIGHT_ENCODER_PIN,callbackright);    
+    ENC::Encoder rightEncoder(RIGHT_ENCODER_PIN,callbackright);
+    ALM::Alarm rightAlarm(RIGHT_ALARM_PIN,alarmcallbackright);    
     std::cout << "SUCCESS" << std::endl;
 
     isRunning = true;
 
     while (isRunning)
     {   
+        
+        std::cout << fmt::format("Motors alarm state on left: {} and right: {} ", leftAlarm.getState(),rightAlarm.getState()) << std::endl;
         printStatus(leftEncoder, rightEncoder);
+       
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         system("clear");
     }
     std::cout << "Cleaning up resources" << std::endl << std::flush;
@@ -80,5 +97,5 @@ int main()
 
 void printStatus(const ENC::Encoder& leftEncoder, const ENC::Encoder& rightEncoder)
 {
-    std::cout << fmt::format("Motors speed on left: {} and right: {} ", leftEncoder.getMotorSpeed(), rightEncoder.getMotorSpeed()) << std::endl;
+    std::cout << fmt::format("Motors speed on left: {:.2f} and right: {:.2f} ", leftEncoder.getMotorSpeed(), rightEncoder.getMotorSpeed()) << std::endl;
 }
