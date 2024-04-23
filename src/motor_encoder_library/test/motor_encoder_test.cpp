@@ -22,14 +22,12 @@ void signalHandler(int signal)
     isRunning = false;
 }
 
+// temporary callback function
 void callbackleft(int way){
-    static int leftpos=0;
-    leftpos+=way;
 }
 
+// temporary callback function
 void callbackright(int way){
-    static int rightpos=0;
-    rightpos+=way;
 }
 
 
@@ -62,6 +60,8 @@ int main()
 
     signal(SIGINT, signalHandler);
 
+     // Setting up encoders and alarms
+
     std::cout << fmt::format("Configuring Left Encoder on GPIO {}... ", LEFT_ENCODER_PIN);
     ENC::Encoder leftEncoder(LEFT_ENCODER_PIN,callbackleft);
     ALM::Alarm leftAlarm(LEFT_ALARM_PIN);
@@ -74,6 +74,7 @@ int main()
 
     isRunning = true;
 
+    //read motors and display the state and rpm of each left and right 
     while (isRunning)
     {   
         
@@ -83,6 +84,7 @@ int main()
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         system("clear");
     }
+    
     std::cout << "Cleaning up resources" << std::endl << std::flush;
 
     return 0;    
@@ -90,5 +92,5 @@ int main()
 
 void printStatus(const ENC::Encoder& leftEncoder, const ENC::Encoder& rightEncoder)
 {
-    std::cout << fmt::format("Motors speed on left: {:.2f} and right: {:.2f} ", leftEncoder.getMotorSpeed(), rightEncoder.getMotorSpeed()) << std::endl;
+    std::cout << fmt::format("Motors RPM on left: {:.2f} and right: {:.2f} ", leftEncoder.getMotorSpeed(), rightEncoder.getMotorSpeed()) << std::endl;
 }

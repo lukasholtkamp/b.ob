@@ -1,8 +1,7 @@
 /**
- * @file MotorEncoder.h
- * @brief Motor Encoder library for the Jetson Nano and the Raspberry Pi
+ * @file MotorEncoder.hpp
+ * @brief Motor Encoder library for the the Raspberry Pi
  * @details This library is used to get encoder feedback from the motors of the robot. The library is used to create closed loop velocity control.
- * The library is used by the RunMotor.cpp program, which is used to control the motors of the robot. 
  */
 #ifndef MOTOR_ENCODER_HPP
 #define MOTOR_ENCODER_HPP
@@ -11,59 +10,53 @@
 #include <stdint.h> //<-- Used to define the uint8_t type
 #include <stdint.h> //<-- Used to define the uint
 
-#define LEFT_ENCODER_PIN      23 //<-- Pin number for the direction of the left motor
-#define RIGHT_ENCODER_PIN     24 //<-- Pin number for the pwm of the left motor
+#define LEFT_ENCODER_PIN      23 //<-- Pin number for the left motor encoder 
+#define RIGHT_ENCODER_PIN     24 //<-- Pin number for the right motor encoder 
 
-typedef void (*encoderCB_t)(int);
+typedef void (*encoderCB_t)(int); //<-- callback function for tracking number of pulses
 
 // ME: Motor Encoder
 namespace ENC{
   /**
-   * @brief Motor class
-   * @details This class is used to control the motors of the robot. The class is used to set the speed and direction of the motors.
+   * @brief Motor Encoder class
+   * @details This class is used to read the encoders of the motors of the robot. The class is used to read the speed of the motors.
    */
 
   class Encoder {
 
   private:
     int e_Pin; //<-- encoder Pin numbers
-    double _weighting,_new,_old;
-    u_int32_t _high_tick,_period,_high;
-    uint pos;
+    double _weighting,_new,_old; //<-- Weighting for new and old reading for smoothing 
+    u_int32_t _high_tick,_period; //<-- Variables for timing of pulse signal
+    uint pos; //<-- Variables for tracking the number of pulses
 
-    encoderCB_t mycallback;
+    encoderCB_t mycallback; //<-- callback function for tracking number of pulses
 
-    void _pulse(int gpio, int level, uint32_t tick);
+    void _pulse(int gpio, int level, uint32_t tick); //<-- function gets called everytime there is a change on the e_Pin
 
-    static void _pulseEx(int gpio, int level, uint32_t tick, void *user);
+    static void _pulseEx(int gpio, int level, uint32_t tick, void *user); //<-- function gets called everytime there is a change on the e_Pin
 
-    u_int32_t _tick_diff(u_int32_t o_tick, u_int32_t c_tick);
+    u_int32_t _tick_diff(u_int32_t o_tick, u_int32_t c_tick);//<-- function to get difference between to times
 
   
   public:
   /**
    * @brief Constructor
    * @details This constructor is used to initialize the motor driver library. The constructor is used to set the pin numbers for the motors, the speed limits and the current speed and direction of the motors.
-   * @param directionPin Pin number for the direction of the motor
-   * @param pwmPin Pin number for the pwm of the motor
-   * @param minSpeed Minimum speed of the motor
-   * @param maxSpeed Maximum speed of the motor
+   * @param gpio Pin number for the encoder signal from the motor
+   * @param callback callback function for calculating number of pulses
    */
     Encoder(int gpio, encoderCB_t callback);
 
-    void re_cancel(void);
+    void re_cancel(void);//<--Cancels the reader and releases resources.
 
-    double getFreq() const;
+    double getFreq() const; //<--Calculates frequency from period
 
-    double getMotorSpeed() const;
+    double getMotorSpeed() const; //<--Calculates RPM from frequency
 
-    double getDutyCycle() const;
-
-    u_int32_t getPeriod() const;
-
-    u_int32_t getHigh() const;
+    u_int32_t getPeriod() const; //<--Gets the period of the signal
 
   };
   }
 
-#endif // MOTOR_DRIVER_H
+#endif // MOTOR_ENCODER_HPP

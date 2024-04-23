@@ -1,53 +1,46 @@
 /**
- * @file MotorEncoder.h
- * @brief Motor Encoder library for the Jetson Nano and the Raspberry Pi
- * @details This library is used to get encoder feedback from the motors of the robot. The library is used to create closed loop velocity control.
- * The library is used by the RunMotor.cpp program, which is used to control the motors of the robot. 
+ * @file MotorAlarm.hpp
+ * @brief Motor Alarm library for the Raspberry Pi
+ * @details This library is used to check the alarms on the motors of the robot.
  */
 #ifndef MOTOR_ALARM_HPP
 #define MOTOR_ALARM_HPP
 
-#include <pigpio.h> //<-- Used to create the PWM pins on the Raspberry Pi
-#include <stdint.h> //<-- Used to define the uint8_t type
-#include <stdint.h> //<-- Used to define the uint
+#include <pigpio.h> //<-- Used to read the gpio on the Raspberry Pi
 
 #define LEFT_ALARM_PIN      22 //<-- Pin number for the direction of the left motor
 #define RIGHT_ALARM_PIN     25 //<-- Pin number for the pwm of the left motor
 
 
-// ME: Motor Encoder
+// ALM: Motor Alarm
 namespace ALM{
   /**
-   * @brief Motor class
-   * @details This class is used to control the motors of the robot. The class is used to set the speed and direction of the motors.
+   * @brief Alarm class
+   * @details This class is to used to read when the motor alarm is triggered.
    */
-
   class Alarm {
 
   private:
-    int a_Pin; //<-- encoder Pin numbers
-    int state;
+    int a_Pin; //<-- alarm Pin numbers
+    int state; //<-- state of alarm pin (1 = no alarm, 0 = alarm)
 
-    void _pulse(int gpio, int level, uint32_t tick);
+    void _pulse(int gpio, int level, uint32_t tick); //<-- function gets called everytime there is a change on the a_Pin
 
-    static void _pulseEx(int gpio, int level, uint32_t tick, void *user);
+    static void _pulseEx(int gpio, int level, uint32_t tick, void *user);//<-- function gets called everytime there is a change on the a_Pin
 
   public:
   /**
    * @brief Constructor
-   * @details This constructor is used to initialize the motor driver library. The constructor is used to set the pin numbers for the motors, the speed limits and the current speed and direction of the motors.
-   * @param directionPin Pin number for the direction of the motor
-   * @param pwmPin Pin number for the pwm of the motor
-   * @param minSpeed Minimum speed of the motor
-   * @param maxSpeed Maximum speed of the motor
+   * @details This constructor is used to initialize the motor alarm. The constructor is used to set the pin numbers for the motor alarms.
+   * @param gpio Pin number for the alarm signal from the motor
    */
     Alarm(int gpio);
 
-    void re_cancel(void);
+    void re_cancel(void); //<--Cancels the reader and releases resources.
 
-    int getState();
+    int getState(); //<--Gets state of the alarm
 
   };
   }
 
-#endif // MOTOR_DRIVER_H
+#endif // MOTOR_ALARM_HPP
