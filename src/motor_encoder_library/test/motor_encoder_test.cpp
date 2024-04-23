@@ -26,13 +26,11 @@ void signalHandler(int signal)
 void callbackleft(int way){
     static int leftpos=0;
     leftpos+=way;
-    // std::cout << fmt::format("Motors pos on left: {} ", leftpos) << std::endl;
 }
 
 void callbackright(int way){
     static int rightpos=0;
     rightpos+=way;
-    // std::cout << fmt::format("Motors pos on rightft: {} ", rightpos) << std::endl;
 }
 
 int main()
@@ -73,42 +71,11 @@ int main()
     std::cout << "SUCCESS" << std::endl;
 
     isRunning = true;
-    
-    std::vector<double> t, rspeed, lspeed;
-    int count=1;
 
     while (isRunning)
     {   
-        // printStatus(leftEncoder, rightEncoder);
-	    
-        t.push_back(count);
-        rspeed.push_back(rightEncoder.getMotorSpeed());
-        lspeed.push_back(leftEncoder.getMotorSpeed());
-
-        if (count % 10 == 0) {
-            // Clear previous plot
-            plt::clf();
-            // Plot line from given x and y data. Color is selected automatically.
-            plt::plot(t, rspeed);
-
-            // Set x-axis to interval [0,1000000]
-            plt::xlim(0, 1000000);
-
-            // Add graph title
-            plt::title("Speed");
-            // Enable legend.
-            plt::legend();
-            // Display plot continuously
-            plt::pause(0.01);
-        }
-
-        count++;
-	    
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        // system("clear");
+        printStatus(leftEncoder, rightEncoder);
     }
-
     std::cout << "Cleaning up resources" << std::endl << std::flush;
 
     return 0;    
@@ -116,7 +83,5 @@ int main()
 
 void printStatus(const ENC::Encoder& leftEncoder, const ENC::Encoder& rightEncoder)
 {
-    // std::cout << fmt::format("Motors speed on left: {} and right: {} ", leftEncoder.getMotorSpeed(), rightEncoder.getMotorSpeed()) << std::endl;
-    printf("%f\t",rightEncoder.getMotorSpeed());
-    printf("\n");
+    std::cout << fmt::format("Motors speed on left: {} and right: {} ", leftEncoder.getMotorSpeed(), rightEncoder.getMotorSpeed()) << std::endl;
 }
