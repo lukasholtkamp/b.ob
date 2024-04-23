@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rm -r build
+rm -r -f build
 
 mkdir build
 
