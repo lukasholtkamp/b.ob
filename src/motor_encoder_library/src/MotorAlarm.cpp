@@ -4,9 +4,8 @@
 
 namespace ALM{
 	
-Alarm::Alarm(int gpio, alarmCB_t callback){
+Alarm::Alarm(int gpio){
   a_Pin = gpio;
-  mycallback = callback;
   
   gpioSetMode(gpio,PI_INPUT);
   gpioSetPullUpDown(gpio,PI_PUD_UP);

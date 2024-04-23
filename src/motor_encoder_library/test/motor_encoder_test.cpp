@@ -32,13 +32,6 @@ void callbackright(int way){
     rightpos+=way;
 }
 
-void alarmcallbackleft(){
-    std::cout << "Left Alarm" << std::endl;
-}
-
-void alarmcallbackright(){
-    std::cout << "Right Alarm" << std::endl;
-}
 
 int main()
 {
@@ -71,12 +64,12 @@ int main()
 
     std::cout << fmt::format("Configuring Left Encoder on GPIO {}... ", LEFT_ENCODER_PIN);
     ENC::Encoder leftEncoder(LEFT_ENCODER_PIN,callbackleft);
-    ALM::Alarm leftAlarm(LEFT_ALARM_PIN,alarmcallbackleft);
+    ALM::Alarm leftAlarm(LEFT_ALARM_PIN);
     std::cout << "SUCCESS" << std::endl;
 
     std::cout << fmt::format("Configuring Right Motor on GPIO {}... ", RIGHT_ENCODER_PIN);
     ENC::Encoder rightEncoder(RIGHT_ENCODER_PIN,callbackright);
-    ALM::Alarm rightAlarm(RIGHT_ALARM_PIN,alarmcallbackright);    
+    ALM::Alarm rightAlarm(RIGHT_ALARM_PIN);    
     std::cout << "SUCCESS" << std::endl;
 
     isRunning = true;
