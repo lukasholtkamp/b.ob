@@ -6,17 +6,15 @@ find_package(fmt)
 list(APPEND CMAKE_MODULE_PATH "$ENV{HOME}/pigpio-master/util")
 find_package(pigpio)
 
-include_directories(include)
+include_directories(include/motor_alarm include/motor_encoder include/motor_driver include/wheel)
+
 include_directories(src)
 
-add_library(${PROJECT_NAME} src/MotorDriver.cpp)
-add_library(${PROJECT_NAME} src/MotorEncoder.cpp)
+add_library(${PROJECT_NAME} src/MotorDriver.cpp src/MotorEncoder.cpp src/MotorAlarm.cpp src/Wheel.cpp)
 
-add_executable(motor_encoder_test test/motor_encoder_test.cpp)
-add_executable(motor_driver_test test/motor_driver_test.cpp)
+add_executable(Wheel_test test/Wheel_test.cpp)
 
-target_include_directories(motor_encoder_test PRIVATE include)
-target_include_directories(motor_driver_test PRIVATE include)
+target_include_directories(Wheel_test PRIVATE include)
 
-target_link_libraries(motor_driver_test fmt::fmt)
-target_link_libraries(motor_driver_test pigpio)
+target_link_libraries(Wheel_test fmt::fmt)
+target_link_libraries(Wheel_test pigpio)

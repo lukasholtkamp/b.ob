@@ -18,16 +18,19 @@
 #include "MotorAlarm.cpp"
 
 // Left wheel callback function
-void left_wheel_pulse()
+void left_wheel_pulse(int tick)
 {   
-    
+    if(Wheel.Motor.getDirection() == "FORWARD")
+        Wheel.encoder_ticks++;
+    else if(Wheel.Motor.getDirection() == "BACKWARD")
+        Wheel.encoder_ticks--;
 }
 
 // Right wheel callback function
-void right_wheel_pulse()
-{
+// void right_wheel_pulse()
+// {
 
-}
+// }
 
 int main()
 {
@@ -61,7 +64,7 @@ int main()
     std::cout << fmt::format("Configuring Left Wheel");
 
     MD::Motor leftMotor(LEFT_DIRECTION_PIN, LEFT_PWM_PIN, MAX_SPEED,CCW);
-    ENC::Encoder leftEncoder(LEFT_ENCODER_PIN,callbackleft);
+    ENC::Encoder leftEncoder(LEFT_ENCODER_PIN,left_wheel_pulse);
     ALM::Alarm leftAlarm(LEFT_ALARM_PIN);
 
     Wheel("left_wheel",15*6,0.08255,10,leftMotor, leftEncoder, leftAlarm);

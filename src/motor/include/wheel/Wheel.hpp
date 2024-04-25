@@ -12,6 +12,10 @@
 #include "MotorEncoder.hpp"
 #include "MotorAlarm.hpp"
 
+#define KP      
+#define KI       
+#define KD     
+
 namespace WH{
 
 class Wheel

@@ -15,6 +15,8 @@ Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev, double radius, si
 
     encoder_ticks = 0;
     command = 0;
+    position = 0;
+    velocity = 0;
     old_pos = 0;
     old_velocity = 0;
     radius = radius;
@@ -54,6 +56,11 @@ void Wheel::set_speed(double speed){
 }
 
 void Wheel.update(){
+
+    velocity = (Encoder.getMotorSpeed()*2*M_PI*radius) / 60.0;
+    
+    double error = command - velocity;
+    double u = std::min(KP*error, 255);
 
     
 
