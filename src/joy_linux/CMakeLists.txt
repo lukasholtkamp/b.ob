@@ -17,8 +17,8 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
 install(DIRECTORY
-    launch
-    DESTINATION share/${PROJECT_NAME}/
+  launch
+  DESTINATION share/${PROJECT_NAME}/
 )
 
 # for now, this program only exists for Linux hosts, since it calls into
