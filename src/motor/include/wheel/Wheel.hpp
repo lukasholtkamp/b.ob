@@ -33,6 +33,7 @@ class Wheel
     double radius = 0;
     double rads_per_tick = 0;
     size_t velocity_rolling_window_size = 0;
+    int Alarm_state = 0;
     // RollingMeanAccumulator linear_accumulator;
     // RollingMeanAccumulator angular_accumulator;
 

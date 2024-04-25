@@ -34,6 +34,8 @@ void Wheel::setup(const std::string &wheel_name, int ticks_per_rev, double radiu
     radius = radius;
     rads_per_tick = (2*M_PI)/ticks_per_rev;
 
+    Alarm_state = Alarm_obj.getState();
+
     velocity_rolling_window_size = velocity_rolling_window_size;
     // linear_accumulator = RollingMeanAccumulator(velocity_rolling_window_size);
     // angular_accumulator = RollingMeanAccumulator(velocity_rolling_window_size);
@@ -54,7 +56,7 @@ void Wheel::set_speed(double speed){
 void Wheel::update(){
 
     // velocity = (Encoder.getMotorSpeed()*2*M_PI*radius) / 60.0;
-    velocity = Encoder.getMotorSpeed();
+    Alarm_state = Alarm.getState();
 
 }
 

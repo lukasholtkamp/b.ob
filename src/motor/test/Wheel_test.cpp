@@ -85,11 +85,13 @@ int main()
 
     isRunning = true;
 
-    leftWheel.set_speed(50);
+    // leftWheel.set_speed(50);
     
     while (isRunning)
     {   
         leftWheel.update();
+
+        std::cout << fmt::format("Motors alarm state on left: {} ", leftWheel.Alarm_state) << std::endl;
         printStatus(leftWheel);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         system("clear");
