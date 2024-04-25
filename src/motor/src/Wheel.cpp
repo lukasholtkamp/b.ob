@@ -1,31 +1,41 @@
 #include "Wheel.hpp"
 #include "MotorDriver.hpp"
 #include "MotorEncoder.hpp"
-
-// Left wheel callback function
-void left_wheel_pulse()
-{   
-    
-}
-
-// Right wheel callback function
-void right_wheel_pulse()
-{
-
-}
+#include "MotorAlarm.hpp"
 
 namespace WH{
 
-Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev,int directionPin,int pwmPin, double maxSpeed,int direction,int EncPin, encoderCB_t callback){
+Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev, double radius, size_t velocity_rolling_window_size, MD::Motor Motor, ENC::Encoder Encoder, ALM::Alarm Alarm){
+
+    name = wheel_name;
     
-    std::string name = "";
+    Motor = Motor;
+    Encoder = Encoder;
+    Alarm = Alarm;
 
-    setup(wheel_name, ticks_per_rev);
+    encoder_ticks = 0;
+    command = 0;
+    old_pos = 0;
+    old_velocity = 0;
+    radius = radius;
+    rads_per_tick = (2*M_PI)/ticks_per_rev;
 
-    class MD::Motor Motor(directionPin,pwmPin, maxSpeed,direction);
-    class ENC::Encoder Encoder(EncPin, callback);
-    double command = 0.0;
-    double rads_per_tick = 0.0;
+    velocity_rolling_window_size = velocity_rolling_window_size;
+    linear_accumulator = RollingMeanAccumulator(velocity_rolling_window_size);
+    angular_accumulator = RollingMeanAccumulator(velocity_rolling_window_size);
+
+    timestamp = 0;
+
+    resetAccumulators();
+    timestamp_ = time;
+    
+}
+
+void Wheel::init(const rclcpp::Time & time)
+{
+  // Reset accumulators and timestamp:
+  resetAccumulators();
+  timestamp_ = time;
 }
 
 void Wheel::setup(const std::string &wheel_name, int ticks_per_rev)
@@ -37,6 +47,17 @@ void Wheel::setup(const std::string &wheel_name, int ticks_per_rev)
 double Wheel::calculate_encoder_angle()
 {
     return Encoder.getPulseCount() * rads_per_tick;
+}
+
+void Wheel::set_speed(double speed){
+    command = speed;
+}
+
+void Wheel.update(){
+
+    
+
+
 }
 
 }

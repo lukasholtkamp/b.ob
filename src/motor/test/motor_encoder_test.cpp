@@ -9,6 +9,9 @@
 #include "MotorEncoder.hpp"
 #include "MotorEncoder.cpp"
 
+#include "MotorAlarm.hpp"
+#include "MotorAlarm.cpp"
+
 void printStatus(const ENC::Encoder& left, const ENC::Encoder& right);
 
 
@@ -19,17 +22,14 @@ void signalHandler(int signal)
     isRunning = false;
 }
 
+// temporary callback function
 void callbackleft(int way){
-    static int leftpos=0;
-    leftpos+=way;
-    // std::cout << fmt::format("Motors pos on left: {} ", leftpos) << std::endl;
 }
 
+// temporary callback function
 void callbackright(int way){
-    static int rightpos=0;
-    rightpos+=way;
-    // std::cout << fmt::format("Motors pos on rightft: {} ", rightpos) << std::endl;
 }
+
 
 int main()
 {
@@ -60,23 +60,31 @@ int main()
 
     signal(SIGINT, signalHandler);
 
+     // Setting up encoders and alarms
+
     std::cout << fmt::format("Configuring Left Encoder on GPIO {}... ", LEFT_ENCODER_PIN);
     ENC::Encoder leftEncoder(LEFT_ENCODER_PIN,callbackleft);
+    ALM::Alarm leftAlarm(LEFT_ALARM_PIN);
     std::cout << "SUCCESS" << std::endl;
 
     std::cout << fmt::format("Configuring Right Motor on GPIO {}... ", RIGHT_ENCODER_PIN);
-    ENC::Encoder rightEncoder(RIGHT_ENCODER_PIN,callbackright);    
+    ENC::Encoder rightEncoder(RIGHT_ENCODER_PIN,callbackright);
+    ALM::Alarm rightAlarm(RIGHT_ALARM_PIN);    
     std::cout << "SUCCESS" << std::endl;
 
     isRunning = true;
-    
+
+    //read motors and display the state and rpm of each left and right 
     while (isRunning)
     {   
+        
+        std::cout << fmt::format("Motors alarm state on left: {} and right: {} ", leftAlarm.getState(),rightAlarm.getState()) << std::endl;
         printStatus(leftEncoder, rightEncoder);
+       
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         system("clear");
     }
-
+    
     std::cout << "Cleaning up resources" << std::endl << std::flush;
 
     return 0;    
@@ -84,6 +92,5 @@ int main()
 
 void printStatus(const ENC::Encoder& leftEncoder, const ENC::Encoder& rightEncoder)
 {
-    std::cout << fmt::format("Motors period on left: {} and right: {} ", leftEncoder.getPeriod(), rightEncoder.getPeriod()) << std::endl;
-    std::cout << fmt::format("Motors high time on left: {} and right: {} ", leftEncoder.getHigh(), rightEncoder.getHigh()) << std::endl;
+    std::cout << fmt::format("Motors RPM on left: {:.2f} and right: {:.2f} ", leftEncoder.getMotorSpeed(), rightEncoder.getMotorSpeed()) << std::endl;
 }
