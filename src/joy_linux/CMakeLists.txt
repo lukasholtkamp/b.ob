@@ -16,6 +16,11 @@ find_package(diagnostic_updater REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
+install(DIRECTORY
+    launch
+    DESTINATION share/${PROJECT_NAME}/
+)
+
 # for now, this program only exists for Linux hosts, since it calls into
 # the underlying joystick driver provided by the Linux kernel.
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
