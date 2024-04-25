@@ -104,5 +104,5 @@ int main()
 void printStatus(const WH::Wheel& leftWheel)
 {
     // std::cout << fmt::format("Wheel command speed in m/s on left: {:.2f} ", leftWheel.command) << std::endl;
-    std::cout << fmt::format("Wheel speed in m/s on left: {:.2f} ", leftWheel.velocity) << std::endl;
+    std::cout << fmt::format("Wheel speed in m/s on left: {:.2f} ", leftWheel.Encoder.getMotorSpeed()) << std::endl;
 }

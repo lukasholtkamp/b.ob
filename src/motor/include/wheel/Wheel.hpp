@@ -51,7 +51,6 @@ class Wheel
     void update();
 
     void set_speed(double speed);
-
 };
 
 }
