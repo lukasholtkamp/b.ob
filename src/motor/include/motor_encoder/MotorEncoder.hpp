@@ -25,11 +25,14 @@ namespace ENC{
   class Encoder {
 
   private:
-    int e_Pin; //<-- encoder Pin numbers
-    double _weighting,_new,_old; //<-- Weighting for new and old reading for smoothing 
-    u_int32_t _high_tick,_period; //<-- Variables for timing of pulse signal
+    int e_Pin = 0; //<-- encoder Pin numbers
+    double _weighting = 0;
+    double _new = 0;
+    double _old = 0; //<-- Weighting for new and old reading for smoothing 
+    u_int32_t _high_tick = 0;
+    u_int32_t _period = 0; //<-- Variables for timing of pulse signal
 
-    encoderCB_t mycallback; //<-- callback function for tracking number of pulses
+    encoderCB_t mycallback = 0; //<-- callback function for tracking number of pulses
 
     void _pulse(int gpio, int level, uint32_t tick); //<-- function gets called everytime there is a change on the e_Pin
 
@@ -45,6 +48,8 @@ namespace ENC{
    * @param gpio Pin number for the encoder signal from the motor
    * @param callback callback function for calculating number of pulses
    */
+    Encoder() = default;
+
     Encoder(int gpio, encoderCB_t callback);
 
     void re_cancel(void);//<--Cancels the reader and releases resources.

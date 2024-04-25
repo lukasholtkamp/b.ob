@@ -21,8 +21,8 @@ namespace ALM{
   class Alarm {
 
   private:
-    int a_Pin; //<-- alarm Pin numbers
-    int state; //<-- state of alarm pin (1 = no alarm, 0 = alarm)
+    int a_Pin = 0; //<-- alarm Pin numbers
+    int state = 0; //<-- state of alarm pin (1 = no alarm, 0 = alarm)
 
     void _pulse(int gpio, int level, uint32_t tick); //<-- function gets called everytime there is a change on the a_Pin
 
@@ -34,6 +34,8 @@ namespace ALM{
    * @details This constructor is used to initialize the motor alarm. The constructor is used to set the pin numbers for the motor alarms.
    * @param gpio Pin number for the alarm signal from the motor
    */
+    Alarm() = default;
+    
     Alarm(int gpio);
 
     void re_cancel(void); //<--Cancels the reader and releases resources.

@@ -17,13 +17,25 @@
 #include "MotorAlarm.hpp"
 #include "MotorAlarm.cpp"
 
+void printStatus(const WH::Wheel& left);
+
+WH::Wheel leftWheel;
+WH::Wheel righttWheel;
+
+bool isRunning = false;
+void signalHandler(int signal)
+{
+    std::cout << "Received signal. Shutting down." << std::endl;
+    isRunning = false;
+}
+
 // Left wheel callback function
 void left_wheel_pulse(int tick)
 {   
-    if(Wheel.Motor.getDirection() == "FORWARD")
-        Wheel.encoder_ticks++;
-    else if(Wheel.Motor.getDirection() == "BACKWARD")
-        Wheel.encoder_ticks--;
+    if(leftWheel.Motor.getDirection() == "FORWARD")
+        leftWheel.encoder_ticks++;
+    else if(leftWheel.Motor.getDirection() == "BACKWARD")
+        leftWheel.encoder_ticks--;
 }
 
 // Right wheel callback function
@@ -67,21 +79,30 @@ int main()
     ENC::Encoder leftEncoder(LEFT_ENCODER_PIN,left_wheel_pulse);
     ALM::Alarm leftAlarm(LEFT_ALARM_PIN);
 
-    Wheel("left_wheel",15*6,0.08255,10,leftMotor, leftEncoder, leftAlarm);
+    leftWheel.setup("left_wheel",15*6,0.08255,10,leftMotor, leftEncoder, leftAlarm);
 
     std::cout << "SUCCESS" << std::endl;
 
     isRunning = true;
+
+    leftWheel.set_speed(50);
     
     while (isRunning)
     {   
-        Wheel.set_speed(2);
-        Wheel.update();
+        leftWheel.update();
+        printStatus(leftWheel);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         system("clear");
     }
 
+    leftWheel.Motor.stop();
     std::cout << "Cleaning up resources" << std::endl << std::flush;
 
     return 0;    
+}
+
+void printStatus(const WH::Wheel& leftWheel)
+{
+    // std::cout << fmt::format("Wheel command speed in m/s on left: {:.2f} ", leftWheel.command) << std::endl;
+    std::cout << fmt::format("Wheel speed in m/s on left: {:.2f} ", leftWheel.velocity) << std::endl;
 }

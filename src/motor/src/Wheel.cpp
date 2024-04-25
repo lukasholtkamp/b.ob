@@ -5,13 +5,25 @@
 
 namespace WH{
 
-Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev, double radius, size_t velocity_rolling_window_size, MD::Motor Motor, ENC::Encoder Encoder, ALM::Alarm Alarm){
+Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev, double radius, size_t velocity_rolling_window_size, MD::Motor Motor_obj, ENC::Encoder Encoder_obj, ALM::Alarm Alarm_obj){
 
+    setup(wheel_name,ticks_per_rev,radius,velocity_rolling_window_size,Motor_obj, Encoder_obj,Alarm_obj);
+    
+}
+
+// void Wheel::init(const rclcpp::Time & time)
+// {
+//   // Reset accumulators and timestamp:
+//   resetAccumulators();
+//   timestamp_ = time;
+// }
+void Wheel::setup(const std::string &wheel_name, int ticks_per_rev, double radius, size_t velocity_rolling_window_size, MD::Motor Motor_obj, ENC::Encoder Encoder_obj, ALM::Alarm Alarm_obj)
+{
     name = wheel_name;
     
-    Motor = Motor;
-    Encoder = Encoder;
-    Alarm = Alarm;
+    Motor = Motor_obj;
+    Encoder = Encoder_obj;
+    Alarm = Alarm_obj;
 
     encoder_ticks = 0;
     command = 0;
@@ -23,47 +35,26 @@ Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev, double radius, si
     rads_per_tick = (2*M_PI)/ticks_per_rev;
 
     velocity_rolling_window_size = velocity_rolling_window_size;
-    linear_accumulator = RollingMeanAccumulator(velocity_rolling_window_size);
-    angular_accumulator = RollingMeanAccumulator(velocity_rolling_window_size);
+    // linear_accumulator = RollingMeanAccumulator(velocity_rolling_window_size);
+    // angular_accumulator = RollingMeanAccumulator(velocity_rolling_window_size);
 
-    timestamp = 0;
-
-    resetAccumulators();
-    timestamp_ = time;
-    
-}
-
-void Wheel::init(const rclcpp::Time & time)
-{
-  // Reset accumulators and timestamp:
-  resetAccumulators();
-  timestamp_ = time;
-}
-
-void Wheel::setup(const std::string &wheel_name, int ticks_per_rev)
-{
-    name = wheel_name;
-    rads_per_tick = (2*M_PI)/ticks_per_rev;
+    // timestamp = 0;
 }
 
 double Wheel::calculate_encoder_angle()
 {
-    return Encoder.getPulseCount() * rads_per_tick;
+    return encoder_ticks * rads_per_tick;
 }
 
 void Wheel::set_speed(double speed){
     command = speed;
+    Motor.setSpeed(speed);
 }
 
-void Wheel.update(){
+void Wheel::update(){
 
-    velocity = (Encoder.getMotorSpeed()*2*M_PI*radius) / 60.0;
-    
-    double error = command - velocity;
-    double u = std::min(KP*error, 255);
-
-    
-
+    // velocity = (Encoder.getMotorSpeed()*2*M_PI*radius) / 60.0;
+    velocity = Encoder.getMotorSpeed();
 
 }
 

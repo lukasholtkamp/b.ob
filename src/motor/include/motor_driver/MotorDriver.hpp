@@ -30,12 +30,13 @@ namespace MD{
   class Motor {
 
   private:
-    int m_DirectionPin, m_PwmPin; //<-- Pin numbers
-    double m_MaxSpeed; //<-- Speed limits
-    double m_Speed; //<-- Current speed
-    bool m_Direction; //<-- Current direction
-    bool m_FDirection; //<-- Direction considered as Forward
-    u_int PWM_Range; //<-- PWM range. Default is 255 but a bigger range can be chosen to get finer speed tuning
+    int m_DirectionPin=0;
+    int m_PwmPin=0; //<-- Pin numbers
+    double m_MaxSpeed=0; //<-- Speed limits
+    double m_Speed=0; //<-- Current speed
+    bool m_Direction=0; //<-- Current direction
+    bool m_FDirection=0; //<-- Direction considered as Forward
+    u_int PWM_Range=0; //<-- PWM range. Default is 255 but a bigger range can be chosen to get finer speed tuning
 
   public:
   /**
@@ -45,6 +46,8 @@ namespace MD{
    * @param pwmPin Pin number for the pwm of the motor
    * @param maxSpeed Maximum speed of the motor
    */
+    Motor() = default;
+
     Motor(int directionPin, int pwmPin, double maxSpeed, int direction);
 
     int getPwmPin() const; //<-- Returns the pwm pin number
