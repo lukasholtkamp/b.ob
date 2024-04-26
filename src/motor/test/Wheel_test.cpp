@@ -17,10 +17,10 @@
 #include "MotorAlarm.hpp"
 #include "MotorAlarm.cpp"
 
-void printStatus(const WH::Wheel& left);
+void printStatus(const WH::Wheel& left, const WH::Wheel& right);
 
 WH::Wheel leftWheel;
-WH::Wheel righttWheel;
+WH::Wheel rightWheel;
 
 bool isRunning = false;
 void signalHandler(int signal)
@@ -40,10 +40,14 @@ void left_wheel_pulse(int tick)
 }
 
 // Right wheel callback function
-// void right_wheel_pulse()
-// {
-
-// }
+void right_wheel_pulse(int tick)
+{
+    rightWheel.update();
+    if(rightWheel.Motor.getDirection() == "FORWARD")
+        rightWheel.encoder_ticks++;
+    else if(rightWheel.Motor.getDirection() == "BACKWARD")
+        rightWheel.encoder_ticks--;
+}
 
 int main()
 {
@@ -74,13 +78,19 @@ int main()
 
     signal(SIGINT, signalHandler);
 
-    std::cout << fmt::format("Configuring Left Wheel");
+    std::cout << fmt::format("Configuring Left & Right Wheel");
 
     MD::Motor leftMotor(LEFT_DIRECTION_PIN, LEFT_PWM_PIN, MAX_SPEED,CCW);
     ENC::Encoder leftEncoder(LEFT_ENCODER_PIN,left_wheel_pulse);
     ALM::Alarm leftAlarm(LEFT_ALARM_PIN);
 
     leftWheel.setup("left_wheel",15*6,0.08255,10,leftMotor, leftEncoder, leftAlarm);
+
+    MD::Motor rightMotor(RIGHT_DIRECTION_PIN, RIGHT_PWM_PIN, MAX_SPEED,CCW);
+    ENC::Encoder rightEncoder(RIGHT_ENCODER_PIN,right_wheel_pulse);
+    ALM::Alarm rightAlarm(RIGHT_ALARM_PIN);
+
+    rightWheel.setup("right_wheel",15*6,0.08255,10,rightMotor, rightEncoder, rightAlarm);
 
     std::cout << "SUCCESS" << std::endl;
 
@@ -91,15 +101,19 @@ int main()
         int i;
         for (i=0; i<10; i++) {
             leftWheel.set_speed(double(i)/10);
+            rightWheel.set_speed(double(i)/10);
             leftWheel.update();
-            printStatus(leftWheel);
+            rightWheel.update();
+            printStatus(leftWheel,rightWheel);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             system("clear");
         }
         for (i=10; i!=0; i--) {
             leftWheel.set_speed(double(i)/10);
+            rightWheel.set_speed(double(i)/10);
             leftWheel.update();
-            printStatus(leftWheel);
+            rightWheel.update();
+            printStatus(leftWheel,rightWheel);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             system("clear");
         }
@@ -113,10 +127,10 @@ int main()
     return 0;
 }
 
-void printStatus(const WH::Wheel& leftWheel)
+void printStatus(const WH::Wheel& leftWheel,const WH::Wheel& rightWheel)
 {
-    std::cout << fmt::format("Wheel command speed in m/s on left: {:.2f} ", leftWheel.command) << std::endl;
-    std::cout << fmt::format("Motors alarm state on left: {} ", leftWheel.Alarm.getState()) << std::endl;
-    std::cout << fmt::format("Wheel speed in RPM on left: {:.2f} ", leftWheel.Encoder.getMotorSpeed()) << std::endl;
-    std::cout << fmt::format("Wheel speed in m/s on left: {:.2f} ", leftWheel.velocity) << std::endl;
+    std::cout << fmt::format("Wheel command speed in m/s on left: {:.2f} and right: {:.2f}", leftWheel.command,rightWheel.command) << std::endl;
+    std::cout << fmt::format("Motors alarm state on left: {} and right: {}", leftWheel.Alarm.getState(),rightWheel.Alarm.getState()) << std::endl;
+    std::cout << fmt::format("Wheel speed in RPM on left: {:.2f} and right: {:.2f}", leftWheel.Encoder.getMotorSpeed(),rightWheel.Encoder.getMotorSpeed()) << std::endl;
+    std::cout << fmt::format("Wheel speed in m/s on left: {:.2f} and right: {:.2f}", leftWheel.velocity, rightWheel.velocity) << std::endl;
 }
