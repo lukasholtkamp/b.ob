@@ -28,8 +28,10 @@ class Wheel
     double command = 0;
     double position = 0;
     double velocity = 0;
-    double old_pos = 0;
+    double old_position = 0;
     double old_velocity = 0;
+    double old_e = 0;
+    double sum_e = 0;
     double radius = 0;
     double rads_per_tick = 0;
     size_t velocity_rolling_window_size = 0;
@@ -41,9 +43,9 @@ class Wheel
 
     Wheel() = default;
 
-    Wheel(const std::string &wheel_name, int ticks_per_rev, double radius, size_t velocity_rolling_window_size, MD::Motor Motor, ENC::Encoder Encoder, ALM::Alarm Alarm);
+    Wheel(const std::string &wheel_name, int ticks_per_rev, double radius, size_t velocity_rolling_window_size, MD::Motor &Motor, ENC::Encoder &Encoder, ALM::Alarm &Alarm);
 
-    void setup(const std::string &wheel_name, int ticks_per_rev, double radius, size_t velocity_rolling_window_size, MD::Motor Motor, ENC::Encoder Encoder, ALM::Alarm Alarm);
+    void setup(const std::string &wheel_name, int ticks_per_rev, double radius, size_t velocity_rolling_window_size, MD::Motor &Motor, ENC::Encoder &Encoder, ALM::Alarm &Alarm);
 
     // void init(const rclcpp::Time & time);
     
@@ -52,6 +54,8 @@ class Wheel
     void update();
 
     void set_speed(double speed);
+
+    double PID(double error);
 };
 
 }

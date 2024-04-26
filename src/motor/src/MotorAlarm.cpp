@@ -61,7 +61,7 @@ void Alarm::_pulseEx(int gpio, int level,u_int32_t tick, void *user){
  * @brief get State
  * @return (1 = no alarm, 0 = alarm)
  */ 
-int Alarm::getState(){
+int Alarm::getState() const{
     return state;
 }
 

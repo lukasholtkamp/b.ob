@@ -5,7 +5,7 @@
 
 namespace WH{
 
-Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev, double radius, size_t velocity_rolling_window_size, MD::Motor Motor_obj, ENC::Encoder Encoder_obj, ALM::Alarm Alarm_obj){
+Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev, double radius, size_t velocity_rolling_window_size, MD::Motor &Motor_obj, ENC::Encoder &Encoder_obj, ALM::Alarm &Alarm_obj){
 
     setup(wheel_name,ticks_per_rev,radius,velocity_rolling_window_size,Motor_obj, Encoder_obj,Alarm_obj);
     
@@ -30,8 +30,12 @@ void Wheel::setup(const std::string &wheel_name, int ticks_per_rev, double radiu
     command = 0;
     position = 0;
     velocity = 0;
-    old_pos = 0;
+    old_position = 0;
     old_velocity = 0;
+
+    old_e = 0;
+    sum_e = 0;
+
     radius = radius;
     rads_per_tick = (2*M_PI)/ticks_per_rev;
 
@@ -49,14 +53,25 @@ double Wheel::calculate_encoder_angle()
 
 void Wheel::set_speed(double speed){
     command = speed;
-    Motor.setSpeed(speed);
 }
 
 void Wheel::update(){
 
-    // velocity = (Encoder.getMotorSpeed()*2*M_PI*radius) / 60.0;
-    Alarm_state = Alarm.getState();
+    old_position = position;
+    old_velocity = velocity;
 
+    position = calculate_encoder_angle()*radius;
+    velocity = (Encoder.getMotorSpeed()*2*M_PI*radius) / 60.0;
+
+    double speed_signal = PID(command-velocity);
+
+    Motor.setSpeed(speed_signal);
+}
+
+double Wheel::PID(double e){
+    sum_e += e;
+    double dedt = old_e - e;
+    return KP*e + KI*sum_e + KD*dedt;
 }
 
 }

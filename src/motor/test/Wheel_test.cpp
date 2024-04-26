@@ -32,6 +32,7 @@ void signalHandler(int signal)
 // Left wheel callback function
 void left_wheel_pulse(int tick)
 {   
+    leftWheel.update();
     if(leftWheel.Motor.getDirection() == "FORWARD")
         leftWheel.encoder_ticks++;
     else if(leftWheel.Motor.getDirection() == "BACKWARD")
@@ -84,15 +85,24 @@ int main()
     std::cout << "SUCCESS" << std::endl;
 
     isRunning = true;
-
-    // leftWheel.set_speed(50);
     
     while (isRunning)
     {   
-        leftWheel.update();
-
-        std::cout << fmt::format("Motors alarm state on left: {} ", leftWheel.Alarm_state) << std::endl;
-        printStatus(leftWheel);
+        int i;
+        for (i=0; i<10; i++) {
+            leftWheel.set_speed(double(i)/10);
+            leftWheel.update();
+            printStatus(leftWheel);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            system("clear");
+        }
+        for (i=10; i!=0; i--) {
+            leftWheel.set_speed(double(i)/10);
+            leftWheel.update();
+            printStatus(leftWheel);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            system("clear");
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         system("clear");
     }
@@ -100,11 +110,13 @@ int main()
     leftWheel.Motor.stop();
     std::cout << "Cleaning up resources" << std::endl << std::flush;
 
-    return 0;    
+    return 0;
 }
 
 void printStatus(const WH::Wheel& leftWheel)
 {
-    // std::cout << fmt::format("Wheel command speed in m/s on left: {:.2f} ", leftWheel.command) << std::endl;
-    std::cout << fmt::format("Wheel speed in m/s on left: {:.2f} ", leftWheel.Encoder.getMotorSpeed()) << std::endl;
+    std::cout << fmt::format("Wheel command speed in m/s on left: {:.2f} ", leftWheel.command) << std::endl;
+    std::cout << fmt::format("Motors alarm state on left: {} ", leftWheel.Alarm.getState()) << std::endl;
+    std::cout << fmt::format("Wheel speed in RPM on left: {:.2f} ", leftWheel.Encoder.getMotorSpeed()) << std::endl;
+    std::cout << fmt::format("Wheel speed in m/s on left: {:.2f} ", leftWheel.velocity) << std::endl;
 }

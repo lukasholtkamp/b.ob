@@ -40,7 +40,7 @@ namespace ALM{
 
     void re_cancel(void); //<--Cancels the reader and releases resources.
 
-    int getState(); //<--Gets state of the alarm
+    int getState() const; //<--Gets state of the alarm
 
   };
   }
