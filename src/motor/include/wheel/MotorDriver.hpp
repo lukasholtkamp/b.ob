@@ -9,6 +9,7 @@
 #include <pigpio.h> //<-- Used to create the PWM pins on the Raspberry Pi
 #include <stdint.h> //<-- Used to define the uint
 #include <string>
+#include <math.h>
 
 #define LEFT_DIRECTION_PIN      6 //<-- Pin number for the direction of the left motor
 #define LEFT_PWM_PIN            13 //<-- Pin number for the pwm of the left motor

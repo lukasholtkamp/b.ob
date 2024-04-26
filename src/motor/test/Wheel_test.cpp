@@ -128,10 +128,10 @@ int main()
     return 0;
 }
 
-void printStatus(const WH::Wheel& leftWheel,const WH::Wheel& rightWheel)
+void printStatus(const WH::Wheel& pleftWheel,const WH::Wheel& prightWheel)
 {
-    std::cout << fmt::format("Wheel command speed in m/s on left: {:.2f} and right: {:.2f}", leftWheel.command,rightWheel.command) << std::endl;
-    std::cout << fmt::format("Motors alarm state on left: {} and right: {}", leftWheel.Alarm.getState(),rightWheel.Alarm.getState()) << std::endl;
-    std::cout << fmt::format("Wheel speed in RPM on left: {:.2f} and right: {:.2f}", leftWheel.Encoder.getMotorSpeed(),rightWheel.Encoder.getMotorSpeed()) << std::endl;
-    std::cout << fmt::format("Wheel speed in m/s on left: {:.2f} and right: {:.2f}", leftWheel.velocity, rightWheel.velocity) << std::endl;
+    std::cout << fmt::format("Wheel command speed in m/s on left: {:.2f} and right: {:.2f}", pleftWheel.command,prightWheel.command) << std::endl;
+    std::cout << fmt::format("Motors alarm state on left: {} and right: {}", pleftWheel.Alarm.getState(),prightWheel.Alarm.getState()) << std::endl;
+    std::cout << fmt::format("Wheel speed in RPM on left: {:.2f} and right: {:.2f}", pleftWheel.Encoder.getMotorSpeed(),prightWheel.Encoder.getMotorSpeed()) << std::endl;
+    std::cout << fmt::format("Wheel speed in m/s on left: {:.2f} and right: {:.2f}", pleftWheel.velocity, prightWheel.velocity) << std::endl;
 }

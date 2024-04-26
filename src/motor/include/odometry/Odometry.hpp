@@ -19,8 +19,8 @@
  * Author: Paul Mathieu
  */
 
-#ifndef DIFF_DRIVE_CONTROLLER__ODOMETRY_HPP_
-#define DIFF_DRIVE_CONTROLLER__ODOMETRY_HPP_
+#ifndef ODOMETRY_HPP
+#define ODOMETRY_HPP
 
 #include <cmath>
 
@@ -32,7 +32,7 @@
 #include "rcppmath/rolling_mean_accumulator.hpp"
 #endif
 
-namespace diff_drive_controller
+namespace ODOM
 {
 class Odometry
 {

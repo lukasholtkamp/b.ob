@@ -5,9 +5,9 @@
 
 namespace WH{
 
-Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev, double radius, size_t velocity_rolling_window_size, MD::Motor &Motor_obj, ENC::Encoder &Encoder_obj, ALM::Alarm &Alarm_obj){
+Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev, double wheel_radius, size_t vr_window_size, MD::Motor &Motor_obj, ENC::Encoder &Encoder_obj, ALM::Alarm &Alarm_obj){
 
-    setup(wheel_name,ticks_per_rev,radius,velocity_rolling_window_size,Motor_obj, Encoder_obj,Alarm_obj);
+    setup(wheel_name,ticks_per_rev,wheel_radius,vr_window_size,Motor_obj, Encoder_obj,Alarm_obj);
     
 }
 
@@ -18,7 +18,7 @@ Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev, double radius, si
 //   timestamp_ = time;
 // }
 
-void Wheel::setup(const std::string &wheel_name, int ticks_per_rev, double radius, size_t velocity_rolling_window_size, MD::Motor &Motor_obj, ENC::Encoder &Encoder_obj, ALM::Alarm &Alarm_obj)
+void Wheel::setup(const std::string &wheel_name, int ticks_per_rev, double wheel_radius, size_t vr_window_size, MD::Motor &Motor_obj, ENC::Encoder &Encoder_obj, ALM::Alarm &Alarm_obj)
 {
     name = wheel_name;
     
@@ -36,10 +36,10 @@ void Wheel::setup(const std::string &wheel_name, int ticks_per_rev, double radiu
     old_e = 0;
     sum_e = 0;
 
-    radius = radius;
+    radius = wheel_radius;
     rads_per_tick = (2*M_PI)/ticks_per_rev;
 
-    velocity_rolling_window_size = velocity_rolling_window_size;
+    velocity_rolling_window_size = vr_window_size;
     // linear_accumulator = RollingMeanAccumulator(velocity_rolling_window_size);
     // angular_accumulator = RollingMeanAccumulator(velocity_rolling_window_size);
 

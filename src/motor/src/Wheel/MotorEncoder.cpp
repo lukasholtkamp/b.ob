@@ -57,7 +57,7 @@ void Encoder::_pulse(int gpio, int level,uint32_t tick){
 
         if(_period != 0){
           // update in a smoothed fashion
-          _period = (_old*_period)+(_new*t);
+          _period = u_int32_t((_old*double(_period))+(_new*double(t)));
 
           // return 1 pulse to the callback function
           (mycallback)(1);

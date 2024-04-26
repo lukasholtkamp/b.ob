@@ -16,7 +16,7 @@
  * Author: Enrique Fernández
  */
 
-#include "diff_drive_controller/odometry.hpp"
+#include "Odometry.hpp"
 
 namespace diff_drive_controller
 {

@@ -43,9 +43,9 @@ class Wheel
 
     Wheel() = default;
 
-    Wheel(const std::string &wheel_name, int ticks_per_rev, double radius, size_t velocity_rolling_window_size, MD::Motor &Motor, ENC::Encoder &Encoder, ALM::Alarm &Alarm);
+    Wheel(const std::string &wheel_name, int ticks_per_rev, double wheel_radius, size_t vr_window_size, MD::Motor &Motor_obj, ENC::Encoder &Encoder_obj, ALM::Alarm &Alarm_obj);
 
-    void setup(const std::string &wheel_name, int ticks_per_rev, double radius, size_t velocity_rolling_window_size, MD::Motor &Motor, ENC::Encoder &Encoder, ALM::Alarm &Alarm);
+    void setup(const std::string &wheel_name, int ticks_per_rev, double wheel_radius, size_t vr_window_size, MD::Motor &Motor_obj, ENC::Encoder &Encoder_obj, ALM::Alarm &Alarm_obj);
 
     // void init(const rclcpp::Time & time);
     

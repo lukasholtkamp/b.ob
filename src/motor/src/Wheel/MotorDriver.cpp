@@ -131,9 +131,9 @@ void Motor::setSpeed(double speed) {
   }
 
   // convert speed to percentage of max speed and map to PWM range
-  double signal = (PWM_Range/m_MaxSpeed) * ((m_MaxSpeed/100) * abs(speed));
+  double signal = (double(PWM_Range)/m_MaxSpeed) * ((m_MaxSpeed/100) * fabs(m_Speed));
 
-  gpioPWM(m_PwmPin, signal);
+  gpioPWM(m_PwmPin, int(signal));
 
 }
 
