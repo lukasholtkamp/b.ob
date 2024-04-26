@@ -1,4 +1,4 @@
-#include <iostream>                                                                                                                                                                                                                                                                                                                                                                                                                                                 MotorDriver.cpp                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+#include <iostream>
 #include "MotorAlarm.hpp"
 
 /**
@@ -37,6 +37,9 @@ void Alarm::re_cancel(void){
 * @param tick The number of microseconds since boot WARNING: this wraps around from 4294967295 to 0 roughly every 72 minutes
 */
 void Alarm::_pulse(int gpio, int level,uint32_t tick){
+  (void)gpio;
+  (void)level;
+  (void)tick;
   // if there is a change in state fo the pin, update the state
     state = gpioRead(a_Pin);
 }

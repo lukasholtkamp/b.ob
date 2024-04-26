@@ -25,6 +25,7 @@ WH::Wheel rightWheel;
 bool isRunning = false;
 void signalHandler(int signal)
 {
+    (void)signal;
     std::cout << "Received signal. Shutting down." << std::endl;
     isRunning = false;
 }
@@ -34,9 +35,9 @@ void left_wheel_pulse(int tick)
 {   
     leftWheel.update();
     if(leftWheel.Motor.getDirection() == "FORWARD")
-        leftWheel.encoder_ticks++;
+        leftWheel.encoder_ticks+=tick;
     else if(leftWheel.Motor.getDirection() == "BACKWARD")
-        leftWheel.encoder_ticks--;
+        leftWheel.encoder_ticks-=tick;
 }
 
 // Right wheel callback function
@@ -44,9 +45,9 @@ void right_wheel_pulse(int tick)
 {
     rightWheel.update();
     if(rightWheel.Motor.getDirection() == "FORWARD")
-        rightWheel.encoder_ticks++;
+        rightWheel.encoder_ticks+=tick;
     else if(rightWheel.Motor.getDirection() == "BACKWARD")
-        rightWheel.encoder_ticks--;
+        rightWheel.encoder_ticks-=tick;
 }
 
 int main()

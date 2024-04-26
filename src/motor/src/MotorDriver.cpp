@@ -84,6 +84,9 @@ std::string Motor::getDirection() const{
   {
     return "BACKWARD";
   }
+  else{
+    return "ERROR: Cannot tell which direction the motor is running";
+  }
 }
 
 /**

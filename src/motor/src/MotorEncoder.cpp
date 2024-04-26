@@ -1,4 +1,4 @@
-#include <iostream>                                                                                                                                                                                                                                                                                                                                                                                                                                                 MotorDriver.cpp                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+#include <iostream> 
 #include "MotorEncoder.hpp"
 
 /**
@@ -44,6 +44,7 @@ void Encoder::re_cancel(void){
 */
 void Encoder::_pulse(int gpio, int level,uint32_t tick){
 
+  (void)gpio;
   // time between pulses
   int32_t t;
 
