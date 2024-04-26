@@ -17,7 +17,8 @@ Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev, double radius, si
 //   resetAccumulators();
 //   timestamp_ = time;
 // }
-void Wheel::setup(const std::string &wheel_name, int ticks_per_rev, double radius, size_t velocity_rolling_window_size, MD::Motor Motor_obj, ENC::Encoder Encoder_obj, ALM::Alarm Alarm_obj)
+
+void Wheel::setup(const std::string &wheel_name, int ticks_per_rev, double radius, size_t velocity_rolling_window_size, MD::Motor &Motor_obj, ENC::Encoder &Encoder_obj, ALM::Alarm &Alarm_obj)
 {
     name = wheel_name;
     
@@ -33,8 +34,6 @@ void Wheel::setup(const std::string &wheel_name, int ticks_per_rev, double radiu
     old_velocity = 0;
     radius = radius;
     rads_per_tick = (2*M_PI)/ticks_per_rev;
-
-    Alarm_state = Alarm_obj.getState();
 
     velocity_rolling_window_size = velocity_rolling_window_size;
     // linear_accumulator = RollingMeanAccumulator(velocity_rolling_window_size);
