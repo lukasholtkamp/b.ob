@@ -9,8 +9,8 @@
 #include "MotorEncoder.hpp"
 #include "MotorAlarm.hpp"
 
-#define KP  1
-#define KI  0   
+#define KP  10
+#define KI  5   
 #define KD  0    
 
 namespace WH{
@@ -18,12 +18,11 @@ namespace WH{
 class Wheel
 {   
   public:
+    MD::Motor& Motor;
+    ENC::Encoder& Encoder;
+    ALM::Alarm& Alarm;
+
     std::string name;
-
-    class MD::Motor Motor;
-    class ENC::Encoder Encoder;
-    class ALM::Alarm Alarm;
-
     int encoder_ticks = 0;
     double command = 0;
     double position = 0;
@@ -34,21 +33,10 @@ class Wheel
     double sum_e = 0;
     double radius = 0;
     double rads_per_tick = 0;
-    size_t velocity_rolling_window_size = 0;
-    
-    // RollingMeanAccumulator linear_accumulator;
-    // RollingMeanAccumulator angular_accumulator;
 
-    // rclcpp::Time timestamp_;
 
-    Wheel() = default;
+    Wheel(const std::string &wheel_name, int ticks_per_rev, double wheel_radius, MD::Motor& Motor_obj, ENC::Encoder& Encoder_obj, ALM::Alarm& Alarm_obj);
 
-    Wheel(const std::string &wheel_name, int ticks_per_rev, double wheel_radius, size_t vr_window_size, MD::Motor &Motor_obj, ENC::Encoder &Encoder_obj, ALM::Alarm &Alarm_obj);
-
-    void setup(const std::string &wheel_name, int ticks_per_rev, double wheel_radius, size_t vr_window_size, MD::Motor &Motor_obj, ENC::Encoder &Encoder_obj, ALM::Alarm &Alarm_obj);
-
-    // void init(const rclcpp::Time & time);
-    
     double calculate_encoder_angle();
 
     void update();
@@ -56,6 +44,7 @@ class Wheel
     void set_speed(double speed);
 
     double PID(double error);
+
 };
 
 }

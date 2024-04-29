@@ -9,3 +9,5 @@ cd build
 cmake ..
 
 make
+
+sudo ./Wheel_test

@@ -16,7 +16,8 @@
 #define RIGHT_DIRECTION_PIN     19 //<-- Pin number for the direction of the right motor
 #define RIGHT_PWM_PIN           12 //<-- Pin number for the pwm of the right motor
 
-#define MAX_SPEED               100.0 //<-- The maximum speed of the robot
+#define MAX_SPEED               255 //<-- The maximum speed of the robot
+#define MIN_SPEED               13 //<-- The maximum speed of the robot
 
 #define CCW 1 //<-- Value to be written to direction pin for motor to go counterclockwise
 #define CW 0 //<-- Value to be written to direction pin for motor to go clockwise
@@ -33,7 +34,8 @@ namespace MD{
   private:
     int m_DirectionPin=0;
     int m_PwmPin=0; //<-- Pin numbers
-    double m_MaxSpeed=0; //<-- Speed limits
+    int m_MaxSpeed=0; //<-- Speed limits
+    int m_MinSpeed=0; //<-- Speed limits
     double m_Speed=0; //<-- Current speed
     bool m_Direction=0; //<-- Current direction
     bool m_FDirection=0; //<-- Direction considered as Forward

@@ -14,7 +14,8 @@ namespace MD{
 Motor::Motor(int directionPin,int pwmPin, double maxSpeed,int direction){
   m_DirectionPin = directionPin;
   m_PwmPin = pwmPin;
-  m_MaxSpeed = maxSpeed;
+  m_MaxSpeed = int((maxSpeed/100) * MAX_SPEED);
+  m_MinSpeed = MIN_SPEED;
   m_FDirection = direction;
   m_Speed = 0.0;
   m_Direction = direction;
@@ -123,17 +124,17 @@ void Motor::setSpeed(double speed) {
   }
   
   // ensure values are inbetween -100 and 100
-  if (speed>100){
-    m_Speed = 100;
+  if (speed>m_MaxSpeed){
+    m_Speed = m_MaxSpeed;
   }
-  else if (speed<-100){
-    m_Speed = -100;
+  else if (speed<-m_MaxSpeed){
+    m_Speed = -m_MaxSpeed;
   }
 
   // convert speed to percentage of max speed and map to PWM range
-  double signal = (double(PWM_Range)/m_MaxSpeed) * ((m_MaxSpeed/100) * fabs(m_Speed));
+  double signal = fabs(m_Speed);
 
-  gpioPWM(m_PwmPin, int(signal));
+  gpioPWM(m_PwmPin, signal);
 
 }
 
