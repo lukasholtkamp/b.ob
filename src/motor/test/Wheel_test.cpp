@@ -25,6 +25,8 @@ int right_wheel_pulse_count = 0;
 std::string left_wheel_direction = "IDLE";
 std::string right_wheel_direction = "IDLE";
 
+int tpr = 130;
+
 void printStatus(const WH::Wheel& left, const WH::Wheel& right);
 
 bool isRunning = false;
@@ -101,13 +103,13 @@ int main()
     ENC::Encoder leftEncoder(LEFT_ENCODER_PIN,left_wheel_pulse);
     ALM::Alarm leftAlarm(LEFT_ALARM_PIN);
 
-    WH::Wheel leftWheel("left_wheel",69,0.08255,leftMotor, leftEncoder, leftAlarm);
+    WH::Wheel leftWheel("left_wheel",tpr,0.084,leftMotor, leftEncoder, leftAlarm);
 
     MD::Motor rightMotor(RIGHT_DIRECTION_PIN, RIGHT_PWM_PIN, 15,CW);
     ENC::Encoder rightEncoder(RIGHT_ENCODER_PIN,right_wheel_pulse);
     ALM::Alarm rightAlarm(RIGHT_ALARM_PIN);
 
-    WH::Wheel rightWheel("right_wheel",69,0.08255,rightMotor, rightEncoder, rightAlarm);
+    WH::Wheel rightWheel("right_wheel",tpr,0.084,rightMotor, rightEncoder, rightAlarm);
 
     std::cout << "SUCCESS" << std::endl;
 
@@ -115,8 +117,8 @@ int main()
     
     while (isRunning)
     {   
-        rightWheel.set_speed(255);
-        leftWheel.set_speed(255);
+        rightWheel.set_speed(-255);
+        leftWheel.set_speed(-255);
         set_motor_direction(leftWheel.Motor.getDirection(),rightWheel.Motor.getDirection());
         read_encoder_values(&leftWheel.encoder_ticks, &rightWheel.encoder_ticks);
         rightWheel.update();
