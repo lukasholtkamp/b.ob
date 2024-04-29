@@ -4,13 +4,15 @@
 
 #include <string>
 #include <cmath>
+#include <ctime>
+#include <chrono>
 
 #include "MotorDriver.hpp"
 #include "MotorEncoder.hpp"
 #include "MotorAlarm.hpp"
 
-#define KP  10
-#define KI  5   
+#define KP  20
+#define KI  10   
 #define KD  0    
 
 namespace WH{
@@ -25,6 +27,7 @@ class Wheel
     std::string name;
     int encoder_ticks = 0;
     double command = 0;
+    double u = 0;
     double position = 0;
     double velocity = 0;
     double old_position = 0;

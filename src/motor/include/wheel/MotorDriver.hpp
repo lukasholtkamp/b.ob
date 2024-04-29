@@ -17,7 +17,7 @@
 #define RIGHT_PWM_PIN           12 //<-- Pin number for the pwm of the right motor
 
 #define MAX_SPEED               255 //<-- The maximum speed of the robot
-#define MIN_SPEED               13 //<-- The maximum speed of the robot
+#define MIN_SPEED               14 //<-- The maximum speed of the robot
 
 #define CCW 1 //<-- Value to be written to direction pin for motor to go counterclockwise
 #define CW 0 //<-- Value to be written to direction pin for motor to go clockwise

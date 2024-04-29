@@ -13,6 +13,7 @@ Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev, double wheel_radi
     Alarm(Alarm_obj),
     encoder_ticks(0),
     command(0),
+    u(0),
     position(0),
     velocity(0),
     old_position(0),
@@ -31,7 +32,6 @@ double Wheel::calculate_encoder_angle()
 
 void Wheel::set_speed(double speed){
     command = speed;
-    Motor.setSpeed(speed);
 }
 
 void Wheel::update(){
@@ -39,8 +39,22 @@ void Wheel::update(){
     old_position = position;
     old_velocity = velocity;
 
+    auto time_stamp_start = std::chrono::high_resolution_clock::now();
     position = calculate_encoder_angle()*radius;
-    velocity = (Encoder.getMotorSpeed()*2*M_PI*radius) / 60.0;
+    auto time_stamp_end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> diff = time_stamp_end - time_stamp_start;
+
+    velocity = (position - old_position) / (diff.count() * pow(10, 6));
+
+    u = PID(command-velocity);
+
+    if(u>255){
+        u=255;
+    }
+
+    Motor.setSpeed(u);
+
 }
 
 double Wheel::PID(double e){
