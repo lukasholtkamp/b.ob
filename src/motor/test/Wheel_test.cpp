@@ -124,7 +124,7 @@ int main()
 
     isRunning = true;
 
-    double speed = 0.1;
+    double speed = 0.2;
     
     while (isRunning)
     {   
@@ -138,7 +138,7 @@ int main()
         leftWheel.update();
         printStatus(leftWheel,rightWheel);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        system("clear");
+        // system("clear");
 
         // if(fabs(rightWheel.velocity)>=speed){
         //     isRunning = false;
@@ -158,11 +158,13 @@ int main()
 
 void printStatus(const WH::Wheel& pleftWheel,const WH::Wheel& prightWheel)
 {
-    std::cout << fmt::format("Wheel command speed in m/s on left: {:.2f} and right: {:.2f}", pleftWheel.command,prightWheel.command) << std::endl;
-    std::cout << fmt::format("Wheel speed signal on left: {:.2f} and right: {:.2f}", pleftWheel.u,prightWheel.u) << std::endl;
-    std::cout << fmt::format("Wheel direction on left: {} and right: {}", pleftWheel.Motor.getDirection(),prightWheel.Motor.getDirection()) << std::endl;
-    std::cout << fmt::format("Wheel position in m on left: {} and right: {}", pleftWheel.position,prightWheel.position) << std::endl;
-    std::cout << fmt::format("Motors alarm state on left: {} and right: {}", pleftWheel.Alarm.getState(),prightWheel.Alarm.getState()) << std::endl;
+    // std::cout << fmt::format("Wheel command speed in m/s on left: {:.2f} and right: {:.2f}", pleftWheel.command,prightWheel.command) << std::endl;
+    // std::cout << fmt::format("Wheel speed signal on left: {:.2f} and right: {:.2f}", pleftWheel.u,prightWheel.u) << std::endl;
+    // std::cout << fmt::format("Wheel direction on left: {} and right: {}", pleftWheel.Motor.getDirection(),prightWheel.Motor.getDirection()) << std::endl;
+    // std::cout << fmt::format("Wheel position in m on left: {} and right: {}", pleftWheel.position,prightWheel.position) << std::endl;
+    // std::cout << fmt::format("Motors alarm state on left: {} and right: {}", pleftWheel.Alarm.getState(),prightWheel.Alarm.getState()) << std::endl;
     std::cout << fmt::format("Wheel speed in RPM on left: {:.2f} and right: {:.2f}", pleftWheel.Encoder.getMotorSpeed(),prightWheel.Encoder.getMotorSpeed()) << std::endl;
-    std::cout << fmt::format("Wheel speed in m/s on left: {:.2f} and right: {:.2f}", pleftWheel.velocity, prightWheel.velocity) << std::endl;
+    std::cout << fmt::format("Wheel median period on left: {} and right: {}", pleftWheel.Encoder.getPeriod(),prightWheel.Encoder.getPeriod()) << std::endl;
+    // std::cout << fmt::format("Wheel median period on left: {:.2f} and right: {:.2f}", pleftWheel.Encoder.getMotorSpeed(),prightWheel.Encoder.getMotorSpeed()) << std::endl;
+    // std::cout << fmt::format("Wheel speed in m/s on left: {:.2f} and right: {:.2f}", pleftWheel.velocity, prightWheel.velocity) << std::endl;
 }

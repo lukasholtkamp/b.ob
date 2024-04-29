@@ -9,6 +9,9 @@
 #include <pigpio.h> //<-- Used to create the PWM pins on the Raspberry Pi
 #include <stdint.h> //<-- Used to define the uint8_t type
 #include <stdint.h> //<-- Used to define the uint
+#include <bits/stdc++.h>
+
+#include "Rolling_median.hpp"
 
 #define LEFT_ENCODER_PIN      23 //<-- Pin number for the left motor encoder 
 #define RIGHT_ENCODER_PIN     24 //<-- Pin number for the right motor encoder 
@@ -31,6 +34,10 @@ namespace ENC{
     double _old = 0; //<-- Weighting for new and old reading for smoothing 
     u_int32_t _high_tick = 0;
     u_int32_t _period = 0; //<-- Variables for timing of pulse signal
+    
+    rolling_median mperiod = rolling_median(10);
+
+    u_int32_t med_period = 0;
 
     encoderCB_t mycallback = 0; //<-- callback function for tracking number of pulses
 

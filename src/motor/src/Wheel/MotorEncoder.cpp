@@ -65,6 +65,9 @@ void Encoder::_pulse(int gpio, int level,uint32_t tick){
         else{
           _period = t;
         }
+
+        mperiod.insert(_period);
+        med_period = mperiod.getMedian();
     }
     _high_tick = tick;
   }
@@ -102,7 +105,7 @@ u_int32_t Encoder::_tick_diff(u_int32_t o_tick, u_int32_t c_tick){
  */
 double Encoder::getFreq() const{
   if(_period != 0){
-    return 1000000.0/_period;
+    return 1000000.0/ _period;
   }
   else{
     return 0.0;
@@ -124,7 +127,7 @@ double Encoder::getMotorSpeed() const{
  * @return period in microseconds
  */ 
 u_int32_t Encoder::getPeriod() const{
-  return _period;
+  return med_period;
 }
 
 
