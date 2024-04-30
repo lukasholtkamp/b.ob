@@ -3,7 +3,7 @@
 
 class rolling_median{
     public:
-      std::list <u_int32_t> arr;
+      std::deque<u_int32_t> arr;
       int window_size;
 
       rolling_median(int ws){
@@ -22,13 +22,25 @@ class rolling_median{
 
       double getMedian(){
 
-        std::list <u_int32_t> tmp = arr;
+        std::deque<u_int32_t>tmp = arr;
 
-        tmp.sort();
+        // Sort the deque
+        sort(tmp.begin(), tmp.end());
 
-        tmp
+        // finding size of deque
+        int n = tmp.size();
 
-        return (a + b) * 0.5;
+        // Check if the number of elements is odd
+        double median;
+        if (n % 2 != 0)
+            median = (double)tmp[n / 2];
+        else
+        // If the number of elements is even, return the
+        // average of the two middle elements
+        median = (double)(tmp[(n - 1) / 2] + tmp[n / 2]) / 2.0;
+
+
+        return median;
       }
 
   };
