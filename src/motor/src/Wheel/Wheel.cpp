@@ -21,7 +21,10 @@ Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev, double wheel_radi
     old_e(0),
     sum_e(0),
     radius(wheel_radius),
-    rads_per_tick((2*M_PI)/ticks_per_rev)
+    rads_per_tick((2*M_PI)/ticks_per_rev),
+    Kp(0),
+    Ki(0),
+    Kd(0)
     {}
 
 
@@ -59,10 +62,18 @@ void Wheel::update(){
 
 }
 
+void Wheel::set_PID(int Kp_gain, int Ki_gain,int Kd_gain){
+    Kp = Kp_gain;
+    Ki = Ki_gain;
+    Kd = Kd_gain;
+}
+
 double Wheel::PID(double e,double dt){
     sum_e += e*dt*pow(10,6);
     double dedt = (old_e - e)/(dt*pow(10,6));
-    return KP*e + KI*sum_e + KD*dedt;
+    return Kp*e + Ki*sum_e + Kd*dedt;
 }
+
+
 
 }

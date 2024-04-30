@@ -117,11 +117,15 @@ int main()
 
     WH::Wheel leftWheel("left_wheel",LEFTWHEEL_PULSES_PER_REV,WHEEL_RADIUS,leftMotor, leftEncoder, leftAlarm);
 
+    leftWheel.set_PID(75.0,175.0,3.0);  
+
     MD::Motor rightMotor(RIGHT_DIRECTION_PIN, RIGHT_PWM_PIN,100,CW);
     ENC::Encoder rightEncoder(RIGHT_ENCODER_PIN,right_wheel_pulse, RIGHTWHEEL_PULSES_PER_REV);
     ALM::Alarm rightAlarm(RIGHT_ALARM_PIN);
 
     WH::Wheel rightWheel("right_wheel",RIGHTWHEEL_PULSES_PER_REV,WHEEL_RADIUS,rightMotor, rightEncoder, rightAlarm);
+
+    rightWheel.set_PID(75.0,175.0,3.0); 
 
     std::cout << "SUCCESS" << std::endl;
 

@@ -9,11 +9,7 @@
 
 #include "MotorDriver.hpp"
 #include "MotorEncoder.hpp"
-#include "MotorAlarm.hpp"
-
-#define KP  75.0
-#define KI  175.0
-#define KD  3.0   
+#include "MotorAlarm.hpp" 
 
 namespace WH{
 
@@ -36,7 +32,9 @@ class Wheel
     double sum_e = 0;
     double radius = 0;
     double rads_per_tick = 0;
-
+    double Kp = 0;
+    double Ki = 0;
+    double Kd = 0;
 
     Wheel(const std::string &wheel_name, int ticks_per_rev, double wheel_radius, MD::Motor& Motor_obj, ENC::Encoder& Encoder_obj, ALM::Alarm& Alarm_obj);
 
@@ -45,6 +43,8 @@ class Wheel
     void update();
 
     void set_speed(double speed);
+
+    void set_PID(int Kp_gain, int Ki_gain, int Kd_gain);
 
     double PID(double error, double dt);
 
