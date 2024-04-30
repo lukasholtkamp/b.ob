@@ -11,9 +11,9 @@
 #include "MotorEncoder.hpp"
 #include "MotorAlarm.hpp"
 
-#define KP  112.0
-#define KI  0
-#define KD  0    
+#define KP  75.0
+#define KI  175.0
+#define KD  3.0   
 
 namespace WH{
 

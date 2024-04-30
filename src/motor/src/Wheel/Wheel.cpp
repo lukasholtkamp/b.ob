@@ -60,8 +60,8 @@ void Wheel::update(){
 }
 
 double Wheel::PID(double e,double dt){
-    sum_e += e*dt;
-    double dedt = (old_e - e)/dt;
+    sum_e += e*dt*pow(10,6);
+    double dedt = (old_e - e)/(dt*pow(10,6));
     return KP*e + KI*sum_e + KD*dedt;
 }
 

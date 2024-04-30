@@ -17,7 +17,7 @@
 #include "MotorAlarm.hpp"
 #include "MotorAlarm.cpp"
 
-#define LEFTWHEEL_PULSES_PER_REV 65
+#define LEFTWHEEL_PULSES_PER_REV 98
 #define RIGHTWHEEL_PULSES_PER_REV 98
 
 #define WHEEL_RADIUS 0.084
@@ -143,9 +143,10 @@ int main()
         
         printStatus(leftWheel,rightWheel);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        
         system("clear");
 
-        // if(rightWheel.encoder_ticks>=98){
+        // if(rightWheel.position>=1){
         //     isRunning = false;
         // }
         // else{
