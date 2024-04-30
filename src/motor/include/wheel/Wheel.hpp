@@ -12,7 +12,7 @@
 #include "MotorAlarm.hpp"
 
 #define KP  20
-#define KI  10   
+#define KI  0   
 #define KD  0    
 
 namespace WH{

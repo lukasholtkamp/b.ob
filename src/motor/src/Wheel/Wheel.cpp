@@ -32,17 +32,18 @@ double Wheel::calculate_encoder_angle()
 
 void Wheel::set_speed(double speed){
     command = speed;
-    // Motor.setSpeed(100);
 }
 
 void Wheel::update(){
 
+    auto time_stamp_start = std::chrono::high_resolution_clock::now();
+
     old_position = position;
     old_velocity = velocity;
 
-    auto time_stamp_start = std::chrono::high_resolution_clock::now();
-    position = calculate_encoder_angle()*radius;
     auto time_stamp_end = std::chrono::high_resolution_clock::now();
+
+    position = calculate_encoder_angle()*radius;
 
     std::chrono::duration<double> diff = time_stamp_end - time_stamp_start;
 

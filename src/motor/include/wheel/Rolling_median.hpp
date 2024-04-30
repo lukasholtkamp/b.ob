@@ -23,7 +23,7 @@ class rolling_median{
       double getMedian(){
 
         std::deque<u_int32_t>tmp = arr;
-
+        
         // Sort the deque
         sort(tmp.begin(), tmp.end());
 

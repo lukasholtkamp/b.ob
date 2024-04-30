@@ -105,7 +105,7 @@ u_int32_t Encoder::_tick_diff(u_int32_t o_tick, u_int32_t c_tick){
  */
 double Encoder::getFreq() const{
   if(_period != 0){
-    return 1000000.0/ _period;
+    return 1000000.0/ med_period;
   }
   else{
     return 0.0;
