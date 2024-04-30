@@ -10,9 +10,11 @@
 
 namespace ENC{
 	
-Encoder::Encoder(int gpio, encoderCB_t callback){
+Encoder::Encoder(int gpio, encoderCB_t callback, int tpr){
   e_Pin = gpio;
   mycallback = callback;
+
+  ticks_per_rev = tpr;
 
   _weighting=0.1;
   _new=1.0-_weighting;
@@ -119,7 +121,7 @@ double Encoder::getFreq() const{
  * @details Formula found in BLDC-8015A manual and the number of motor pole pairs found at https://docs.odriverobotics.com/v/0.5.4/hoverboard.html
  */
 double Encoder::getMotorSpeed() const{
-  return (60*getFreq())/(15*6);
+  return (60*getFreq())/double(ticks_per_rev);
 }
 
 /**

@@ -11,8 +11,8 @@
 #include "MotorEncoder.hpp"
 #include "MotorAlarm.hpp"
 
-#define KP  20
-#define KI  0   
+#define KP  112.0
+#define KI  0
 #define KD  0    
 
 namespace WH{
@@ -46,7 +46,7 @@ class Wheel
 
     void set_speed(double speed);
 
-    double PID(double error);
+    double PID(double error, double dt);
 
 };
 

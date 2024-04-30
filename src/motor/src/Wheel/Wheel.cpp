@@ -41,27 +41,27 @@ void Wheel::update(){
     old_position = position;
     old_velocity = velocity;
 
-    auto time_stamp_end = std::chrono::high_resolution_clock::now();
-
     position = calculate_encoder_angle()*radius;
+    
+    auto time_stamp_end = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> diff = time_stamp_end - time_stamp_start;
 
-    velocity = (position - old_position) / (diff.count() * pow(10, 6));
+    velocity = 2* radius * M_PI * (Motor.getSpeed()/60);
 
-    u = PID(command-velocity);
+    u = PID(command-velocity,diff.count());
 
     if(u>255){
         u=255;
     }
 
-    // Motor.setSpeed(u);
+    Motor.setSpeed(u);
 
 }
 
-double Wheel::PID(double e){
-    sum_e += e;
-    double dedt = old_e - e;
+double Wheel::PID(double e,double dt){
+    sum_e += e*dt;
+    double dedt = (old_e - e)/dt;
     return KP*e + KI*sum_e + KD*dedt;
 }
 

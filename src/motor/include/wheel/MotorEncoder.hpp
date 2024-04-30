@@ -14,7 +14,7 @@
 #include "Rolling_median.hpp"
 
 #define LEFT_ENCODER_PIN      23 //<-- Pin number for the left motor encoder 
-#define RIGHT_ENCODER_PIN     24 //<-- Pin number for the right motor encoder 
+#define RIGHT_ENCODER_PIN     24 //<-- Pin number for the right motor encoder
 
 typedef void (*encoderCB_t)(int); //<-- callback function for tracking number of pulses
 
@@ -31,7 +31,8 @@ namespace ENC{
     int e_Pin = 0; //<-- encoder Pin numbers
     double _weighting = 0;
     double _new = 0;
-    double _old = 0; //<-- Weighting for new and old reading for smoothing 
+    double _old = 0; //<-- Weighting for new and old reading for smoothing
+    int ticks_per_rev = 0;
     u_int32_t _high_tick = 0;
     u_int32_t _period = 0; //<-- Variables for timing of pulse signal
     
@@ -57,7 +58,7 @@ namespace ENC{
    */
     Encoder() = default;
 
-    Encoder(int gpio, encoderCB_t callback);
+    Encoder(int gpio, encoderCB_t callback, int tpr);
 
     void re_cancel(void);//<--Cancels the reader and releases resources.
 

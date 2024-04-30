@@ -17,6 +17,11 @@
 #include "MotorAlarm.hpp"
 #include "MotorAlarm.cpp"
 
+#define LEFTWHEEL_PULSES_PER_REV 65
+#define RIGHTWHEEL_PULSES_PER_REV 98
+
+#define WHEEL_RADIUS 0.084
+
 // Initialize pulse counters
 int left_wheel_pulse_count = 0;
 int right_wheel_pulse_count = 0;
@@ -27,8 +32,6 @@ double right_input_sig = 0;
 // Initialize wheel directions
 std::string left_wheel_direction = "IDLE";
 std::string right_wheel_direction = "IDLE";
-
-int tpr = 130;
 
 void printStatus(const WH::Wheel& left, const WH::Wheel& right);
 
@@ -62,7 +65,7 @@ void read_motor_signal(double linsig, double rinsig)
 // Left wheel callback function
 void left_wheel_pulse(int tick)
 {   
-    if(left_wheel_direction == "FORWARD" && fabs(left_input_sig)>MIN_SPEED)
+    if(left_wheel_direction == "FORWARD" && fabs(left_input_sig)>=MIN_SPEED)
         left_wheel_pulse_count+=tick;
     else if(left_wheel_direction== "BACKWARD" && fabs(left_input_sig)>=MIN_SPEED)
         left_wheel_pulse_count-=tick;
@@ -71,7 +74,7 @@ void left_wheel_pulse(int tick)
 // Right wheel callback function
 void right_wheel_pulse(int tick)
 {
-    if(right_wheel_direction == "FORWARD" && fabs(right_input_sig)>MIN_SPEED)
+    if(right_wheel_direction == "FORWARD" && fabs(right_input_sig)>=MIN_SPEED)
         right_wheel_pulse_count+=tick;
     else if(right_wheel_direction == "BACKWARD" && fabs(right_input_sig)>=MIN_SPEED)
         right_wheel_pulse_count-=tick;
@@ -109,28 +112,28 @@ int main()
     std::cout << fmt::format("Configuring Left & Right Wheel");
 
     MD::Motor leftMotor(LEFT_DIRECTION_PIN, LEFT_PWM_PIN, 100,CCW);
-    ENC::Encoder leftEncoder(LEFT_ENCODER_PIN,left_wheel_pulse);
+    ENC::Encoder leftEncoder(LEFT_ENCODER_PIN,left_wheel_pulse, LEFTWHEEL_PULSES_PER_REV);
     ALM::Alarm leftAlarm(LEFT_ALARM_PIN);
 
-    WH::Wheel leftWheel("left_wheel",tpr,0.084,leftMotor, leftEncoder, leftAlarm);
+    WH::Wheel leftWheel("left_wheel",LEFTWHEEL_PULSES_PER_REV,WHEEL_RADIUS,leftMotor, leftEncoder, leftAlarm);
 
-    MD::Motor rightMotor(RIGHT_DIRECTION_PIN, RIGHT_PWM_PIN, 100,CW);
-    ENC::Encoder rightEncoder(RIGHT_ENCODER_PIN,right_wheel_pulse);
+    MD::Motor rightMotor(RIGHT_DIRECTION_PIN, RIGHT_PWM_PIN,100,CW);
+    ENC::Encoder rightEncoder(RIGHT_ENCODER_PIN,right_wheel_pulse, RIGHTWHEEL_PULSES_PER_REV);
     ALM::Alarm rightAlarm(RIGHT_ALARM_PIN);
 
-    WH::Wheel rightWheel("right_wheel",tpr,0.084,rightMotor, rightEncoder, rightAlarm);
+    WH::Wheel rightWheel("right_wheel",RIGHTWHEEL_PULSES_PER_REV,WHEEL_RADIUS,rightMotor, rightEncoder, rightAlarm);
 
     std::cout << "SUCCESS" << std::endl;
 
     isRunning = true;
 
-    double speed = 0.2;
+    double speed = 0.5;
     
     while (isRunning)
     {   
         rightWheel.set_speed(speed);
         leftWheel.set_speed(speed);
-        
+    
         set_motor_direction(leftWheel.Motor.getDirection(),rightWheel.Motor.getDirection());
         read_encoder_values(&leftWheel.encoder_ticks, &rightWheel.encoder_ticks);
         read_motor_signal(leftWheel.u,rightWheel.u);
@@ -142,7 +145,7 @@ int main()
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         system("clear");
 
-        // if(fabs(rightWheel.velocity)>=speed){
+        // if(rightWheel.encoder_ticks>=98){
         //     isRunning = false;
         // }
         // else{
@@ -161,11 +164,12 @@ int main()
 
 void printStatus(const WH::Wheel& pleftWheel,const WH::Wheel& prightWheel)
 {
+    // std::cout << fmt::format("Wheel pulses on left: {} and right: {}", pleftWheel.encoder_ticks,prightWheel.encoder_ticks) << std::endl;
     std::cout << fmt::format("Wheel command speed in m/s on left: {:.2f} and right: {:.2f}", pleftWheel.command,prightWheel.command) << std::endl;
+    std::cout << fmt::format("Wheel speed in m/s on left: {:.2f} and right: {:.2f}", pleftWheel.velocity, prightWheel.velocity) << std::endl;
     std::cout << fmt::format("Wheel speed signal on left: {:.2f} and right: {:.2f}", pleftWheel.u,prightWheel.u) << std::endl;
     std::cout << fmt::format("Wheel direction on left: {} and right: {}", pleftWheel.Motor.getDirection(),prightWheel.Motor.getDirection()) << std::endl;
     std::cout << fmt::format("Wheel position in m on left: {} and right: {}", pleftWheel.position,prightWheel.position) << std::endl;
     std::cout << fmt::format("Motors alarm state on left: {} and right: {}", pleftWheel.Alarm.getState(),prightWheel.Alarm.getState()) << std::endl;
     std::cout << fmt::format("Wheel speed in RPM on left: {:.2f} and right: {:.2f}", pleftWheel.Encoder.getMotorSpeed(),prightWheel.Encoder.getMotorSpeed()) << std::endl;
-    std::cout << fmt::format("Wheel speed in m/s on left: {:.2f} and right: {:.2f}", pleftWheel.velocity, prightWheel.velocity) << std::endl;
 }
