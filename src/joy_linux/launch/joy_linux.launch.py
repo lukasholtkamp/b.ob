@@ -2,6 +2,7 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument
+from pathlib import Path
 
 import os
 from ament_index_python.packages import get_package_share_directory
@@ -9,7 +10,7 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
     #use_sim_time = LaunchConfiguration('use_sim_time')
 
-    joy_params = os.path.join(get_package_share_directory('b.ob'),'src','joy_linux','config','BasicDrive.yaml')
+    joy_params = os.path.join(Path.cwd(),'config','BasicDrive.yaml')
 
     joy_linux_node = Node(
             package='joy_linux',
@@ -40,9 +41,9 @@ def generate_launch_description():
 
     return LaunchDescription([
         #DeclareLaunchArgument(
-         #   'use_sim_time',
-          #  default_value='false',
-           # description='Use sim time if true'),
+        #   'use_sim_time',
+        #    default_value='false',
+        #     description='Use sim time if true'),
         joy_linux_node,
         sub_node,
         teleop_node,
