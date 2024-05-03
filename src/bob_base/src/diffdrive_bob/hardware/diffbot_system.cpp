@@ -88,6 +88,10 @@ void right_wheel_pulse(int tick)
         right_wheel_pulse_count-=tick;
 }
 
+
+// Initialize the pigpio library
+int gpioResult = gpioInitialise();
+
 MD::Motor leftMotor(LEFT_DIRECTION_PIN, LEFT_PWM_PIN, 100,CCW);
 ENC::Encoder leftEncoder(LEFT_ENCODER_PIN,left_wheel_pulse, LEFTWHEEL_PULSES_PER_REV);
 ALM::Alarm leftAlarm(LEFT_ALARM_PIN);
@@ -157,30 +161,7 @@ std::vector<hardware_interface::CommandInterface> DiffDriveBobHardware::export_c
 hardware_interface::CallbackReturn DiffDriveBobHardware::on_configure(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  RCLCPP_INFO(rclcpp::get_logger("DiffDriveBobHardware"), "Configuring motors and encoders...");
-
-  int gpioResult = 0;
-
-  // Disable built-in pigpio signal handling
-  // Must be called before gpioInitialise()
-  int cfg = gpioCfgGetInternals();
-  cfg |= PI_CFG_NOSIGHANDLER;
-  gpioCfgSetInternals(cfg);
-
-  signal(SIGINT, signalHandler);
-
-  // Initialize the pigpio library
-  gpioResult = gpioInitialise();
-
-  if (gpioResult == PI_INIT_FAILED)
-  {
-      RCLCPP_FATAL(
-        rclcpp::get_logger("DiffDriveBobHardware"),
-        "Error value = '%i'", gpioResult);
-      return hardware_interface::CallbackReturn::ERROR;   
-  }
-
-  signal(SIGINT, signalHandler);                          
+  RCLCPP_INFO(rclcpp::get_logger("DiffDriveBobHardware"), "Configuring motors and encoders...");                       
 
   RCLCPP_INFO(rclcpp::get_logger("DiffDriveBobHardware"), "Successfully configured motors and encoders!");
 
