@@ -1,4 +1,4 @@
-#include "wheel.hpp"
+#include "lidarbot_base/wheel.hpp"
 
 Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev)
 {

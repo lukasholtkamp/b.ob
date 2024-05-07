@@ -1,5 +1,5 @@
-#ifndef _BASE__WHEEL_H_
-#define _BASE__WHEEL_H_
+#ifndef _LIDARBOT_BASE__WHEEL_H_
+#define _LIDARBOT_BASE__WHEEL_H_
 
 #include <string>
 #include <cmath>
