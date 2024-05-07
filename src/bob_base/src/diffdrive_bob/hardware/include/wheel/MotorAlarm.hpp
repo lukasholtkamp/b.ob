@@ -6,7 +6,7 @@
 #ifndef MOTOR_ALARM_HPP
 #define MOTOR_ALARM_HPP
 
-#include <pigpio.h> //<-- Used to read the gpio on the Raspberry Pi
+#include <pigpiod_if2.h> //<-- Used to read the gpio on the Raspberry Pi
 
 #define LEFT_ALARM_PIN      22 //<-- Pin number for the direction of the left motor
 #define RIGHT_ALARM_PIN     25 //<-- Pin number for the pwm of the left motor
@@ -23,10 +23,11 @@ namespace ALM{
   private:
     int a_Pin = 0; //<-- alarm Pin numbers
     int state = 0; //<-- state of alarm pin (1 = no alarm, 0 = alarm)
+    int pi = 0;
 
-    void _pulse(int gpio, int level, uint32_t tick); //<-- function gets called everytime there is a change on the a_Pin
+    void _pulse(int pi, u_int gpio, u_int level, uint32_t tick); //<-- function gets called everytime there is a change on the a_Pin
 
-    static void _pulseEx(int gpio, int level, uint32_t tick, void *user);//<-- function gets called everytime there is a change on the a_Pin
+    static void _pulseEx(int pi, u_int gpio, u_int level, uint32_t tick, void *user);//<-- function gets called everytime there is a change on the a_Pin
 
   public:
   /**
@@ -36,7 +37,7 @@ namespace ALM{
    */
     Alarm() = default;
     
-    Alarm(int gpio);
+    Alarm(int pi_val,int gpio);
 
     void re_cancel(void); //<--Cancels the reader and releases resources.
 

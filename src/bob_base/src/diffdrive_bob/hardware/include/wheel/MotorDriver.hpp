@@ -6,7 +6,7 @@
 #ifndef MOTOR_DRIVER_HPP
 #define MOTOR_DRIVER_HPP
 
-#include <pigpio.h> //<-- Used to create the PWM pins on the Raspberry Pi
+#include <pigpiod_if2.h> //<-- Used to create the PWM pins on the Raspberry Pi
 #include <stdint.h> //<-- Used to define the uint
 #include <string>
 #include <math.h>
@@ -40,6 +40,7 @@ namespace MD{
     bool m_Direction=0; //<-- Current direction
     bool m_FDirection=0; //<-- Direction considered as Forward
     u_int PWM_Range=0; //<-- PWM range. Default is 255 but a bigger range can be chosen to get finer speed tuning
+    int pi = 0;
 
   public:
   /**
@@ -51,7 +52,7 @@ namespace MD{
    */
     Motor() = default;
 
-    Motor(int directionPin, int pwmPin, double maxSpeed, int direction);
+    Motor(int pi_var,int directionPin, int pwmPin, double maxSpeed, int direction);
 
     int getPwmPin() const; //<-- Returns the pwm pin number
 

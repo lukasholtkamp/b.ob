@@ -24,11 +24,11 @@ Encoder::Encoder(int gpio, encoderCB_t callback){
   _period = 0;
   
   // set pins to input mode with a pullup restor
-  gpioSetMode(gpio,PI_INPUT);
-  gpioSetPullUpDown(gpio,PI_PUD_UP);
+  set_mode(gpio,PI_INPUT);
+  set_pull_up_down(gpio,PI_PUD_UP);
 
   // set alert function for changes in the signal
-  gpioSetAlertFuncEx(gpio,_pulseEx,this);
+  callback_ex(gpio,_pulseEx,this);
   
 }
 
@@ -36,7 +36,7 @@ Encoder::Encoder(int gpio, encoderCB_t callback){
  * @brief Cancels the reader and releases resources.
  */
 void Encoder::re_cancel(void){
-  gpioSetAlertFuncEx(e_Pin,0,this);
+  callback_ex(e_Pin,0,this);
 }
 
 /** @brief alert function

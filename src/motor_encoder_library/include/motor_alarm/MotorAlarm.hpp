@@ -6,7 +6,7 @@
 #ifndef MOTOR_ALARM_HPP
 #define MOTOR_ALARM_HPP
 
-#include <pigpio.h> //<-- Used to read the gpio on the Raspberry Pi
+#include <pigpiod_if2.h> //<-- Used to read the gpio on the Raspberry Pi
 
 #define LEFT_ALARM_PIN      22 //<-- Pin number for the direction of the left motor
 #define RIGHT_ALARM_PIN     25 //<-- Pin number for the pwm of the left motor

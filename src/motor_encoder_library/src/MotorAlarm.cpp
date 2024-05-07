@@ -13,14 +13,14 @@ Alarm::Alarm(int gpio){
   a_Pin = gpio;
   
   // set pins to input mode with a pullup restor
-  gpioSetMode(gpio,PI_INPUT);
-  gpioSetPullUpDown(gpio,PI_PUD_UP);
+  set_mode(gpio,PI_INPUT);
+  set_pull_up_down(gpio,PI_PUD_UP);
   
   // set alert function for changes in the signal
-  gpioSetAlertFuncEx(gpio,_pulseEx,this);
+  callback_ex(gpio,_pulseEx,this);
 
   // read inital state
-  state = gpioRead(gpio);
+  state = gpio_read(gpio);
   
 }
 
@@ -28,7 +28,7 @@ Alarm::Alarm(int gpio){
  * @brief Cancels the reader and releases resources.
  */
 void Alarm::re_cancel(void){
-  gpioSetAlertFuncEx(a_Pin,0,this);
+  callback_ex(a_Pin,0,this);
 }
 
 /** @brief alert function
@@ -38,7 +38,7 @@ void Alarm::re_cancel(void){
 */
 void Alarm::_pulse(int gpio, int level,uint32_t tick){
   // if there is a change in state fo the pin, update the state
-    state = gpioRead(a_Pin);
+    state = gpio_read(a_Pin);
 }
 
 

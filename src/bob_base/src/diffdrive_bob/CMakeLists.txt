@@ -6,6 +6,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "$ENV{HOME}/pigpio-master/util")
+find_package(pigpio)
 
 # find dependencies
 set(THIS_PACKAGE_INCLUDE_DEPENDS
@@ -36,6 +37,11 @@ add_library(
 
 include_directories(hardware/include/wheel Wheel)
 
+include_directories(
+  include
+  pigpio_INCLUDES
+)
+
 target_compile_features(diffdrive_bob PUBLIC cxx_std_17)
 target_include_directories(diffdrive_bob PUBLIC
 $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/hardware/include>
@@ -46,7 +52,7 @@ ament_target_dependencies(
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
 
-target_link_libraries(diffdrive_bob PUBLIC pigpio)
+target_link_libraries(diffdrive_bob PUBLIC pigpiod_if2)
 
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.

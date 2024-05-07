@@ -10,7 +10,8 @@
 
 namespace ENC{
 	
-Encoder::Encoder(int gpio, encoderCB_t callback, int tpr){
+Encoder::Encoder(int pi_var,int gpio, encoderCB_t callback, int tpr){
+  pi = pi_var;
   e_Pin = gpio;
   mycallback = callback;
 
@@ -24,11 +25,11 @@ Encoder::Encoder(int gpio, encoderCB_t callback, int tpr){
   _period = 0;
   
   // set pins to input mode with a pullup restor
-  gpioSetMode(gpio,PI_INPUT);
-  gpioSetPullUpDown(gpio,PI_PUD_UP);
+  set_mode(pi,gpio,PI_INPUT);
+  set_pull_up_down(pi,gpio,PI_PUD_UP);
 
   // set alert function for changes in the signal
-  gpioSetAlertFuncEx(gpio,_pulseEx,this);
+  callback_ex(pi,gpio,EITHER_EDGE,_pulseEx,this);
   
 }
 
@@ -36,7 +37,7 @@ Encoder::Encoder(int gpio, encoderCB_t callback, int tpr){
  * @brief Cancels the reader and releases resources.
  */
 void Encoder::re_cancel(void){
-  gpioSetAlertFuncEx(e_Pin,0,this);
+  callback_ex(pi,e_Pin,EITHER_EDGE,0,this);
 }
 
 /** @brief alert function
@@ -44,8 +45,9 @@ void Encoder::re_cancel(void){
 * @param level 0 = change to low (a falling edge) 1 = change to high (a rising edge) 2 = no level change (a watchdog timeout)
 * @param tick The number of microseconds since boot WARNING: this wraps around from 4294967295 to 0 roughly every 72 minutes
 */
-void Encoder::_pulse(int gpio, int level,uint32_t tick){
+void Encoder::_pulse(int pi, u_int gpio, u_int level, uint32_t tick){
 
+  (void)pi;
   (void)gpio;
   // time between pulses
   int32_t t;
@@ -83,11 +85,11 @@ void Encoder::_pulse(int gpio, int level,uint32_t tick){
  * @param tick 
  * @param user 
  */
-void Encoder::_pulseEx(int gpio, int level,u_int32_t tick, void *user){
+void Encoder::_pulseEx(int pi, u_int gpio, u_int level, u_int32_t tick, void *user){
 
   Encoder *mySelf = (Encoder *) user;
 
-  mySelf->_pulse(gpio,level,tick);
+  mySelf->_pulse(pi,gpio,level,tick);
 
 }
 

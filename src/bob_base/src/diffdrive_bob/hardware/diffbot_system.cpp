@@ -88,17 +88,17 @@ void right_wheel_pulse(int tick)
         right_wheel_pulse_count-=tick;
 }
 
-int gpioResult = gpioInitialise();
+int gpioResult = pigpio_start(NULL,NULL);
 
-MD::Motor leftMotor(LEFT_DIRECTION_PIN, LEFT_PWM_PIN, 100,CCW);
-ENC::Encoder leftEncoder(LEFT_ENCODER_PIN,left_wheel_pulse, LEFTWHEEL_PULSES_PER_REV);
-ALM::Alarm leftAlarm(LEFT_ALARM_PIN);
+MD::Motor leftMotor(gpioResult,LEFT_DIRECTION_PIN, LEFT_PWM_PIN, 100,CCW);
+ENC::Encoder leftEncoder(gpioResult,LEFT_ENCODER_PIN,left_wheel_pulse, LEFTWHEEL_PULSES_PER_REV);
+ALM::Alarm leftAlarm(gpioResult,LEFT_ALARM_PIN);
 
 WH::Wheel left_wheel("left_wheel",LEFTWHEEL_PULSES_PER_REV,WHEEL_RADIUS,leftMotor, leftEncoder, leftAlarm);
 
-MD::Motor rightMotor(RIGHT_DIRECTION_PIN, RIGHT_PWM_PIN,100,CW);
-ENC::Encoder rightEncoder(RIGHT_ENCODER_PIN,right_wheel_pulse, RIGHTWHEEL_PULSES_PER_REV);
-ALM::Alarm rightAlarm(RIGHT_ALARM_PIN);
+MD::Motor rightMotor(gpioResult,RIGHT_DIRECTION_PIN, RIGHT_PWM_PIN,100,CW);
+ENC::Encoder rightEncoder(gpioResult,RIGHT_ENCODER_PIN,right_wheel_pulse, RIGHTWHEEL_PULSES_PER_REV);
+ALM::Alarm rightAlarm(gpioResult,RIGHT_ALARM_PIN);
 
 WH::Wheel right_wheel("right_wheel",RIGHTWHEEL_PULSES_PER_REV,WHEEL_RADIUS,rightMotor, rightEncoder, rightAlarm);
 

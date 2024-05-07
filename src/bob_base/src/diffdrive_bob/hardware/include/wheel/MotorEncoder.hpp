@@ -6,7 +6,7 @@
 #ifndef MOTOR_ENCODER_HPP
 #define MOTOR_ENCODER_HPP
 
-#include <pigpio.h> //<-- Used to create the PWM pins on the Raspberry Pi
+#include <pigpiod_if2.h> //<-- Used to create the PWM pins on the Raspberry Pi
 #include <stdint.h> //<-- Used to define the uint8_t type
 #include <stdint.h> //<-- Used to define the uint
 #include <bits/stdc++.h>
@@ -28,6 +28,7 @@ namespace ENC{
   class Encoder {
 
   private:
+    int pi = 0;
     int e_Pin = 0; //<-- encoder Pin numbers
     double _weighting = 0;
     double _new = 0;
@@ -42,9 +43,9 @@ namespace ENC{
 
     encoderCB_t mycallback = 0; //<-- callback function for tracking number of pulses
 
-    void _pulse(int gpio, int level, uint32_t tick); //<-- function gets called everytime there is a change on the e_Pin
+    void _pulse(int pi, u_int gpio, u_int level, uint32_t tick); //<-- function gets called everytime there is a change on the e_Pin
 
-    static void _pulseEx(int gpio, int level, uint32_t tick, void *user); //<-- function gets called everytime there is a change on the e_Pin
+    static void _pulseEx(int pi, u_int gpio, u_int level, uint32_t tick, void *user); //<-- function gets called everytime there is a change on the e_Pin
 
     u_int32_t _tick_diff(u_int32_t o_tick, u_int32_t c_tick);//<-- function to get difference between to times
 
@@ -58,7 +59,7 @@ namespace ENC{
    */
     Encoder() = default;
 
-    Encoder(int gpio, encoderCB_t callback, int tpr);
+    Encoder(int pi_var,int gpio, encoderCB_t callback, int tpr);
 
     void re_cancel(void);//<--Cancels the reader and releases resources.
 

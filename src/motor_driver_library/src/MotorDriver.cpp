@@ -21,11 +21,11 @@ Motor::Motor(int directionPin,int pwmPin, double maxSpeed,int direction){
   PWM_Range = 255;
 
   // set pins to output mode
-  gpioSetMode(directionPin,PI_OUTPUT);
-  gpioSetMode(pwmPin,PI_OUTPUT);
+  set_mode(directionPin,PI_OUTPUT);
+  set_mode(pwmPin,PI_OUTPUT);
 
   // write forward direction to direction pin
-  gpioWrite(m_DirectionPin, m_FDirection);
+  gpio_write(m_DirectionPin, m_FDirection);
 }
 
 /**
@@ -61,7 +61,7 @@ void Motor::setPWMRange(uint range){
  */
 void Motor::switchDirection() {
   m_Direction = !m_Direction;
-  gpioWrite(m_DirectionPin, m_Direction);
+  gpio_write(m_DirectionPin, m_Direction);
 }
 
 /**

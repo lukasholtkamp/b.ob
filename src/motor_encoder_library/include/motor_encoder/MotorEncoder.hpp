@@ -6,7 +6,7 @@
 #ifndef MOTOR_ENCODER_HPP
 #define MOTOR_ENCODER_HPP
 
-#include <pigpio.h> //<-- Used to create the PWM pins on the Raspberry Pi
+#include <pigpiod_if2.h> //<-- Used to create the PWM pins on the Raspberry Pi
 #include <stdint.h> //<-- Used to define the uint8_t type
 #include <stdint.h> //<-- Used to define the uint
 

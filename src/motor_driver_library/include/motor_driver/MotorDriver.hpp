@@ -6,7 +6,7 @@
 #ifndef MOTOR_DRIVER_HPP
 #define MOTOR_DRIVER_HPP
 
-#include <pigpio.h> //<-- Used to create the PWM pins on the Raspberry Pi
+#include <pigpiod_if2.h> //<-- Used to create the PWM pins on the Raspberry Pi
 #include <stdint.h> //<-- Used to define the uint
 #include <string>
 

@@ -11,7 +11,7 @@
 
 namespace MD{
 	
-Motor::Motor(int directionPin,int pwmPin, double maxSpeed,int direction){
+Motor::Motor(int pi_var,int directionPin,int pwmPin, double maxSpeed,int direction){
   m_DirectionPin = directionPin;
   m_PwmPin = pwmPin;
   m_MaxSpeed = int((maxSpeed/100) * MAX_SPEED);
@@ -20,13 +20,14 @@ Motor::Motor(int directionPin,int pwmPin, double maxSpeed,int direction){
   m_Speed = 0.0;
   m_Direction = direction;
   PWM_Range = 255;
+  pi = pi_var;
 
   // set pins to output mode
-  gpioSetMode(directionPin,PI_OUTPUT);
-  gpioSetMode(pwmPin,PI_OUTPUT);
+  set_mode(pi,directionPin,PI_OUTPUT);
+  set_mode(pi,pwmPin,PI_OUTPUT);
 
   // write forward direction to direction pin
-  gpioWrite(m_DirectionPin, m_FDirection);
+  gpio_write(pi,m_DirectionPin, m_FDirection);
 }
 
 /**
@@ -62,7 +63,7 @@ void Motor::setPWMRange(uint range){
  */
 void Motor::switchDirection() {
   m_Direction = !m_Direction;
-  gpioWrite(m_DirectionPin, m_Direction);
+  gpio_write(pi,m_DirectionPin, m_Direction);
 }
 
 /**
@@ -134,7 +135,7 @@ void Motor::setSpeed(double speed) {
   // convert speed to percentage of max speed and map to PWM range
   double signal = fabs(m_Speed);
 
-  gpioPWM(m_PwmPin, signal);
+  set_PWM_dutycycle(pi,m_PwmPin, signal);
 
 }
 

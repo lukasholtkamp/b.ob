@@ -9,18 +9,19 @@
 
 namespace ALM{
 	
-Alarm::Alarm(int gpio){
+Alarm::Alarm(int pi_val,int gpio){
+  pi = pi_val;
   a_Pin = gpio;
   
   // set pins to input mode with a pullup restor
-  gpioSetMode(gpio,PI_INPUT);
-  gpioSetPullUpDown(gpio,PI_PUD_DOWN);
+  set_mode(pi,gpio,PI_INPUT);
+  set_pull_up_down(pi,gpio,PI_PUD_DOWN);
   
   // set alert function for changes in the signal
-  gpioSetAlertFuncEx(gpio,_pulseEx,this);
+  callback_ex(pi,gpio,EITHER_EDGE,_pulseEx,this);
 
   // read inital state
-  state = gpioRead(gpio);
+  state = gpio_read(pi,gpio);
   
 }
 
@@ -28,7 +29,7 @@ Alarm::Alarm(int gpio){
  * @brief Cancels the reader and releases resources.
  */
 void Alarm::re_cancel(void){
-  gpioSetAlertFuncEx(a_Pin,0,this);
+  callback_ex(pi,a_Pin,EITHER_EDGE,0,this);
 }
 
 /** @brief alert function
@@ -36,12 +37,12 @@ void Alarm::re_cancel(void){
 * @param level 0 = change to low (a falling edge) 1 = change to high (a rising edge) 2 = no level change (a watchdog timeout)
 * @param tick The number of microseconds since boot WARNING: this wraps around from 4294967295 to 0 roughly every 72 minutes
 */
-void Alarm::_pulse(int gpio, int level,uint32_t tick){
+void Alarm::_pulse(int pi, u_int gpio, u_int level,uint32_t tick){
   (void)gpio;
   (void)level;
   (void)tick;
   // if there is a change in state fo the pin, update the state
-    state = gpioRead(a_Pin);
+  state = gpio_read(pi,a_Pin);
 }
 
 
@@ -52,11 +53,11 @@ void Alarm::_pulse(int gpio, int level,uint32_t tick){
  * @param tick 
  * @param user 
  */
-void Alarm::_pulseEx(int gpio, int level,u_int32_t tick, void *user){
+void Alarm::_pulseEx(int pi, u_int gpio, u_int level,u_int32_t tick, void *user){
 
   Alarm *mySelf = (Alarm *) user;
 
-  mySelf->_pulse(gpio,level,tick);
+  mySelf->_pulse(pi,gpio,level,tick);
 
 }
 
