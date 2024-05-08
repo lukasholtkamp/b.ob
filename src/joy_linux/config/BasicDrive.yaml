@@ -1,7 +1,7 @@
 teleop_node:
   ros__parameters:
     axis_linear:
-      x: 4
+      x: 3
     scale_linear:
       x: 0.5
 

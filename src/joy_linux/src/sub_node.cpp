@@ -69,6 +69,7 @@ std::string find_button(std::vector<int> buttons, int size)
     if (pressed == 1)
     {
         // Button B
+        system("ĵoy_linux_node");
         return "Emergency Stop";
     }
     if (pressed == 4)
@@ -81,6 +82,26 @@ std::string find_button(std::vector<int> buttons, int size)
         // Button X
         // system("ros2 launch basic_drive.launch.py");
         return "Basic Drive Mode Enabled";
+    }
+    if (pressed == 6)
+    {
+        // Button LB
+        return "Button LB is pressed!";
+    }
+    if (pressed == 7)
+    {
+        // Button RB
+        return "Button RB is pressed!";
+    }
+    if (pressed == 13)
+    {
+        // Button LTS
+        return "Button LTS is pressed!";
+    }
+    if (pressed == 14)
+    {
+        // Button RTS
+        return "Button RTS is pressed!";
     }
     else
     {
