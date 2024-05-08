@@ -36,13 +36,14 @@ private:
             system("clear");
             std::cout << button << std::endl;
         }
-
-        // if(axes!=""){
-        //     std::cout << axes << std::endl;
-        //     std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        //     system("clear");
-        //     std::cout << axes << std::endl ;
-        // }
+        /*
+        if(axes!=""){
+            std::cout << axes << std::endl;
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            system("clear");
+            std::cout << axes << std::endl ;
+        }
+        */
     }
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr subscription_;
 };
@@ -86,22 +87,22 @@ std::string find_button(std::vector<int> buttons, int size)
     if (pressed == 6)
     {
         // Button LB
-        return "Button LB is pressed!";
+        return "Button Left Bumper is pressed!";
     }
     if (pressed == 7)
     {
         // Button RB
-        return "Button RB is pressed!";
+        return "Button Right Bumper is pressed!";
     }
     if (pressed == 13)
     {
         // Button LTS
-        return "Button LTS is pressed!";
+        return "Button Left Thumbstick is pressed!";
     }
     if (pressed == 14)
     {
         // Button RTS
-        return "Button RTS is pressed!";
+        return "Button Right Thumbstick is pressed!";
     }
     else
     {
@@ -109,6 +110,68 @@ std::string find_button(std::vector<int> buttons, int size)
     }
 }
 
+/*
+std::string find_axes(std::vector<float> axes, int size)
+{
+    int pressed = -1;
+
+    for (int i = 0; i < size; i++)
+    {
+
+        if (buttons[i] > 0)
+        {
+            pressed = i;
+            break;
+        }
+    }
+
+    if (pressed == 0)
+    {
+        //  Left TS vertical Axes
+        return "Left Thumbstick vertikal Axes!";
+    }
+    if (pressed == 1)
+    {
+        // Left TS linear Axes
+        system("ĵoy_linux_node");
+        return "Left Thumbstick linear Axes!";
+    }
+    if (pressed == 2)
+    {
+        // Right TS vertical Axes
+        return "Right Thumbstick vertikal Axes!";
+    }
+    if (pressed == 3)
+    {
+        // Right TS linear Axes
+        return "Right Thumbstick linear Axes";
+    }
+    if (pressed == 4)
+    {
+        // Trigger RT
+        return "Right Trigger pressed!";
+    }
+    if (pressed == 5)
+    {
+        // Trigger LT
+        return "Left Trigger pressed!!";
+    }
+    if (pressed == 6)
+    {
+        // D-pad vertical
+        return "D-pad vertical Axes!";
+    }
+    if (pressed == 7)
+    {
+        // D-pad linear
+        return "D-pad linear Axes!";
+    }
+    else
+    {
+        return "";
+    }
+}
+*/
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
