@@ -5,7 +5,7 @@ find_package(ament_cmake REQUIRED)
 find_package(urdf REQUIRED)
 
 install(
-  DIRECTORY urdf
+  DIRECTORY urdf ros2_control
   DESTINATION share/${PROJECT_NAME}
 )
 

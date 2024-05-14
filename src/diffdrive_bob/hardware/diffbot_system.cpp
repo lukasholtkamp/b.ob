@@ -78,7 +78,7 @@ hardware_interface::CallbackReturn DiffDriveBobHardware::on_configure(
   RCLCPP_INFO(logger_, "Configuring motors and encoders...");
 
   // Initialize pigpio using GPIO BCM pin numbers
-  int pi = pigpio_start(NULL,NULL);
+  int pi = pigpio_start("172.22.2.165",NULL);
   pi_int = &pi;
   
   // Setup gpio outputs

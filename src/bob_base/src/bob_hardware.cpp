@@ -78,7 +78,7 @@ hardware_interface::CallbackReturn DiffDriveBobHardware::on_configure(
   RCLCPP_INFO(logger_, "Configuring motors and encoders...");
 
   // Initialize pigpio using GPIO BCM pin numbers
-  int pi = pigpio_start(NULL,NULL);
+  int pi = pigpio_start("172.22.2.165",NULL);
   pi_int = &pi;
   
   // Setup gpio outputs
@@ -107,6 +107,19 @@ hardware_interface::CallbackReturn DiffDriveBobHardware::on_configure(
   gpio_write(pi,RIGHT_DIRECTION_PIN,CW);                        
 
   RCLCPP_INFO(logger_, "Successfully configured motors and encoders!");
+
+  return hardware_interface::CallbackReturn::SUCCESS;
+}
+
+hardware_interface::CallbackReturn DiffDriveBobHardware::on_cleanup(
+  const rclcpp_lifecycle::State & /*previous_state*/)
+{
+  RCLCPP_INFO(logger_, "Cleaning up ...please wait...");
+  if (*pi_int>=0)
+  {
+    pigpio_stop(*pi_int);
+  }
+  RCLCPP_INFO(logger_, "Successfully cleaned up!");
 
   return hardware_interface::CallbackReturn::SUCCESS;
 }

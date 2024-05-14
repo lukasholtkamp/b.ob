@@ -69,7 +69,7 @@ def generate_launch_description():
         [FindPackageShare("ros2_control_demo_description"), "diffbot/rviz", "diffbot.rviz"]
     )
 
-    joy_params = os.path.join(Path.cwd(),'src','bob_teleop','config','xbox.config.yaml')
+    joy_params = os.path.join(Path.cwd(),'src','diffdrive_bob','bringup','config','xbox.config.yaml')
 
     with open(joy_params, 'r') as file:
         params = yaml.safe_load(file)
