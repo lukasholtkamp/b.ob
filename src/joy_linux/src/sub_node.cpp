@@ -70,7 +70,7 @@ std::string find_button(std::vector<int> buttons, int size)
     if (pressed == 1)
     {
         // Button B
-        system("ĵoy_linux_node");
+        // system("ros2 lifecycle set teleop_twist_joy_node shutdown");
         return "Emergency Stop";
     }
     if (pressed == 4)
