@@ -3,6 +3,7 @@
 #include <iostream>
 #include <stdint.h> //<-- Used to define the int32
 #include <thread>
+#include <stdlib.h>
 
 #include "rclcpp/rclcpp.hpp"
 #include <sensor_msgs/msg/joy.hpp>
@@ -104,6 +105,13 @@ std::string find_button(std::vector<int> buttons, int size)
         // Button RTS
         return "Button Right Thumbstick is pressed!";
     }
+    /*
+    if (pressed == x)
+    {
+        // Button x
+        system("shutdown now");
+    }
+    */
     else
     {
         return "";
