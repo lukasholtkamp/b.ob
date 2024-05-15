@@ -57,7 +57,14 @@ private:
         }
         */
         auto drive_mode_status = std_msgs::msg::String();
-        drive_mode_status.data = find_button(msg.buttons);
+                
+        if(find_button(msg.buttons) != last_mode){
+            drive_mode_status.data = find_button(msg.buttons);
+        }
+        else{
+            drive_mode_status.data = last_mode;
+        }
+
         publisher_->publish(drive_mode_status);
     }
 
@@ -95,7 +102,7 @@ std::string find_button(std::vector<int> buttons)
     {
         // Button X
         // system("ros2 launch joy_linux basic_drive.launch.py");
-        return "Basic Drive Mode Enabled";
+        return "Basic Drive Mode";
     }
     if (buttons[6] == 1)
     {
@@ -195,7 +202,7 @@ std::string find_axes(std::vector<float> axes, int size)
 
 void launch_call(std::string mode, std::string last_mode)
 {
-    if (mode != last_mode && mode == "Basic Drive Mode Enabled")
+    if (mode != last_mode && mode == "Basic Drive Mode")
     {
         system("ros2 launch joy_linux basic_drive.launch.py");
     }
