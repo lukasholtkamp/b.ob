@@ -21,9 +21,9 @@ def generate_launch_description():
     )
 
     # starting the node for the drive modes
-    sub_node = Node(
+    drive_selection_node = Node(
         package="joy_linux",
-        executable="sub_node",
+        executable="drive_selection_node",
         output = "screen",
     )
 
@@ -50,7 +50,7 @@ def generate_launch_description():
             #    default_value='false',
             #     description='Use sim time if true'),
             joy_linux_node,
-            sub_node,
+            drive_selection_node,
             # teleop_node,
             # twist_stamper
         ]

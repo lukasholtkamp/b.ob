@@ -18,7 +18,7 @@ class DriveModeSubscriber : public rclcpp::Node
 {
 public:
     DriveModeSubscriber()
-        : Node("drive_mode")
+        : Node("drive_selection")
     {
         subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
             "joy", 10, std::bind(&DriveModeSubscriber::topic_callback, this, _1));
@@ -71,7 +71,7 @@ void find_button(std::vector<int> buttons, int size)
     if (buttons[1] == 1)
     {
         // Button B
-        system("ros2 lifecycle set teleop_node shutdown");
+        system("killall teleop_node");
         return "Emergency Stop";
     }
     if (buttons[4] == 1)

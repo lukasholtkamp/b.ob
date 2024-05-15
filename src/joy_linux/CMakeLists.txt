@@ -38,12 +38,12 @@ ament_target_dependencies(joy_linux_node
 "rclcpp"
 "sensor_msgs")
 
-add_executable(sub_node src/sub_node.cpp)
-ament_target_dependencies(sub_node
+add_executable(drive_selection_node src/drive_selection_node.cpp)
+ament_target_dependencies(drive_selection_node
 "rclcpp"
 "sensor_msgs")
 
-install(TARGETS joy_linux_node sub_node DESTINATION lib/${PROJECT_NAME})
+install(TARGETS joy_linux_node drive_selection_node DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
 find_package(ament_lint_auto REQUIRED)
