@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BOB_BASE__DIFFBOT_SYSTEM_HPP_
-#define BOB_BASE__DIFFBOT_SYSTEM_HPP_
+#ifndef DIFFDRIVE_BOB__DIFFBOT_SYSTEM_HPP_
+#define DIFFDRIVE_BOB__DIFFBOT_SYSTEM_HPP_
 
 #include <memory>
 #include <string>
@@ -68,8 +68,6 @@ public:
 
   CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state) override;
 
-  CallbackReturn on_cleanup(const rclcpp_lifecycle::State & previous_state) override;
-
   CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state) override;
 
   CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override;
@@ -90,4 +88,4 @@ private:
 
 }  // namespace bob_base
 
-#endif  // BOB_BASE__DIFFBOT_SYSTEM_HPP_
+#endif  // DIFFDRIVE_BOB__DIFFBOT_SYSTEM_HPP_

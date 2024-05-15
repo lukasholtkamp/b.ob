@@ -69,7 +69,7 @@ def generate_launch_description():
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
             PathJoinSubstitution(
-                [FindPackageShare("diffdrive_bob"), "urdf", description_file]
+                [FindPackageShare("bob_description"), "urdf", description_file]
             ),
             " ",
             "prefix:=",

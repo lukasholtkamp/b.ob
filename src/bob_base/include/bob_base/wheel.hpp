@@ -1,5 +1,5 @@
-#ifndef _BOB_BASE__WHEEL_H_
-#define _BOB_BASE__WHEEL_H_
+#ifndef _DIFFDRIVE_BOB__WHEEL_H_
+#define _DIFFDRIVE_BOB__WHEEL_H_
 
 #include <string>
 #include <cmath>

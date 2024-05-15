@@ -54,17 +54,18 @@ def generate_launch_description():
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
             PathJoinSubstitution(
-                [FindPackageShare("bob_bringup"), "urdf", "diffbot.urdf.xacro"]
+                [FindPackageShare("bob_description"), "urdf", "diffbot.urdf.xacro"]
             ),
             " ",
             "use_mock_hardware:=",
             use_mock_hardware,
         ]
     )
+    
     robot_description = {"robot_description": robot_description_content}
 
     robot_controllers = os.path.join(Path.cwd(),'src','bob_bringup','config','diffbot_controllers.yaml')
-
+    
     joy_params = os.path.join(Path.cwd(),'src','bob_teleop','config','xbox.config.yaml')
 
     with open(joy_params, 'r') as file:
@@ -102,7 +103,6 @@ def generate_launch_description():
         executable="spawner",
         arguments=["diffbot_base_controller", "--controller-manager", "/controller_manager"],
     )
-
 
     # Delay start of robot_controller after `joint_state_broadcaster`
     delay_robot_controller_spawner_after_joint_state_broadcaster_spawner = RegisterEventHandler(

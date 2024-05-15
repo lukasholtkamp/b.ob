@@ -17,7 +17,7 @@
 
 int* pi_int;
 
-namespace diffdrive_bob
+namespace bob_base
 {
 
 DiffDriveBobHardware::DiffDriveBobHardware()
@@ -155,7 +155,7 @@ hardware_interface::return_type DiffDriveBobHardware::read(
   return hardware_interface::return_type::OK;
 }
 
-hardware_interface::return_type diffdrive_bob ::DiffDriveBobHardware::write(
+hardware_interface::return_type bob_base ::DiffDriveBobHardware::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
 
@@ -190,8 +190,8 @@ hardware_interface::return_type diffdrive_bob ::DiffDriveBobHardware::write(
   return hardware_interface::return_type::OK;
 }
 
-}  // namespace diffdrive_bob
+}  // namespace bob_base
 
 #include "pluginlib/class_list_macros.hpp"
 PLUGINLIB_EXPORT_CLASS(
-  diffdrive_bob::DiffDriveBobHardware, hardware_interface::SystemInterface)
+  bob_base::DiffDriveBobHardware, hardware_interface::SystemInterface)
