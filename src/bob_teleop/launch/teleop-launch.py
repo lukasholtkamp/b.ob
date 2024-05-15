@@ -34,5 +34,6 @@ def generate_launch_description():
             name='teleop_twist_joy_node',
             parameters=[config_filepath, {'publish_stamped_twist': publish_stamped_twist}],
             remappings=[('/cmd_vel', '/diffbot_base_controller/cmd_vel')],
+            output = "screen"
             ),
     ])

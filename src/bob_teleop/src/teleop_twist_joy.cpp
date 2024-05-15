@@ -72,7 +72,9 @@ struct TeleopTwistJoy::Impl
   bool inverted_reverse;
 
   std::map<std::string, int64_t> axis_linear_map;
+  std::map<std::string, int64_t> axis_linear_reverse_map;
   std::map<std::string, std::map<std::string, double>> scale_linear_map;
+  std::map<std::string, std::map<std::string, double>> scale_linear_reverse_map;
 
   std::map<std::string, int64_t> axis_angular_map;
   std::map<std::string, std::map<std::string, double>> scale_angular_map;
@@ -119,6 +121,14 @@ TeleopTwistJoy::TeleopTwistJoy(const rclcpp::NodeOptions & options)
   this->declare_parameters("axis_linear", default_linear_map);
   this->get_parameters("axis_linear", pimpl_->axis_linear_map);
 
+  std::map<std::string, int64_t> default_linear_reverse_map{
+    {"x", -1L},
+    {"y", -1L},
+    {"z", -1L},
+  };
+  this->declare_parameters("axis_linear_reverse", default_linear_reverse_map);
+  this->get_parameters("axis_linear_reverse", pimpl_->axis_linear_reverse_map);
+
   std::map<std::string, int64_t> default_angular_map{
     {"yaw", 2L},
     {"pitch", -1L},
@@ -135,6 +145,14 @@ TeleopTwistJoy::TeleopTwistJoy(const rclcpp::NodeOptions & options)
   this->declare_parameters("scale_linear", default_scale_linear_normal_map);
   this->get_parameters("scale_linear", pimpl_->scale_linear_map["normal"]);
 
+  std::map<std::string, double> default_scale_linear_reverse_normal_map{
+    {"x", 0.5},
+    {"y", 0.0},
+    {"z", 0.0},
+  };
+  this->declare_parameters("scale_linear_reverse", default_scale_linear_reverse_normal_map);
+  this->get_parameters("scale_linear_reverse", pimpl_->scale_linear_reverse_map["normal"]);
+
   std::map<std::string, double> default_scale_linear_turbo_map{
     {"x", 1.0},
     {"y", 0.0},
@@ -142,6 +160,14 @@ TeleopTwistJoy::TeleopTwistJoy(const rclcpp::NodeOptions & options)
   };
   this->declare_parameters("scale_linear_turbo", default_scale_linear_turbo_map);
   this->get_parameters("scale_linear_turbo", pimpl_->scale_linear_map["turbo"]);
+
+std::map<std::string, double> default_scale_linear_reverse_turbo_map{
+    {"x", 1.0},
+    {"y", 0.0},
+    {"z", 0.0},
+  };
+  this->declare_parameters("scale_linear_reverse_turbo", default_scale_linear_reverse_turbo_map);
+  this->get_parameters("scale_linear_reverse_turbo", pimpl_->scale_linear_reverse_map["turbo"]);
 
   std::map<std::string, double> default_scale_angular_normal_map{
     {"yaw", 0.5},
@@ -180,6 +206,18 @@ TeleopTwistJoy::TeleopTwistJoy(const rclcpp::NodeOptions & options)
       pimpl_->scale_linear_map["turbo"][it->first]);
   }
 
+  for (std::map<std::string, int64_t>::iterator it = pimpl_->axis_linear_reverse_map.begin();
+    it != pimpl_->axis_linear_reverse_map.end(); ++it)
+  {
+    ROS_INFO_COND_NAMED(
+      it->second != -1L, "TeleopTwistJoy", "Reverse Linear axis %s on %" PRId64 " at scale %f.",
+      it->first.c_str(), it->second, pimpl_->scale_linear_reverse_map["normal"][it->first]);
+    ROS_INFO_COND_NAMED(
+      pimpl_->enable_turbo_button >= 0 && it->second != -1, "TeleopTwistJoy",
+      "Turbo for linear axis %s is scale %f.", it->first.c_str(),
+      pimpl_->scale_linear_reverse_map["turbo"][it->first]);
+  }
+
   for (std::map<std::string, int64_t>::iterator it = pimpl_->axis_angular_map.begin();
     it != pimpl_->axis_angular_map.end(); ++it)
   {
@@ -215,6 +253,12 @@ TeleopTwistJoy::TeleopTwistJoy(const rclcpp::NodeOptions & options)
         } else if (parameter.get_name() == "axis_linear.y") {
           this->pimpl_->axis_linear_map["y"] = parameter.get_value<rclcpp::PARAMETER_INTEGER>();
         } else if (parameter.get_name() == "axis_linear.z") {
+          this->pimpl_->axis_linear_reverse_map["z"] = parameter.get_value<rclcpp::PARAMETER_INTEGER>();
+        } else if (parameter.get_name() == "axis_linear_reverse.x") {
+          this->pimpl_->axis_linear_reverse_map["x"] = parameter.get_value<rclcpp::PARAMETER_INTEGER>();
+        } else if (parameter.get_name() == "axis_linear_reverse.y") {
+          this->pimpl_->axis_linear_reverse_map["y"] = parameter.get_value<rclcpp::PARAMETER_INTEGER>();
+        } else if (parameter.get_name() == "axis_linear_reverse.z") {
           this->pimpl_->axis_linear_map["z"] = parameter.get_value<rclcpp::PARAMETER_INTEGER>();
         } else if (parameter.get_name() == "axis_angular.yaw") {
           this->pimpl_->axis_angular_map["yaw"] = parameter.get_value<rclcpp::PARAMETER_INTEGER>();
@@ -231,7 +275,7 @@ TeleopTwistJoy::TeleopTwistJoy(const rclcpp::NodeOptions & options)
             parameter.get_value<rclcpp::PARAMETER_DOUBLE>();
         } else if (parameter.get_name() == "scale_linear_turbo.z") {
           this->pimpl_->scale_linear_map["turbo"]["z"] =
-            parameter.get_value<rclcpp::PARAMETER_DOUBLE>();
+            parameter.get_value<rclcpp::PARAMETER_DOUBLE>(); 
         } else if (parameter.get_name() == "scale_linear.x") {
           this->pimpl_->scale_linear_map["normal"]["x"] =
             parameter.get_value<rclcpp::PARAMETER_DOUBLE>();
@@ -241,7 +285,16 @@ TeleopTwistJoy::TeleopTwistJoy(const rclcpp::NodeOptions & options)
         } else if (parameter.get_name() == "scale_linear.z") {
           this->pimpl_->scale_linear_map["normal"]["z"] =
             parameter.get_value<rclcpp::PARAMETER_DOUBLE>();
-        } else if (parameter.get_name() == "scale_angular_turbo.yaw") {
+        } else if (parameter.get_name() == "scale_linear_reverse.x") {
+          this->pimpl_->scale_linear_reverse_map["normal"]["x"] =
+            parameter.get_value<rclcpp::PARAMETER_DOUBLE>();
+        } else if (parameter.get_name() == "scale_linear_reverse.y") {
+          this->pimpl_->scale_linear_reverse_map["normal"]["y"] =
+            parameter.get_value<rclcpp::PARAMETER_DOUBLE>();
+        } else if (parameter.get_name() == "scale_linear_reverse.z") {
+          this->pimpl_->scale_linear_reverse_map["normal"]["z"] =
+            parameter.get_value<rclcpp::PARAMETER_DOUBLE>();
+        }else if (parameter.get_name() == "scale_angular_turbo.yaw") {
           this->pimpl_->scale_angular_map["turbo"]["yaw"] =
             parameter.get_value<rclcpp::PARAMETER_DOUBLE>();
         } else if (parameter.get_name() == "scale_angular_turbo.pitch") {
@@ -284,7 +337,7 @@ double getVal(
     return 0.0;
   }
 
-  if(axis_map.at(fieldname) == 4)
+  if(axis_map.at(fieldname) == 4 || axis_map.at(fieldname) == 5)
   {
     return (std::round(0.5 * (1 - joy_msg->axes[axis_map.at(fieldname)]) * 1000.0) / 1000.0) * scale_map.at(fieldname);
   }
@@ -315,21 +368,31 @@ void TeleopTwistJoy::Impl::fillCmdVelMsg(
   const std::string & which_map,
   geometry_msgs::msg::Twist * cmd_vel_msg)
 {
-
-  double reverse = std::round(-0.5 * (1 - joy_msg->axes[5]) * 1000.0) / 1000.0;
-  double forward = std::round(0.5 * (1 - joy_msg->axes[4]) * 1000.0) / 1000.0;
+  double reverse;
+  double forward;
 
   double lin_x = 0;
 
-  if(reverse < 0 && forward == 0)
-  {
-    lin_x = reverse * scale_linear_map[which_map].at("x");
-  }
-  else if (reverse == 0 && forward > 0)
-  {
+  if (axis_linear_reverse_map.at("x")==4 || axis_linear_reverse_map.at("x")==5 || axis_linear_map.at("x")==4 || axis_linear_map.at("x")==5){
+    reverse = std::round(-0.5 * (1 - joy_msg->axes[axis_linear_reverse_map.at("x")]) * 1000000.0) / 1000000.0;
+    forward = std::round(0.5 * (1 - joy_msg->axes[axis_linear_map.at("x")]) * 1000000.0) / 1000000.0;
+
+    if(reverse < 0 && forward == 0)
+    {
+      lin_x = reverse * scale_linear_reverse_map[which_map].at("x");
+    }
+
+    else if (reverse == 0 && forward > 0)
+    {
+      lin_x = getVal(joy_msg, axis_linear_map, scale_linear_map[which_map], "x");
+    }
+
+    }
+
+  else{
     lin_x = getVal(joy_msg, axis_linear_map, scale_linear_map[which_map], "x");
   }
-
+    
   double ang_z = getVal(joy_msg, axis_angular_map, scale_angular_map[which_map], "yaw");
 
   cmd_vel_msg->linear.x = lin_x;
