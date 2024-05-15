@@ -54,22 +54,19 @@ def generate_launch_description():
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
             PathJoinSubstitution(
-                [FindPackageShare("diffdrive_bob"), "urdf", "diffbot.urdf.xacro"]
+                [FindPackageShare("bob_description"), "urdf", "diffbot.urdf.xacro"]
             ),
             " ",
             "use_mock_hardware:=",
             use_mock_hardware,
         ]
     )
+    
     robot_description = {"robot_description": robot_description_content}
 
-    robot_controllers = os.path.join(Path.cwd(),'src','diffdrive_bob','bringup','config','diffbot_controllers.yaml')
+    robot_controllers = os.path.join(Path.cwd(),'src','bob_bringup','config','diffbot_controllers.yaml')
     
-    rviz_config_file = PathJoinSubstitution(
-        [FindPackageShare("ros2_control_demo_description"), "diffbot/rviz", "diffbot.rviz"]
-    )
-
-    joy_params = os.path.join(Path.cwd(),'src','diffdrive_bob','bringup','config','xbox.config.yaml')
+    joy_params = os.path.join(Path.cwd(),'src','bob_teleop','config','xbox.config.yaml')
 
     with open(joy_params, 'r') as file:
         params = yaml.safe_load(file)
@@ -94,14 +91,6 @@ def generate_launch_description():
             ("/diff_drive_controller/cmd_vel", "/cmd_vel"),
         ],
     )
-    rviz_node = Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        output="log",
-        arguments=["-d", rviz_config_file],
-        condition=IfCondition(gui),
-    )
 
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
@@ -113,14 +102,6 @@ def generate_launch_description():
         package="controller_manager",
         executable="spawner",
         arguments=["diffbot_base_controller", "--controller-manager", "/controller_manager"],
-    )
-
-    # Delay rviz start after `joint_state_broadcaster`
-    delay_rviz_after_joint_state_broadcaster_spawner = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=joint_state_broadcaster_spawner,
-            on_exit=[rviz_node],
-        )
     )
 
     # Delay start of robot_controller after `joint_state_broadcaster`
@@ -135,7 +116,6 @@ def generate_launch_description():
         control_node,
         robot_state_pub_node,
         joint_state_broadcaster_spawner,
-        delay_rviz_after_joint_state_broadcaster_spawner,
         delay_robot_controller_spawner_after_joint_state_broadcaster_spawner,
     ]
 
