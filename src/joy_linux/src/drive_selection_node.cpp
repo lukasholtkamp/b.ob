@@ -8,11 +8,14 @@
 #include "rclcpp/rclcpp.hpp"
 #include <sensor_msgs/msg/joy.hpp>
 #include <sensor_msgs/msg/joy_feedback_array.hpp>
+#include "std_msgs/msg/string.hpp"
 
 using std::placeholders::_1;
 
-void find_button(std::vector<int> buttons, int size);
+std::string find_button(std::vector<int> buttons);
+void launch_call(std::string mode, std::string last_mode);
 // std::string find_axes(std::vector<float> axes,float size);
+// std::string publish
 
 class DriveModeSubscriber : public rclcpp::Node
 {
@@ -22,12 +25,20 @@ public:
     {
         subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
             "joy", 10, std::bind(&DriveModeSubscriber::topic_callback, this, _1));
+
+        subscriber_ = this->create_subscription<std_msgs::msg::String>(
+            "drive_selection", 10, std::bind(&DriveModeSubscriber::status_callback, this, _1));
+            
+        publisher_ = this->create_publisher<std_msgs::msg::String>("drive_mode_status", 10);
+    
     }
 
+    std::string last_mode="IDLE";
+
 private:
+
     void topic_callback(const sensor_msgs::msg::Joy &msg) const
     {
-        find_button(msg.buttons, msg.buttons.size());
         // // std::string axes=find_axes(msg.axes,msg.axes.size());
 
         // if (button != "")
@@ -45,33 +56,34 @@ private:
             std::cout << axes << std::endl ;
         }
         */
+        auto drive_mode_status = std_msgs::msg::String();
+        drive_mode_status.data = find_button(msg.buttons);
+        publisher_->publish(drive_mode_status);
     }
+
+    void status_callback(const std_msgs::msg::String &msg)
+    {
+        launch_call(msg.data, last_mode);
+        last_mode = msg.data;
+    }
+
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr subscription_;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscriber_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
 };
 
-void find_button(std::vector<int> buttons, int size)
+std::string find_button(std::vector<int> buttons)
 {
-    int pressed = -1;
 
-    for (int i = 0; i < size; i++)
-    {
-
-        if (buttons[i] > 0)
-        {
-            pressed = i;
-            break;
-        }
-    }
-
-    if (pressed == 0)
+    if (buttons[0] == 1)
     {
         // Button A
-        return "Assisted Drive Mode Enabled";
+        return "Assisted Drive Mode";
     }
     if (buttons[1] == 1)
     {
         // Button B
-        system("killall teleop_node");
+        // system("killall teleop_node");
         return "Emergency Stop";
     }
     if (buttons[4] == 1)
@@ -79,34 +91,34 @@ void find_button(std::vector<int> buttons, int size)
         // Button Y
         return "";
     }
-    if (pressed == 3)
+    if (buttons[3] == 1)
     {
         // Button X
-        system("ros2 launch joy_linux basic_drive.launch.py");
+        // system("ros2 launch joy_linux basic_drive.launch.py");
         return "Basic Drive Mode Enabled";
     }
-    if (pressed == 6)
+    if (buttons[6] == 1)
     {
         // Button LB
         return "Button Left Bumper is pressed!";
     }
-    if (pressed == 7)
+    if (buttons[7] == 1)
     {
         // Button RB
         return "Button Right Bumper is pressed!";
     }
-    if (pressed == 13)
+    if (buttons[13] == 1)
     {
         // Button LTS
         return "Button Left Thumbstick is pressed!";
     }
-    if (pressed == 14)
+    if (buttons[14] == 1)
     {
         // Button RTS
         return "Button Right Thumbstick is pressed!";
     }
     /*
-    if (pressed == x)
+    if (buttons[x] == 1)
     {
         // Button x
         system("shutdown now");
@@ -180,6 +192,19 @@ std::string find_axes(std::vector<float> axes, int size)
     }
 }
 */
+
+void launch_call(std::string mode, std::string last_mode)
+{
+    if (mode != last_mode && mode == "Basic Drive Mode Enabled")
+    {
+        system("ros2 launch joy_linux basic_drive.launch.py");
+    }
+    else if (mode != last_mode && mode == "Emergency Stop")
+    {
+        system("killall teleop_node");
+    }
+}
+
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
