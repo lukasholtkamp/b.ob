@@ -11,7 +11,7 @@
 
 using std::placeholders::_1;
 
-std::string find_button(std::vector<int> buttons, int size);
+void find_button(std::vector<int> buttons, int size);
 // std::string find_axes(std::vector<float> axes,float size);
 
 class DriveModeSubscriber : public rclcpp::Node
@@ -27,16 +27,16 @@ public:
 private:
     void topic_callback(const sensor_msgs::msg::Joy &msg) const
     {
-        std::string button = find_button(msg.buttons, msg.buttons.size());
-        // std::string axes=find_axes(msg.axes,msg.axes.size());
+        find_button(msg.buttons, msg.buttons.size());
+        // // std::string axes=find_axes(msg.axes,msg.axes.size());
 
-        if (button != "")
-        {
-            std::cout << button << std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            system("clear");
-            std::cout << button << std::endl;
-        }
+        // if (button != "")
+        // {
+        //     std::cout << button << std::endl;
+        //     std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        //     system("clear");
+        //     std::cout << button << std::endl;
+        // }
         /*
         if(axes!=""){
             std::cout << axes << std::endl;
@@ -49,7 +49,7 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr subscription_;
 };
 
-std::string find_button(std::vector<int> buttons, int size)
+void find_button(std::vector<int> buttons, int size)
 {
     int pressed = -1;
 
@@ -68,13 +68,13 @@ std::string find_button(std::vector<int> buttons, int size)
         // Button A
         return "Assisted Drive Mode Enabled";
     }
-    if (pressed == 1)
+    if (buttons[1] == 1)
     {
         // Button B
-        // system("ros2 lifecycle set teleop_twist_joy_node shutdown");
+        system("ros2 lifecycle set teleop_node shutdown");
         return "Emergency Stop";
     }
-    if (pressed == 4)
+    if (buttons[4] == 1)
     {
         // Button Y
         return "";
@@ -82,7 +82,7 @@ std::string find_button(std::vector<int> buttons, int size)
     if (pressed == 3)
     {
         // Button X
-        // system("ros2 launch basic_drive.launch.py");
+        system("ros2 launch joy_linux basic_drive.launch.py");
         return "Basic Drive Mode Enabled";
     }
     if (pressed == 6)

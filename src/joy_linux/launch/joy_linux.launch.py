@@ -24,15 +24,16 @@ def generate_launch_description():
     sub_node = Node(
         package="joy_linux",
         executable="sub_node",
+        output = "screen",
     )
 
     # starting the teleop node with parameters from BasicDrive.yaml
-    teleop_node = Node(
-        package="teleop_twist_joy",
-        executable="teleop_node",
-        name="teleop_node",
-        parameters=[joy_params],
-    )
+    # teleop_node = Node(
+    #     package="teleop_twist_joy",
+    #     executable="teleop_node",
+    #     name="teleop_node",
+    #     parameters=[joy_params],
+    # )
 
     # twist_stamper = Node(
     #         package='twist_stamper',
@@ -50,7 +51,7 @@ def generate_launch_description():
             #     description='Use sim time if true'),
             joy_linux_node,
             sub_node,
-            teleop_node,
+            # teleop_node,
             # twist_stamper
         ]
     )

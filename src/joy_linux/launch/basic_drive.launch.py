@@ -10,13 +10,14 @@ from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
 
-    joy_params = os.path.join(Path.cwd(), "config", "BasicDrive.yaml")
+    joy_params = os.path.join(Path.cwd(), "config", "xbox.config.yaml")
 
     teleop_node = Node(
         package="teleop_twist_joy",
         executable="teleop_node",
         name="teleop_node",
         parameters=[joy_params],
+        output = "screen",
     )
 
     return LaunchDescription(

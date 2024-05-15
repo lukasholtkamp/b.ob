@@ -1,70 +1,59 @@
 cmake_minimum_required(VERSION 3.5)
-project(teleop_twist_joy)
+
+project(joy_linux)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 14)
 endif()
-
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
 find_package(ament_cmake REQUIRED)
-
-find_package(geometry_msgs REQUIRED)
+find_package(diagnostic_msgs REQUIRED)
+find_package(diagnostic_updater REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
-add_library(${PROJECT_NAME} SHARED src/teleop_twist_joy.cpp)
-target_link_libraries(${PROJECT_NAME}
-  ${geometry_msgs_TARGETS}
-  rclcpp::rclcpp
-  rclcpp_components::component
-  ${sensor_msgs_TARGETS}
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}/
 )
 
-include(GenerateExportHeader)
-generate_export_header(${PROJECT_NAME} EXPORT_FILE_NAME ${PROJECT_NAME}/${PROJECT_NAME}_export.h)
-target_include_directories(${PROJECT_NAME} PUBLIC
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-  "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-set_target_properties(${PROJECT_NAME} PROPERTIES EXPORT_HEADER_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+# for now, this program only exists for Linux hosts, since it calls into
+# the underlying joystick driver provided by the Linux kernel.
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+# Look for <linux/joystick.h>
+include(CheckIncludeFiles)
+check_include_files(linux/joystick.h HAVE_LINUX_JOYSTICK_H)
 
-rclcpp_components_register_nodes(${PROJECT_NAME}
-  "teleop_twist_joy::TeleopTwistJoy")
+if(HAVE_LINUX_JOYSTICK_H)
+include_directories(msg/cpp ${catkin_INCLUDE_DIRS})
+add_executable(joy_linux_node src/joy_linux_node.cpp)
+ament_target_dependencies(joy_linux_node
+"diagnostic_msgs"
+"diagnostic_updater"
+"rclcpp"
+"sensor_msgs")
 
-add_executable(${PROJECT_NAME}_node src/teleop_node.cpp)
-target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME})
-set_target_properties(${PROJECT_NAME}_node
-  PROPERTIES OUTPUT_NAME teleop_node PREFIX "")
+add_executable(sub_node src/sub_node.cpp)
+ament_target_dependencies(sub_node
+"rclcpp"
+"sensor_msgs")
 
-install(TARGETS ${PROJECT_NAME}
-  EXPORT export_${PROJECT_NAME}
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin)
+install(TARGETS joy_linux_node sub_node DESTINATION lib/${PROJECT_NAME})
 
-install(TARGETS ${PROJECT_NAME}_node
-  DESTINATION lib/${PROJECT_NAME})
+if(BUILD_TESTING)
+find_package(ament_lint_auto REQUIRED)
+set(ament_cmake_copyright_FOUND TRUE)
+ament_lint_auto_find_test_dependencies()
+endif()
 
-install(DIRECTORY include/
-  DESTINATION include/${PROJECT_NAME})
-
-install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}_export.h
-  DESTINATION include/${PROJECT_NAME}/${PROJECT_NAME})
-
-install(DIRECTORY launch config
-  DESTINATION share/${PROJECT_NAME})
-
-# Export old-style CMake variables
-ament_export_include_directories("include/${PROJECT_NAME}")
-ament_export_libraries(${PROJECT_NAME})
-
-# Export modern CMake targets
-ament_export_targets(export_${PROJECT_NAME})
+else()
+message(FATAL_ERROR "no <linux/joystick.h>; can't build joy node")
+endif()
+endif()
 
 ament_package()
