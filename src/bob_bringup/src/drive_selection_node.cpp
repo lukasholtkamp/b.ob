@@ -12,10 +12,9 @@
 
 using std::placeholders::_1;
 
-std::string find_button(std::vector<int> buttons);
-void launch_call(std::string mode, std::string last_mode);
+std::string find_button(std::vector<int> buttons); // <-- Implement find_button function
+void launch_call(std::string mode, std::string last_mode); // <-- Implement launch_call function
 // std::string find_axes(std::vector<float> axes,float size);
-// std::string publish
 
 class DriveModeSubscriber : public rclcpp::Node
 {
@@ -23,18 +22,22 @@ public:
     DriveModeSubscriber()
         : Node("drive_selection")
     {
+        // Implementing the Subscriber for the Button request
         subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
             "joy", 10, std::bind(&DriveModeSubscriber::topic_callback, this, _1));
 
+        // Implementing the Subscriber for Drive Mode request
         subscriber_ = this->create_subscription<std_msgs::msg::String>(
             "drive_mode_status", 10, std::bind(&DriveModeSubscriber::status_callback, this, _1));
 
+        // Implementing the Publisher for the Drive Mode Status
         publisher_ = this->create_publisher<std_msgs::msg::String>("drive_mode_status", 10);
     }
 
     std::string last_mode = "IDLE";
 
 private:
+    // Button callback function
     void topic_callback(const sensor_msgs::msg::Joy &msg)
     {
         // // std::string axes=find_axes(msg.axes,msg.axes.size());
@@ -55,7 +58,8 @@ private:
         }
         */
         auto drive_mode_status = std_msgs::msg::String();
-
+        
+        // Read button input, transfer it to the button output function and write it to the drive mode status 
         if (find_button(msg.buttons) == "")
         {
             drive_mode_status.data = last_mode;
@@ -65,14 +69,17 @@ private:
             drive_mode_status.data = find_button(msg.buttons);
         }
 
+        // Transfers the drive mode status to the publisher
         publisher_->publish(drive_mode_status);
     }
 
+    // Drive Mode Status callback funtion
     void status_callback(const std_msgs::msg::String &msg)
     {
+        // Read the drive mode status, output in the terminal and transfer it to the launch function
         if(last_mode != msg.data)
         {
-            std::cout << "Driving Mode: " << msg.data << std::endl ;
+            std::cout << "last: " << last_mode << " curr: " << msg.data << std::endl ;
 
             launch_call(msg.data, last_mode);
             last_mode = msg.data;
@@ -87,6 +94,12 @@ private:
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
 };
 
+
+/**
+ * @brief Gets and read the button input
+ * 
+ * @return Which button is pressed and writes it to the terminal
+*/
 std::string find_button(std::vector<int> buttons)
 {
 
@@ -134,9 +147,9 @@ std::string find_button(std::vector<int> buttons)
     }
     if (buttons[11] == 1)
     {
-        // Button Menu
+        // Menu Button
         // system("shutdown now");
-        return "Shutdown Button";
+        return "Shutdown";
     }
     else
     {
@@ -144,6 +157,11 @@ std::string find_button(std::vector<int> buttons)
     }
 }
 
+/**
+ * @brief Gets and read the axes input
+ * 
+ * @return Which axes is triggerd and writes it to the terminal
+*/
 /*
 std::string find_axes(std::vector<float> axes, int size)
 {
@@ -207,14 +225,24 @@ std::string find_axes(std::vector<float> axes, int size)
 }
 */
 
+/**
+ * @brief Gets the actual drive mode status
+ * 
+ * @return The several launch or kill system commands
+*/
 void launch_call(std::string drive_mode_status, std::string last_mode)
 {
-    if(last_mode=="Basic Drive Mode"){
+    if(last_mode=="Basic Drive Mode")
+    {
         system("killall teleop_node");
     }
     if (drive_mode_status=="Basic Drive Mode")
     {
         system("ros2 launch teleop_twist_joy teleop-launch.py &");
+    }
+    if(drive_mode_status == "Shutdown")
+    {
+        system("shutdown now");
     }
 }
 
