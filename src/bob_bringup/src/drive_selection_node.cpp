@@ -79,7 +79,7 @@ private:
         // Read the drive mode status, output in the terminal and transfer it to the launch function
         if (last_mode != msg.data)
         {
-            std::cout << "last: " << last_mode << " curr: " << msg.data << std::endl;
+            std::cout << "Driving Mode: " << msg.data << std::endl;
 
             launch_call(msg.data, last_mode);
             last_mode = msg.data;
@@ -113,7 +113,7 @@ std::string find_button(std::vector<int> buttons)
     if (buttons[4] == 1)
     {
         // Button Y
-        return "";
+        return "Close ROS";
     }
     if (buttons[3] == 1)
     {
@@ -239,6 +239,9 @@ void launch_call(std::string drive_mode_status, std::string last_mode)
     if (drive_mode_status == "Shutdown")
     {
         system("shutdown now");
+    }
+    if (drive_mode_status == "Emergency Stop"){
+        kill(getppid(),9);
     }
 }
 
