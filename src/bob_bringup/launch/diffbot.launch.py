@@ -104,6 +104,17 @@ def generate_launch_description():
         arguments=["diffbot_base_controller", "--controller-manager", "/controller_manager"],
     )
 
+    joy_node = Node(
+        package="joy",
+        executable="joy_node",
+    )
+
+    drive_selection_node = Node(
+        package="bob_bringup",
+        executable="drive_selection_node",
+        output = "screen",
+    )
+
     # Delay start of robot_controller after `joint_state_broadcaster`
     delay_robot_controller_spawner_after_joint_state_broadcaster_spawner = RegisterEventHandler(
         event_handler=OnProcessExit(
@@ -113,10 +124,12 @@ def generate_launch_description():
     )
 
     nodes = [
+        joy_node,
+        drive_selection_node,
         control_node,
         robot_state_pub_node,
         joint_state_broadcaster_spawner,
-        delay_robot_controller_spawner_after_joint_state_broadcaster_spawner,
+        delay_robot_controller_spawner_after_joint_state_broadcaster_spawner,  
     ]
 
     return LaunchDescription(declared_arguments + nodes)
