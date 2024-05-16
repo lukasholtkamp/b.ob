@@ -240,7 +240,8 @@ void launch_call(std::string drive_mode_status, std::string last_mode)
     {
         system("shutdown now");
     }
-    if (drive_mode_status == "Emergency Stop"){
+    if (drive_mode_status == "Emergency Stop")
+    {
         system("python3 shut_down.py");
     }
 }
