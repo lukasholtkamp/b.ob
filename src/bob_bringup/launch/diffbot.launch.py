@@ -16,7 +16,12 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, RegisterEventHandler
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
-from launch.substitutions import Command, FindExecutable, PathJoinSubstitution, LaunchConfiguration
+from launch.substitutions import (
+    Command,
+    FindExecutable,
+    PathJoinSubstitution,
+    LaunchConfiguration,
+)
 
 from pathlib import Path
 import os
@@ -61,22 +66,31 @@ def generate_launch_description():
             use_mock_hardware,
         ]
     )
-    
+
     robot_description = {"robot_description": robot_description_content}
 
-    robot_controllers = os.path.join(Path.cwd(),'src','bob_bringup','config','diffbot_controllers.yaml')
-    
-    joy_params = os.path.join(Path.cwd(),'src','bob_teleop','config','xbox.config.yaml')
+    robot_controllers = os.path.join(
+        Path.cwd(), "src", "bob_bringup", "config", "diffbot_controllers.yaml"
+    )
 
-    with open(joy_params, 'r') as file:
+    joy_params = os.path.join(
+        Path.cwd(), "src", "bob_teleop", "config", "xbox.config.yaml"
+    )
+
+    with open(joy_params, "r") as file:
         params = yaml.safe_load(file)
 
-    x_scale = params['teleop_twist_joy_node']['ros__parameters']['scale_linear']['x']
+    x_scale = params["teleop_twist_joy_node"]["ros__parameters"]["scale_linear"]["x"]
 
+    # Implement the launching Nodes with all parameters and declaring all necessary settings
     control_node = Node(
         package="controller_manager",
         executable="ros2_control_node",
-        parameters=[robot_controllers,{'linear.x.max_velocity': 0.122*x_scale},{'linear.x.min_velocity': -0.122*x_scale},],
+        parameters=[
+            robot_controllers,
+            {"linear.x.max_velocity": 0.122 * x_scale},
+            {"linear.x.min_velocity": -0.122 * x_scale},
+        ],
         output="both",
         remappings=[
             ("~/robot_description", "/robot_description"),
@@ -95,13 +109,21 @@ def generate_launch_description():
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_state_broadcaster", "--controller-manager", "/controller_manager"],
+        arguments=[
+            "joint_state_broadcaster",
+            "--controller-manager",
+            "/controller_manager",
+        ],
     )
 
     robot_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["diffbot_base_controller", "--controller-manager", "/controller_manager"],
+        arguments=[
+            "diffbot_base_controller",
+            "--controller-manager",
+            "/controller_manager",
+        ],
     )
 
     joy_node = Node(
@@ -112,14 +134,16 @@ def generate_launch_description():
     drive_selection_node = Node(
         package="bob_bringup",
         executable="drive_selection_node",
-        output = "screen",
+        output="screen",
     )
 
     # Delay start of robot_controller after `joint_state_broadcaster`
-    delay_robot_controller_spawner_after_joint_state_broadcaster_spawner = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=joint_state_broadcaster_spawner,
-            on_exit=[robot_controller_spawner],
+    delay_robot_controller_spawner_after_joint_state_broadcaster_spawner = (
+        RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=joint_state_broadcaster_spawner,
+                on_exit=[robot_controller_spawner],
+            )
         )
     )
 
@@ -129,8 +153,7 @@ def generate_launch_description():
         control_node,
         robot_state_pub_node,
         joint_state_broadcaster_spawner,
-        delay_robot_controller_spawner_after_joint_state_broadcaster_spawner,  
+        delay_robot_controller_spawner_after_joint_state_broadcaster_spawner,
     ]
 
     return LaunchDescription(declared_arguments + nodes)
-

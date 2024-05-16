@@ -34,7 +34,7 @@ public:
         publisher_ = this->create_publisher<std_msgs::msg::String>("drive_mode_status", 10);
     }
 
-    std::string last_mode = "IDLE";
+    std::string last_mode = "IDLE"; // <-- Implementing the las_mode variable for the drive_mode_status request
 
 private:
     // Button callback function

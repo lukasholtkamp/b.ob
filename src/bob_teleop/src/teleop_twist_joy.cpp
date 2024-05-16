@@ -49,12 +49,13 @@ namespace teleop_twist_joy
  * Internal members of class. This is the pimpl idiom, and allows more flexibility in adding
  * parameters later without breaking ABI compatibility, for robots which link TeleopTwistJoy
  * directly into base nodes.
+ * Implementing and declare all neccesary parameters, functions, variables, subscribers and publishers.
  */
 struct TeleopTwistJoy::Impl
 {
-  void joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy);
-  void sendCmdVelMsg(const sensor_msgs::msg::Joy::SharedPtr, const std::string & which_map);
-  void fillCmdVelMsg(
+  void joy_callback(const sensor_msgs::msg::Joy::SharedPtr joy);
+  void send_cmd_vel_msg(const sensor_msgs::msg::Joy::SharedPtr, const std::string & which_map);
+  void fill_cmd_vel_msg(
     const sensor_msgs::msg::Joy::SharedPtr, const std::string & which_map,
     geometry_msgs::msg::Twist * cmd_vel_msg);
 
@@ -103,7 +104,7 @@ TeleopTwistJoy::TeleopTwistJoy(const rclcpp::NodeOptions & options)
   }
   pimpl_->joy_sub = this->create_subscription<sensor_msgs::msg::Joy>(
     "joy", rclcpp::QoS(10),
-    std::bind(&TeleopTwistJoy::Impl::joyCallback, this->pimpl_, std::placeholders::_1));
+    std::bind(&TeleopTwistJoy::Impl::joy_callback, this->pimpl_, std::placeholders::_1));
 
   pimpl_->require_enable_button = this->declare_parameter("require_enable_button", true);
 
@@ -325,7 +326,7 @@ TeleopTwistJoy::~TeleopTwistJoy()
   delete pimpl_;
 }
 
-double getVal(
+double get_val(
   const sensor_msgs::msg::Joy::SharedPtr joy_msg, const std::map<std::string, int64_t> & axis_map,
   const std::map<std::string, double> & scale_map, const std::string & fieldname)
 {
@@ -345,7 +346,7 @@ double getVal(
   return joy_msg->axes[axis_map.at(fieldname)] * scale_map.at(fieldname);
 }
 
-void TeleopTwistJoy::Impl::sendCmdVelMsg(
+void TeleopTwistJoy::Impl::send_cmd_vel_msg(
   const sensor_msgs::msg::Joy::SharedPtr joy_msg,
   const std::string & which_map)
 {
@@ -353,17 +354,17 @@ void TeleopTwistJoy::Impl::sendCmdVelMsg(
     auto cmd_vel_stamped_msg = std::make_unique<geometry_msgs::msg::TwistStamped>();
     cmd_vel_stamped_msg->header.stamp = clock->now();
     cmd_vel_stamped_msg->header.frame_id = frame_id;
-    fillCmdVelMsg(joy_msg, which_map, &cmd_vel_stamped_msg->twist);
+    fill_cmd_vel_msg(joy_msg, which_map, &cmd_vel_stamped_msg->twist);
     cmd_vel_stamped_pub->publish(std::move(cmd_vel_stamped_msg));
   } else {
     auto cmd_vel_msg = std::make_unique<geometry_msgs::msg::Twist>();
-    fillCmdVelMsg(joy_msg, which_map, cmd_vel_msg.get());
+    fill_cmd_vel_msg(joy_msg, which_map, cmd_vel_msg.get());
     cmd_vel_pub->publish(std::move(cmd_vel_msg));
   }
   sent_disable_msg = false;
 }
 
-void TeleopTwistJoy::Impl::fillCmdVelMsg(
+void TeleopTwistJoy::Impl::fill_cmd_vel_msg(
   const sensor_msgs::msg::Joy::SharedPtr joy_msg,
   const std::string & which_map,
   geometry_msgs::msg::Twist * cmd_vel_msg)
@@ -384,37 +385,37 @@ void TeleopTwistJoy::Impl::fillCmdVelMsg(
 
     else if (reverse == 0 && forward > 0)
     {
-      lin_x = getVal(joy_msg, axis_linear_map, scale_linear_map[which_map], "x");
+      lin_x = get_val(joy_msg, axis_linear_map, scale_linear_map[which_map], "x");
     }
 
     }
 
   else{
-    lin_x = getVal(joy_msg, axis_linear_map, scale_linear_map[which_map], "x");
+    lin_x = get_val(joy_msg, axis_linear_map, scale_linear_map[which_map], "x");
   }
     
-  double ang_z = getVal(joy_msg, axis_angular_map, scale_angular_map[which_map], "yaw");
+  double ang_z = get_val(joy_msg, axis_angular_map, scale_angular_map[which_map], "yaw");
 
   cmd_vel_msg->linear.x = lin_x;
-  cmd_vel_msg->linear.y = getVal(joy_msg, axis_linear_map, scale_linear_map[which_map], "y");
-  cmd_vel_msg->linear.z = getVal(joy_msg, axis_linear_map, scale_linear_map[which_map], "z");
+  cmd_vel_msg->linear.y = get_val(joy_msg, axis_linear_map, scale_linear_map[which_map], "y");
+  cmd_vel_msg->linear.z = get_val(joy_msg, axis_linear_map, scale_linear_map[which_map], "z");
   cmd_vel_msg->angular.z = (lin_x < 0.0 && inverted_reverse) ? -ang_z : ang_z;
-  cmd_vel_msg->angular.y = getVal(joy_msg, axis_angular_map, scale_angular_map[which_map], "pitch");
-  cmd_vel_msg->angular.x = getVal(joy_msg, axis_angular_map, scale_angular_map[which_map], "roll");
+  cmd_vel_msg->angular.y = get_val(joy_msg, axis_angular_map, scale_angular_map[which_map], "pitch");
+  cmd_vel_msg->angular.x = get_val(joy_msg, axis_angular_map, scale_angular_map[which_map], "roll");
 }
 
-void TeleopTwistJoy::Impl::joyCallback(const sensor_msgs::msg::Joy::SharedPtr joy_msg)
+void TeleopTwistJoy::Impl::joy_callback(const sensor_msgs::msg::Joy::SharedPtr joy_msg)
 {
   if (enable_turbo_button >= 0 &&
     static_cast<int>(joy_msg->buttons.size()) > enable_turbo_button &&
     joy_msg->buttons[enable_turbo_button])
   {
-    sendCmdVelMsg(joy_msg, "turbo");
+    send_cmd_vel_msg(joy_msg, "turbo");
   } else if (!require_enable_button ||  // NOLINT
     (static_cast<int>(joy_msg->buttons.size()) > enable_button &&
     joy_msg->buttons[enable_button]))
   {
-    sendCmdVelMsg(joy_msg, "normal");
+    send_cmd_vel_msg(joy_msg, "normal");
   } else {
     // When enable button is released, immediately send a single no-motion command
     // in order to stop the robot.
