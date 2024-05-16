@@ -11,4 +11,4 @@ for node in nodes:
     os.system("ros2 lifecycle set "+node+" shutdown")
     os.system("killall "+node)
 
-os.kill(os.getpid(), signal.SIGINT)
+os.system("kill $bob")
