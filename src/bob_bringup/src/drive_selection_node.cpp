@@ -241,7 +241,7 @@ void launch_call(std::string drive_mode_status, std::string last_mode)
         system("shutdown now");
     }
     if (drive_mode_status == "Emergency Stop"){
-        system("kill -9 -TERM $(cat $PIDFILE) 2> /dev/null")
+        system("kill -9 -TERM $(cat $PIDFILE) 2> /dev/null");
     }
 }
 
