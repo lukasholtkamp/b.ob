@@ -147,9 +147,9 @@ std::string find_button(std::vector<int> buttons)
     }
     if (buttons[11] == 1)
     {
-        // Button Menu
+        // Menu Button
         // system("shutdown now");
-        return "Shutdown Button";
+        return "Shutdown";
     }
     else
     {
@@ -232,12 +232,17 @@ std::string find_axes(std::vector<float> axes, int size)
 */
 void launch_call(std::string drive_mode_status, std::string last_mode)
 {
-    if(last_mode=="Basic Drive Mode"){
+    if(last_mode=="Basic Drive Mode")
+    {
         system("killall teleop_node");
     }
     if (drive_mode_status=="Basic Drive Mode")
     {
         system("ros2 launch joy_linux basic_drive.launch.py &");
+    }
+    if(drive_mode_status == "Shutdown")
+    {
+        system("shutdown now");
     }
 }
 
