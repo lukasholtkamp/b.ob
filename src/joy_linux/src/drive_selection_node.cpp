@@ -27,17 +27,15 @@ public:
             "joy", 10, std::bind(&DriveModeSubscriber::topic_callback, this, _1));
 
         subscriber_ = this->create_subscription<std_msgs::msg::String>(
-            "drive_selection", 10, std::bind(&DriveModeSubscriber::status_callback, this, _1));
-            
+            "drive_mode_status", 10, std::bind(&DriveModeSubscriber::status_callback, this, _1));
+
         publisher_ = this->create_publisher<std_msgs::msg::String>("drive_mode_status", 10);
-    
     }
 
-    std::string last_mode="IDLE";
+    std::string last_mode = "IDLE";
 
 private:
-
-    void topic_callback(const sensor_msgs::msg::Joy &msg) const
+    void topic_callback(const sensor_msgs::msg::Joy &msg)
     {
         // // std::string axes=find_axes(msg.axes,msg.axes.size());
 
@@ -57,12 +55,14 @@ private:
         }
         */
         auto drive_mode_status = std_msgs::msg::String();
-                
-        if(find_button(msg.buttons) != last_mode){
-            drive_mode_status.data = find_button(msg.buttons);
-        }
-        else{
+
+        if (find_button(msg.buttons) == "")
+        {
             drive_mode_status.data = last_mode;
+        }
+        else
+        {
+            drive_mode_status.data = find_button(msg.buttons);
         }
 
         publisher_->publish(drive_mode_status);
@@ -70,8 +70,16 @@ private:
 
     void status_callback(const std_msgs::msg::String &msg)
     {
-        launch_call(msg.data, last_mode);
-        last_mode = msg.data;
+        if(last_mode != msg.data)
+        {
+            std::cout << "last: " << last_mode << " curr: " << msg.data << std::endl ;
+
+            launch_call(msg.data, last_mode);
+            last_mode = msg.data;
+            
+        }
+        
+        
     }
 
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr subscription_;
@@ -124,13 +132,12 @@ std::string find_button(std::vector<int> buttons)
         // Button RTS
         return "Button Right Thumbstick is pressed!";
     }
-    /*
-    if (buttons[x] == 1)
+    if (buttons[11] == 1)
     {
-        // Button x
-        system("shutdown now");
+        // Button Menu
+        // system("shutdown now");
+        return "Shutdown Button";
     }
-    */
     else
     {
         return "";
@@ -200,15 +207,14 @@ std::string find_axes(std::vector<float> axes, int size)
 }
 */
 
-void launch_call(std::string mode, std::string last_mode)
+void launch_call(std::string drive_mode_status, std::string last_mode)
 {
-    if (mode != last_mode && mode == "Basic Drive Mode")
-    {
-        system("ros2 launch joy_linux basic_drive.launch.py");
-    }
-    else if (mode != last_mode && mode == "Emergency Stop")
-    {
+    if(last_mode=="Basic Drive Mode"){
         system("killall teleop_node");
+    }
+    if (drive_mode_status=="Basic Drive Mode")
+    {
+        system("ros2 launch joy_linux basic_drive.launch.py &");
     }
 }
 
