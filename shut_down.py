@@ -8,6 +8,7 @@ for i in range(len(nodes)):
     nodes[i] = nodes[i][1:]
 
 for node in nodes:
+    os.system("ros2 lifecycle set "+node+" shutdown")
     os.system("killall "+node)
 
 os.kill(os.getpid(), signal.SIGINT)
