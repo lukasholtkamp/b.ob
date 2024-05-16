@@ -1,11 +1,11 @@
 teleop_twist_joy_node:
   ros__parameters:
-    axis_linear:  
+    axis_linear:
       x: 4
     scale_linear:
       x: 0.2
 
-    axis_angular:  
+    axis_angular:
       yaw: 0
     scale_angular:
       yaw: 0.2

@@ -31,22 +31,22 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
 namespace teleop_twist_joy
 {
 
-/**
- * Class implementing a basic Joy -> Twist translation.
- */
-class TELEOP_TWIST_JOY_EXPORT TeleopTwistJoy : public rclcpp::Node
-{
-public:
-  explicit TeleopTwistJoy(const rclcpp::NodeOptions & options);
+  /**
+   * Class implementing a basic Joy -> Twist translation.
+   */
+  class TELEOP_TWIST_JOY_EXPORT TeleopTwistJoy : public rclcpp::Node
+  {
+  public:
+    explicit TeleopTwistJoy(const rclcpp::NodeOptions &options);
 
-  virtual ~TeleopTwistJoy();
+    virtual ~TeleopTwistJoy();
 
-private:
-  struct Impl;
-  Impl * pimpl_;
-  OnSetParametersCallbackHandle::SharedPtr callback_handle;
-};
+  private:
+    struct Impl;
+    Impl *pimpl_;
+    OnSetParametersCallbackHandle::SharedPtr callback_handle;
+  };
 
-}  // namespace teleop_twist_joy
+} // namespace teleop_twist_joy
 
-#endif  // TELEOP_TWIST_JOY__TELEOP_TWIST_JOY_HPP_
+#endif // TELEOP_TWIST_JOY__TELEOP_TWIST_JOY_HPP_
