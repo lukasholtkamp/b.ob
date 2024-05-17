@@ -84,7 +84,7 @@ def generate_launch_description():
         ],
     )
 
-    # 
+    # Launch state pub node to publish the transforms
     robot_state_pub_node = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
@@ -95,7 +95,7 @@ def generate_launch_description():
         ],
     )
 
-    # 
+    # Launch Joint broadcaster to read all state interfaces
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
@@ -106,7 +106,7 @@ def generate_launch_description():
         ],
     )
 
-    # 
+    # Launch Controller to convert the command velocities to individual motor speeds
     robot_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
