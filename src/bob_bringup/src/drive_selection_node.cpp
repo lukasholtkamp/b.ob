@@ -23,13 +23,11 @@ public:
     {
         // Implementing the Subscriber for the Button request
         gamepad_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
-            "joy", 10, std::bind(&DriveMode::topic_callback, this, _1));
-
-
+            "joy", 10, std::bind(&DriveModeSubscriber::topic_callback, this, _1));
 
         // Implementing the Subscriber for Drive Mode request
-        subscriber_ = this->create_subscription<std_msgs::msg::String>(
-            "drive_mode_status", 10, std::bind(&DriveModeSubscriber::status_callback, this, _1));
+        status_subscriber = this->create_subscription<std_msgs::msg::String>(
+            "drive_mode_status", 10, std::bind(&DriveMode::status_callback, this, _1));
 
         // Implementing the Publisher for the Drive Mode Status
         status_publisher = this->create_publisher<std_msgs::msg::String>("drive_mode_status", 10);
@@ -41,23 +39,6 @@ private:
     // Button callback function
     void topic_callback(const sensor_msgs::msg::Joy &msg)
     {
-        // // std::string axes=find_axes(msg.axes,msg.axes.size());
-
-        // if (button != "")
-        // {
-        //     std::cout << button << std::endl;
-        //     std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        //     system("clear");
-        //     std::cout << button << std::endl;
-        // }
-        /*
-        if(axes!=""){
-            std::cout << axes << std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            system("clear");
-            std::cout << axes << std::endl ;
-        }
-        */
         auto drive_mode_status = std_msgs::msg::String();
 
         // Read button input, transfer it to the button output function and write it to the drive mode status
@@ -71,7 +52,7 @@ private:
         }
 
         // Transfers the drive mode status to the publisher
-        publisher_->publish(drive_mode_status);
+        status_publisher->publish(drive_mode_status);
     }
 
     // Drive Mode Status callback funtion
