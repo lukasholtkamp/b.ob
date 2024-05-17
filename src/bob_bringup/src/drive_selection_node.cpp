@@ -113,7 +113,7 @@ std::string find_button(std::vector<int> buttons)
     if (buttons[4] == 1)
     {
         // Button Y
-        return "Close ROS";
+        return "Return to Selection";
     }
     if (buttons[3] == 1)
     {
@@ -228,7 +228,7 @@ std::string find_axes(std::vector<float> axes, int size)
  */
 void launch_call(std::string drive_mode_status, std::string last_mode)
 {
-    if (last_mode == "Basic Drive Mode")
+    if (last_mode == "Basic Drive Mode" && drive_mode_status == "Return to Selection")
     {
         system("killall teleop_node");
     }
@@ -242,7 +242,7 @@ void launch_call(std::string drive_mode_status, std::string last_mode)
     }
     if (drive_mode_status == "Emergency Stop")
     {
-        kill(getppid(),9);
+        kill(getppid(), 9);
     }
 }
 
