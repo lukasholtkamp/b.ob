@@ -1,4 +1,4 @@
-#include "motor_encoder.hpp"
+#include "motor.hpp"
 #include <math.h>
 
 // Initialize pulse counters

@@ -16,19 +16,19 @@ std::string find_button(std::vector<int> buttons);         // <-- Implement find
 void launch_call(std::string mode, std::string last_mode); // <-- Implement launch_call function
 // std::string find_axes(std::vector<float> axes,float size);
 
-class DriveModeSubscriber : public rclcpp::Node
+class DriveMode : public rclcpp::Node
 {
 public:
-    DriveModeSubscriber()
+    DriveMode()
         : Node("drive_selection")
     {
         // Implementing the Subscriber for the Button request
         subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
-            "joy", 10, std::bind(&DriveModeSubscriber::topic_callback, this, _1));
+            "joy", 10, std::bind(&DriveMode::topic_callback, this, _1));
 
         // Implementing the Subscriber for Drive Mode request
         subscriber_ = this->create_subscription<std_msgs::msg::String>(
-            "drive_mode_status", 10, std::bind(&DriveModeSubscriber::status_callback, this, _1));
+            "drive_mode_status", 10, std::bind(&DriveMode::status_callback, this, _1));
 
         // Implementing the Publisher for the Drive Mode Status
         publisher_ = this->create_publisher<std_msgs::msg::String>("drive_mode_status", 10);
@@ -57,20 +57,20 @@ private:
             std::cout << axes << std::endl ;
         }
         */
-        auto drive_mode_status = std_msgs::msg::String();
+        auto drive_mode_status_msg = std_msgs::msg::String();
 
         // Read button input, transfer it to the button output function and write it to the drive mode status
         if (find_button(msg.buttons) == "")
         {
-            drive_mode_status.data = last_mode;
+            drive_mode_status_msg.data = last_mode;
         }
         else
         {
-            drive_mode_status.data = find_button(msg.buttons);
+            drive_mode_status_msg.data = find_button(msg.buttons);
         }
 
         // Transfers the drive mode status to the publisher
-        publisher_->publish(drive_mode_status);
+        publisher_->publish(drive_mode_status_msg);
     }
 
     // Drive Mode Status callback funtion
@@ -228,7 +228,7 @@ std::string find_axes(std::vector<float> axes, int size)
  */
 void launch_call(std::string drive_mode_status, std::string last_mode)
 {
-    if (last_mode == "Basic Drive Mode" && drive_mode_status == "Return to Selection")
+    if (last_mode == "Basic Drive Mode")
     {
         system("killall teleop_node");
     }
@@ -249,7 +249,7 @@ void launch_call(std::string drive_mode_status, std::string last_mode)
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<DriveModeSubscriber>());
+    rclcpp::spin(std::make_shared<DriveMode>());
     rclcpp::shutdown();
     return 0;
 }

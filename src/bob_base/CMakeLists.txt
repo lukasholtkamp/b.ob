@@ -26,7 +26,7 @@ endforeach()
 ## COMPILE
 add_library( bob_base SHARED
   src/diffbot_system.cpp
-  src/motor_encoder.cpp
+  src/motor.cpp
   src/wheel.cpp
 )
 

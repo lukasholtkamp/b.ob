@@ -1,16 +1,5 @@
-// Copyright 2021 ros2_control Development Team
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Based on: https://github.com/TheNoobInventor/lidarbot/blob/main/lidarbot_base/include/lidarbot_base/lidarbot_hardware.hpp
+// Date of Retrieval: 17.05.2024
 
 #ifndef DIFFDRIVE_BOB__DIFFBOT_SYSTEM_HPP_
 #define DIFFDRIVE_BOB__DIFFBOT_SYSTEM_HPP_
@@ -39,7 +28,7 @@
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 
-#include "motor_encoder.hpp"
+#include "motor.hpp"
 #include "wheel.hpp"
 
 using hardware_interface::CallbackReturn;
@@ -60,6 +49,7 @@ namespace bob_base
   public:
     DiffDriveBobHardware();
 
+    //! 
     CallbackReturn on_init(const hardware_interface::HardwareInfo &info) override;
 
     std::vector<hardware_interface::StateInterface> export_state_interfaces() override;

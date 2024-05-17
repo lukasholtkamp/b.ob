@@ -14,7 +14,6 @@ diffbot_base_controller:
     right_wheel_names: ["right_wheel_joint"]
 
     wheel_separation: 0.122
-    #wheels_per_side: 1  # actually 2, but both are controlled by 1 signal
     wheel_radius: 0.084
 
     wheel_separation_multiplier: 1.0
