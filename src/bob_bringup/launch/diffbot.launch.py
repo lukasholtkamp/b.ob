@@ -67,7 +67,6 @@ def generate_launch_description():
 
     x_scale = params["teleop_twist_joy_node"]["ros__parameters"]["scale_linear"]["x"]
 
-
     # Implement the launching Nodes with all parameters and declaring all necessary settings
     # Scale the max and min velocities by the x_scale
     control_node = Node(

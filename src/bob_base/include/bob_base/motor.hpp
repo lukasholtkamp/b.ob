@@ -23,10 +23,10 @@
 //! Function to send stop both motors
 void handler(int signo);
 
-//! Left wheel callback function to increase/decrease a pulse counter 
+//! Left wheel callback function to increase/decrease a pulse counter
 void left_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick);
 
-//! Right wheel callback function to increase/decrease a pulse counter 
+//! Right wheel callback function to increase/decrease a pulse counter
 void right_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick);
 
 //! Function to switch directions and send PWM to the motors
@@ -34,10 +34,9 @@ void set_motor_speeds(int pi, double left_wheel_command, double right_wheel_comm
 
 //! Function to return the pulse count values
 void read_encoder_values(int *left_encoder_value, int *right_encoder_value);
- 
+
 extern int left_wheel_pulse_count;
 extern int right_wheel_pulse_count;
 
 extern int left_wheel_direction;
 extern int right_wheel_direction;
-

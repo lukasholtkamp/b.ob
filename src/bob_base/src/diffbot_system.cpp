@@ -84,8 +84,8 @@ namespace bob_base
     set_mode(pi_int, RIGHT_PWM_PIN, PI_OUTPUT);
 
     // Setup Gpio Inputs
-    
-    // Direction Pins 
+
+    // Direction Pins
     set_mode(pi_int, LEFT_ALARM_PIN, PI_INPUT);
     set_mode(pi_int, RIGHT_ALARM_PIN, PI_INPUT);
 
