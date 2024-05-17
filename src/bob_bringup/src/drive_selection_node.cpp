@@ -23,7 +23,7 @@ public:
     {
         // Implementing the Subscriber for the Button request
         gamepad_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
-            "joy", 10, std::bind(&DriveModeSubscriber::topic_callback, this, _1));
+            "joy", 10, std::bind(&DriveMode::topic_callback, this, _1));
 
         // Implementing the Subscriber for Drive Mode request
         status_subscriber = this->create_subscription<std_msgs::msg::String>(
@@ -39,7 +39,7 @@ private:
     // Button callback function
     void topic_callback(const sensor_msgs::msg::Joy &msg)
     {
-        auto drive_mode_status = std_msgs::msg::String();
+        auto drive_mode_status_msg = std_msgs::msg::String();
 
         // Read button input, transfer it to the button output function and write it to the drive mode status
         if (find_button(msg.buttons) == "")
@@ -52,7 +52,7 @@ private:
         }
 
         // Transfers the drive mode status to the publisher
-        status_publisher->publish(drive_mode_status);
+        status_publisher->publish(drive_mode_status_msg);
     }
 
     // Drive Mode Status callback funtion
