@@ -14,7 +14,6 @@ using std::placeholders::_1;
 
 std::string find_button(std::vector<int> buttons);         // <-- Implement find_button function
 void launch_call(std::string mode, std::string last_mode); // <-- Implement launch_call function
-// std::string find_axes(std::vector<float> axes,float size);
 
 class DriveModeSubscriber : public rclcpp::Node
 {
@@ -23,15 +22,15 @@ public:
         : Node("drive_selection")
     {
         // Implementing the Subscriber for the Button request
-        subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
+        gamepad_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
             "joy", 10, std::bind(&DriveModeSubscriber::topic_callback, this, _1));
 
         // Implementing the Subscriber for Drive Mode request
-        subscriber_ = this->create_subscription<std_msgs::msg::String>(
+        status_subscriber = this->create_subscription<std_msgs::msg::String>(
             "drive_mode_status", 10, std::bind(&DriveModeSubscriber::status_callback, this, _1));
 
         // Implementing the Publisher for the Drive Mode Status
-        publisher_ = this->create_publisher<std_msgs::msg::String>("drive_mode_status", 10);
+        status_publisher = this->create_publisher<std_msgs::msg::String>("drive_mode_status", 10);
     }
 
     std::string last_mode = "IDLE"; // <-- Implementing the las_mode variable for the drive_mode_status request
@@ -40,23 +39,6 @@ private:
     // Button callback function
     void topic_callback(const sensor_msgs::msg::Joy &msg)
     {
-        // // std::string axes=find_axes(msg.axes,msg.axes.size());
-
-        // if (button != "")
-        // {
-        //     std::cout << button << std::endl;
-        //     std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        //     system("clear");
-        //     std::cout << button << std::endl;
-        // }
-        /*
-        if(axes!=""){
-            std::cout << axes << std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            system("clear");
-            std::cout << axes << std::endl ;
-        }
-        */
         auto drive_mode_status = std_msgs::msg::String();
 
         // Read button input, transfer it to the button output function and write it to the drive mode status
@@ -70,7 +52,7 @@ private:
         }
 
         // Transfers the drive mode status to the publisher
-        publisher_->publish(drive_mode_status);
+        status_publisher->publish(drive_mode_status);
     }
 
     // Drive Mode Status callback funtion
@@ -86,9 +68,9 @@ private:
         }
     }
 
-    rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr subscription_;
-    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscriber_;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
+    rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr gamepad_subscriber;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr status_subscriber;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_publisher;
 };
 
 /**
@@ -152,74 +134,6 @@ std::string find_button(std::vector<int> buttons)
         return "";
     }
 }
-
-/**
- * @brief Gets and read the axes input
- *
- * @return Which axes is triggerd and writes it to the terminal
- */
-/*
-std::string find_axes(std::vector<float> axes, int size)
-{
-    int pressed = -1;
-
-    for (int i = 0; i < size; i++)
-    {
-
-        if (buttons[i] > 0)
-        {
-            pressed = i;
-            break;
-        }
-    }
-
-    if (pressed == 0)
-    {
-        //  Left TS vertical Axes
-        return "Left Thumbstick vertikal Axes!";
-    }
-    if (pressed == 1)
-    {
-        // Left TS linear Axes
-        system("ĵoy_linux_node");
-        return "Left Thumbstick linear Axes!";
-    }
-    if (pressed == 2)
-    {
-        // Right TS vertical Axes
-        return "Right Thumbstick vertikal Axes!";
-    }
-    if (pressed == 3)
-    {
-        // Right TS linear Axes
-        return "Right Thumbstick linear Axes";
-    }
-    if (pressed == 4)
-    {
-        // Trigger RT
-        return "Right Trigger pressed!";
-    }
-    if (pressed == 5)
-    {
-        // Trigger LT
-        return "Left Trigger pressed!!";
-    }
-    if (pressed == 6)
-    {
-        // D-pad vertical
-        return "D-pad vertical Axes!";
-    }
-    if (pressed == 7)
-    {
-        // D-pad linear
-        return "D-pad linear Axes!";
-    }
-    else
-    {
-        return "";
-    }
-}
-*/
 
 /**
  * @brief Gets the actual drive mode status
