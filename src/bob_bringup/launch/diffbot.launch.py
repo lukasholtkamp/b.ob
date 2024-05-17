@@ -70,7 +70,7 @@ def generate_launch_description():
     robot_description = {"robot_description": robot_description_content}
 
     robot_controllers = os.path.join(
-        Path.cwd(), "src", "bob_bringup", "config", "diffbot_controllers.yaml"
+        Path.cwd(), "src", "bob_bringup", "config", "bob_controllers.yaml"
     )
 
     joy_params = os.path.join(

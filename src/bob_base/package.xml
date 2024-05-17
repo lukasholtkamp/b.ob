@@ -3,15 +3,15 @@
 <package format="3">
   <name>bob_base</name>
   <version>0.0.0</version>
-  <description>Demo package of `ros2_control` hardware for DiffBot.</description>
+  <description>Bob base motor driver package</description>
 
-  <maintainer email="denis.stogl@stoglrobotics.de">Dr.-Ing. Denis Štogl</maintainer>
-  <maintainer email="bence.magyar.robotics@gmail.com">Bence Magyar</maintainer>
-  <maintainer email="christoph.froehlich@ait.ac.at">Christoph Froehlich</maintainer>
+  <maintainer email="jkan67.de@gmail.com">Josh Kannemeyer</maintainer>
+  <maintainer email="luca.horstmann@bertrandt.com">Luca Horstmann</maintainer>
+  <maintainer email="nooraldeen.yamk@bertrandt.com">Nooraldeen Yamk</maintainer>
 
   <author email="denis.stogl@stoglrobotics.de">Dr.-Ing. Denis Štogl</author>
 
-  <license>Apache-2.0</license>
+  <license>BSD</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

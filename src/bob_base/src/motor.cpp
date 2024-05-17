@@ -9,7 +9,7 @@ int right_wheel_pulse_count = 0;
 int left_wheel_direction = CCW;
 int right_wheel_direction = CW;
 
-extern int *pi_int;
+extern int pi_sig;
 
 // Read wheel encoder values
 void read_encoder_values(int *left_encoder_value, int *right_encoder_value)
@@ -89,6 +89,7 @@ void set_motor_speeds(int pi, double left_wheel_command, double right_wheel_comm
         gpio_write(pi, RIGHT_DIRECTION_PIN, CCW);
     }
 
+    // Send PWM signals to motors
     set_PWM_dutycycle(pi, LEFT_PWM_PIN, (int)abs(left_wheel_command));
     set_PWM_dutycycle(pi, RIGHT_PWM_PIN, (int)abs(right_wheel_command));
 }
@@ -96,8 +97,8 @@ void set_motor_speeds(int pi, double left_wheel_command, double right_wheel_comm
 void handler(int signo)
 {
     (void)signo;
-    set_PWM_dutycycle(*pi_int, LEFT_PWM_PIN, 0);
-    set_PWM_dutycycle(*pi_int, RIGHT_PWM_PIN, 0);
+    set_PWM_dutycycle(pi_sig, LEFT_PWM_PIN, 0);
+    set_PWM_dutycycle(pi_sig, RIGHT_PWM_PIN, 0);
 
     exit(0);
 }

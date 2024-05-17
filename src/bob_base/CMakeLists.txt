@@ -30,6 +30,7 @@ add_library( bob_base SHARED
   src/wheel.cpp
 )
 
+# include folder for hpp files
 include_directories(
   include
   pigpio_INCLUDES
@@ -46,6 +47,7 @@ ament_target_dependencies(
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
 
+# link library to executable 
 target_link_libraries(bob_base PUBLIC pigpiod_if2)
 
 # Causes the visibility macros to use dllexport rather than dllimport,

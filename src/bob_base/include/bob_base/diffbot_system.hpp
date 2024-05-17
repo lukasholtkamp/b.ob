@@ -36,8 +36,14 @@ using hardware_interface::return_type;
 
 namespace bob_base
 {
+  //! This class was created using ros2_control concepts. <br>
+  //! More info: https://control.ros.org/rolling/index.html <br>
+
+  //! This class uses concepts of Lifecycle States. <br>
+  //! More info: https://design.ros2.org/articles/node_lifecycle.html
   class DiffDriveBobHardware : public hardware_interface::SystemInterface
   {
+    //! Configuration struct with name and motor parameter information
     struct Config
     {
       std::string left_wheel_name = "left_wheel";
@@ -49,29 +55,48 @@ namespace bob_base
   public:
     DiffDriveBobHardware();
 
-    //! 
+    //! Function that gets called when the startup state switches to the unconfigured state. <br>
+    //! Configuration parameters and the wheel objects are setup in this function.
     CallbackReturn on_init(const hardware_interface::HardwareInfo &info) override;
 
+    //! Function to declare which state interfaces exist
     std::vector<hardware_interface::StateInterface> export_state_interfaces() override;
 
+    //! Function to declare which command interfaces exist
     std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
 
+    //! Function that gets called when the unconfigured state switches to the inactive state. <br>
+    //! The gpio pins for the motor driver, encoder and alarm are setup in this function.
     CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override;
 
+    //! Function that gets called when the inactive state switches to the active state. <br>
+    //! Unused but can be used to engage actuators.
     CallbackReturn on_activate(const rclcpp_lifecycle::State &previous_state) override;
 
+    //! Function that gets called when the active state switches to the inactive state. <br>
+    //! Unused but can be used to disengage actuators.
     CallbackReturn on_deactivate(const rclcpp_lifecycle::State &previous_state) override;
 
+    //! Function that reads and updates to the state interfaces.
     return_type read(const rclcpp::Time &time, const rclcpp::Duration &period) override;
 
+    //! Function that write to the command interfaces.
     return_type write(const rclcpp::Time &time, const rclcpp::Duration &period) override;
 
   private:
+    //! Integer identifying the Raspberry pi which is being run
+    int pi_int;
+
+    //! Configuration object with all the necessary parameters
     Config config_;
 
+    //! Left Wheel object
     Wheel left_wheel_;
+
+    //! right Wheel object
     Wheel right_wheel_;
 
+    //! ROS Logger for displaying messages in terminal
     rclcpp::Logger logger_;
   };
 

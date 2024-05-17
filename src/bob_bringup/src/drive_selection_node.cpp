@@ -37,18 +37,18 @@ public:
 
 private:
     // Button callback function
-    void topic_callback(const sensor_msgs::msg::Joy &msg)
+    void topic_callback(const sensor_msgs::msg::Joy &joy_msg)
     {
         auto drive_mode_status = std_msgs::msg::String();
 
         // Read button input, transfer it to the button output function and write it to the drive mode status
-        if (find_button(msg.buttons) == "")
+        if (find_button(joy_msg.buttons) == "")
         {
             drive_mode_status_msg.data = last_mode;
         }
         else
         {
-            drive_mode_status_msg.data = find_button(msg.buttons);
+            drive_mode_status_msg.data = find_button(joy_msg.buttons);
         }
 
         // Transfers the drive mode status to the publisher
@@ -56,15 +56,15 @@ private:
     }
 
     // Drive Mode Status callback funtion
-    void status_callback(const std_msgs::msg::String &msg)
+    void status_callback(const std_msgs::msg::String &drive_mode_status_msg)
     {
         // Read the drive mode status, output in the terminal and transfer it to the launch function
-        if (last_mode != msg.data)
+        if (last_mode != drive_mode_status_msg.data)
         {
-            std::cout << "Driving Mode: " << msg.data << std::endl;
+            std::cout << "Driving Mode: " << drive_mode_status_msg.data << std::endl;
 
-            launch_call(msg.data, last_mode);
-            last_mode = msg.data;
+            launch_call(drive_mode_status_msg.data, last_mode);
+            last_mode = drive_mode_status_msg.data;
         }
     }
 

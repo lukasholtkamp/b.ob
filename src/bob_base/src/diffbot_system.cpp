@@ -1,25 +1,15 @@
-// Copyright 2021 ros2_control Development Team
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Based on: https://github.com/TheNoobInventor/lidarbot/blob/main/lidarbot_base/src/lidarbot_hardware.cpp
+// Date of Retrieval: 17.05.2024
 
 #include "diffbot_system.hpp"
 #include <sstream>
 
-int *pi_int;
+//! Same integer as pi_int but needed for the handler function to shut the motors down
+int pi_sig;
 
 namespace bob_base
 {
-
+  // Define logger
   DiffDriveBobHardware::DiffDriveBobHardware()
       : logger_(rclcpp::get_logger("DiffDriveBobHardware"))
   {
@@ -37,12 +27,13 @@ namespace bob_base
 
     RCLCPP_INFO(logger_, "Initializing...");
 
+    // read configuration parameters from the hardware information given in diffbot.ros2_control.xacro
     config_.left_wheel_name = info_.hardware_parameters["left_wheel_name"];
     config_.right_wheel_name = info_.hardware_parameters["right_wheel_name"];
     config_.enc_ticks_per_rev = std::stoi(info_.hardware_parameters["enc_ticks_per_rev"]);
     config_.loop_rate = std::stod(info_.hardware_parameters["loop_rate"]);
 
-    // Set up wheels
+    // Set up wheels with names and the encoder ticks per revolution
     left_wheel_.setup(config_.left_wheel_name, config_.enc_ticks_per_rev);
     right_wheel_.setup(config_.right_wheel_name, config_.enc_ticks_per_rev);
 
@@ -54,7 +45,7 @@ namespace bob_base
   std::vector<hardware_interface::StateInterface> DiffDriveBobHardware::export_state_interfaces()
   {
     std::vector<hardware_interface::StateInterface> state_interfaces;
-
+    // Declare both position and velocity states for both wheels
     state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_VELOCITY, &left_wheel_.velocity));
     state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_POSITION, &left_wheel_.position));
     state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, hardware_interface::HW_IF_VELOCITY, &right_wheel_.velocity));
@@ -66,7 +57,7 @@ namespace bob_base
   std::vector<hardware_interface::CommandInterface> DiffDriveBobHardware::export_command_interfaces()
   {
     std::vector<hardware_interface::CommandInterface> command_interfaces;
-
+    // Declare velocity command interface for both wheels
     command_interfaces.emplace_back(hardware_interface::CommandInterface(left_wheel_.name, hardware_interface::HW_IF_VELOCITY, &left_wheel_.command));
     command_interfaces.emplace_back(hardware_interface::CommandInterface(right_wheel_.name, hardware_interface::HW_IF_VELOCITY, &right_wheel_.command));
 
@@ -78,34 +69,45 @@ namespace bob_base
   {
     RCLCPP_INFO(logger_, "Configuring motors and encoders...");
 
-    // Initialize pigpio using GPIO BCM pin numbers
-    int pi = pigpio_start("172.22.2.165", NULL);
-    pi_int = &pi;
+    // Initialize pigpio using GPIO pin numbers and save returned integer
+    pi_int = pigpio_start(NULL, NULL);
+    pi_sig = pi_int;
 
     // Setup gpio outputs
-    set_mode(pi, LEFT_DIRECTION_PIN, PI_OUTPUT);
-    set_mode(pi, RIGHT_DIRECTION_PIN, PI_OUTPUT);
-    set_mode(pi, LEFT_PWM_PIN, PI_OUTPUT);
-    set_mode(pi, RIGHT_PWM_PIN, PI_OUTPUT);
 
-    // Setup GPIO encoder interrupt and direction pins
-    set_mode(pi, LEFT_ALARM_PIN, PI_INPUT);
-    set_mode(pi, RIGHT_ALARM_PIN, PI_INPUT);
-    set_mode(pi, LEFT_ENCODER_PIN, PI_INPUT);
-    set_mode(pi, RIGHT_ENCODER_PIN, PI_INPUT);
+    // Motor Direction Pins
+    set_mode(pi_int, LEFT_DIRECTION_PIN, PI_OUTPUT);
+    set_mode(pi_int, RIGHT_DIRECTION_PIN, PI_OUTPUT);
 
-    // Setup pull up resistors on encoder interrupt pins
-    set_pull_up_down(pi, LEFT_ALARM_PIN, PI_PUD_DOWN);
-    set_pull_up_down(pi, RIGHT_ALARM_PIN, PI_PUD_DOWN);
-    set_pull_up_down(pi, LEFT_ENCODER_PIN, PI_PUD_UP);
-    set_pull_up_down(pi, RIGHT_ENCODER_PIN, PI_PUD_UP);
+    // Motor Speed Pins
+    set_mode(pi_int, LEFT_PWM_PIN, PI_OUTPUT);
+    set_mode(pi_int, RIGHT_PWM_PIN, PI_OUTPUT);
 
-    // Initialize encoder interrupts for falling signal states
-    callback(pi, LEFT_ENCODER_PIN, RISING_EDGE, left_wheel_pulse);
-    callback(pi, RIGHT_ENCODER_PIN, RISING_EDGE, right_wheel_pulse);
+    // Setup Gpio Inputs
+    
+    // Direction Pins 
+    set_mode(pi_int, LEFT_ALARM_PIN, PI_INPUT);
+    set_mode(pi_int, RIGHT_ALARM_PIN, PI_INPUT);
 
-    gpio_write(pi, LEFT_DIRECTION_PIN, CCW);
-    gpio_write(pi, RIGHT_DIRECTION_PIN, CW);
+    // Encoder Pins
+    set_mode(pi_int, LEFT_ENCODER_PIN, PI_INPUT);
+    set_mode(pi_int, RIGHT_ENCODER_PIN, PI_INPUT);
+
+    // Setup Pull down Resistors on Alarm Pins
+    set_pull_up_down(pi_int, LEFT_ALARM_PIN, PI_PUD_DOWN);
+    set_pull_up_down(pi_int, RIGHT_ALARM_PIN, PI_PUD_DOWN);
+
+    // Setup Pull up Resistors on Encoder Pins
+    set_pull_up_down(pi_int, LEFT_ENCODER_PIN, PI_PUD_UP);
+    set_pull_up_down(pi_int, RIGHT_ENCODER_PIN, PI_PUD_UP);
+
+    // Initialize Encoder interrupt for Rising Edge signal states with the functions defined in motor.cpp
+    callback(pi_int, LEFT_ENCODER_PIN, RISING_EDGE, left_wheel_pulse);
+    callback(pi_int, RIGHT_ENCODER_PIN, RISING_EDGE, right_wheel_pulse);
+
+    // Set directions of motors to forward
+    gpio_write(pi_int, LEFT_DIRECTION_PIN, CCW);
+    gpio_write(pi_int, RIGHT_DIRECTION_PIN, CW);
 
     RCLCPP_INFO(logger_, "Successfully configured motors and encoders!");
 
@@ -136,8 +138,6 @@ namespace bob_base
       const rclcpp::Time & /*time*/, const rclcpp::Duration &period)
   {
 
-    // RCLCPP_INFO(logger_, "READ");
-
     // Obtain elapsed time
     double delta_seconds = period.seconds();
 
@@ -159,10 +159,11 @@ namespace bob_base
   hardware_interface::return_type bob_base ::DiffDriveBobHardware::write(
       const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
   {
-
+    // Map command velocity to value between 0 and 255
     double left_motor_speed = ceil(351.1478 * left_wheel_.command);
     double right_motor_speed = ceil(351.1478 * right_wheel_.command);
 
+    // Cap max and min velocities
     if (left_motor_speed >= 255)
     {
       left_motor_speed = 255;
@@ -182,10 +183,7 @@ namespace bob_base
     }
 
     // Send commands to motor driver
-    set_motor_speeds(*pi_int, left_motor_speed, right_motor_speed);
-
-    // RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Left command %.5f", left_motor_speed);
-    // RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Right command %.5f", right_motor_speed);
+    set_motor_speeds(pi_int, left_motor_speed, right_motor_speed);
 
     return hardware_interface::return_type::OK;
   }

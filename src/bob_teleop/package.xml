@@ -3,7 +3,7 @@
   <name>teleop_twist_joy</name>
   <version>2.6.0</version>
   <description>Generic joystick teleop for twist robots.</description>
-
+  
   <maintainer email="jkan67.de@gmail.com">Josh Kannemeyer</maintainer>
   <maintainer email="luca.horstmann@bertrandt.com">Luca Horstmann</maintainer>
   <maintainer email="nooraldeen.yamk@bertrandt.com">Nooraldeen Yamk</maintainer>

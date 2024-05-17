@@ -3,11 +3,12 @@
   <name>bob_bringup</name>
   <version>0.0.0</version>
   <description>Bob bringup package</description>
+
   <maintainer email="jkan67.de@gmail.com">Josh Kannemeyer</maintainer>
   <maintainer email="luca.horstmann@bertrandt.com">Luca Horstmann</maintainer>
   <maintainer email="nooraldeen.yamk@bertrandt.com">Nooraldeen Yamk</maintainer>
   
-  <license>CC-BY-SA-4.0 license </license>
+  <license>BSD</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   

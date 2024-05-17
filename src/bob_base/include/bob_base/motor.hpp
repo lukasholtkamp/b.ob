@@ -1,10 +1,5 @@
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-#ifndef __MOTOR_H__
-#define __MOTOR_H__
+// Based on: https://github.com/TheNoobInventor/lidarbot/blob/main/lidarbot_base/include/lidarbot_base/motor_encoder.h
+// Date of Retrieval: 17.05.2024
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,19 +20,24 @@ extern "C"
 #define CCW 1 //<-- Value to be written to direction pin for motor to go counterclockwise
 #define CW 0  //<-- Value to be written to direction pin for motor to go clockwise
 
-    void handler(int signo);
-    void left_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick);
-    void right_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick);
-    void set_motor_speeds(int pi, double left_wheel_command, double right_wheel_command);
-    void read_encoder_values(int *left_encoder_value, int *right_encoder_value);
+//! Function to send stop both motors
+void handler(int signo);
 
-    extern int left_wheel_pulse_count;
-    extern int right_wheel_pulse_count;
-    extern int left_wheel_direction;
-    extern int right_wheel_direction;
+//! Left wheel callback function to increase/decrease a pulse counter 
+void left_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick);
 
-#endif
+//! Right wheel callback function to increase/decrease a pulse counter 
+void right_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick);
 
-#ifdef __cplusplus
-}
-#endif
+//! Function to switch directions and send PWM to the motors
+void set_motor_speeds(int pi, double left_wheel_command, double right_wheel_command);
+
+//! Function to return the pulse count values
+void read_encoder_values(int *left_encoder_value, int *right_encoder_value);
+ 
+extern int left_wheel_pulse_count;
+extern int right_wheel_pulse_count;
+
+extern int left_wheel_direction;
+extern int right_wheel_direction;
+
