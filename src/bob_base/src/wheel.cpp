@@ -1,3 +1,6 @@
+// Based on: https://github.com/TheNoobInventor/lidarbot/blob/main/lidarbot_base/src/wheel.cpp
+// Date of Retrieval: 17.05.2024
+
 #include "wheel.hpp"
 
 // Wheel constructor

@@ -126,7 +126,6 @@ std::string find_button(std::vector<int> buttons)
     if (buttons[11] == 1)
     {
         // Menu Button
-        // system("shutdown now");
         return "Shutdown";
     }
     else

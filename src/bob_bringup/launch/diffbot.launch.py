@@ -1,16 +1,5 @@
-# Copyright 2020 ros2_control Development Team
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Based on: https://github.com/ros-controls/ros2_control_demos/blob/master/example_2/bringup/launch/diffbot.launch.py
+# Date of Retrieval: 17.05.2024
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, RegisterEventHandler
@@ -32,15 +21,10 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
+
     # Declare arguments
     declared_arguments = []
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "gui",
-            default_value="true",
-            description="Start RViz2 automatically with this launch file.",
-        )
-    )
+
     declared_arguments.append(
         DeclareLaunchArgument(
             "use_mock_hardware",
@@ -50,7 +34,6 @@ def generate_launch_description():
     )
 
     # Initialize Arguments
-    gui = LaunchConfiguration("gui")
     use_mock_hardware = LaunchConfiguration("use_mock_hardware")
 
     # Get URDF via xacro
@@ -69,6 +52,7 @@ def generate_launch_description():
 
     robot_description = {"robot_description": robot_description_content}
 
+    # Get settings file paths
     robot_controllers = os.path.join(
         Path.cwd(), "src", "bob_bringup", "config", "bob_controllers.yaml"
     )
@@ -77,12 +61,15 @@ def generate_launch_description():
         Path.cwd(), "src", "bob_teleop", "config", "xbox.config.yaml"
     )
 
+    # Obtain the x scale
     with open(joy_params, "r") as file:
         params = yaml.safe_load(file)
 
     x_scale = params["teleop_twist_joy_node"]["ros__parameters"]["scale_linear"]["x"]
 
+
     # Implement the launching Nodes with all parameters and declaring all necessary settings
+    # Scale the max and min velocities by the x_scale
     control_node = Node(
         package="controller_manager",
         executable="ros2_control_node",
@@ -96,6 +83,8 @@ def generate_launch_description():
             ("~/robot_description", "/robot_description"),
         ],
     )
+
+    # 
     robot_state_pub_node = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
@@ -106,6 +95,7 @@ def generate_launch_description():
         ],
     )
 
+    # 
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
@@ -116,6 +106,7 @@ def generate_launch_description():
         ],
     )
 
+    # 
     robot_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
@@ -126,11 +117,13 @@ def generate_launch_description():
         ],
     )
 
+    # Launch joy node to read gamepad commands
     joy_node = Node(
         package="joy",
         executable="joy_node",
     )
 
+    # Launch drive selection node to be able to switch between the modes
     drive_selection_node = Node(
         package="bob_bringup",
         executable="drive_selection_node",
