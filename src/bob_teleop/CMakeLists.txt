@@ -10,14 +10,18 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# find dependencies
 find_package(ament_cmake REQUIRED)
-
 find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
+## COMPILE
 add_library(${PROJECT_NAME} SHARED src/teleop_twist_joy.cpp)
+
+
+# link library to executable 
 target_link_libraries(${PROJECT_NAME}
   ${geometry_msgs_TARGETS}
   rclcpp::rclcpp
@@ -36,11 +40,13 @@ set_target_properties(${PROJECT_NAME} PROPERTIES EXPORT_HEADER_DIR "${CMAKE_CURR
 rclcpp_components_register_nodes(${PROJECT_NAME}
   "teleop_twist_joy::TeleopTwistJoy")
 
+## COMPILE
 add_executable(${PROJECT_NAME}_node src/teleop_node.cpp)
 target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME})
 set_target_properties(${PROJECT_NAME}_node
   PROPERTIES OUTPUT_NAME teleop_node PREFIX "")
 
+# install
 install(TARGETS ${PROJECT_NAME}
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib

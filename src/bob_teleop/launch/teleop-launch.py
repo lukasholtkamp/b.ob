@@ -1,3 +1,6 @@
+# Based on: https://github.com/TheNoobInventor/lidarbot/blob/main/lidarbot_base/src/lidarbot_hardware.cpp
+# Date of Retrieval: 17.05.2024
+
 import os
 from pathlib import Path
 
@@ -9,10 +12,12 @@ import launch_ros.actions
 
 def generate_launch_description():
 
+    # get config path of the teleop settings 
     config_filepath = os.path.join(
         Path.cwd(), "src", "bob_teleop", "config", "xbox.config.yaml"
     )
 
+    # launch node
     return launch.LaunchDescription(
         [
             launch_ros.actions.Node(
