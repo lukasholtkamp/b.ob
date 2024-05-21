@@ -27,7 +27,7 @@ void left_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick)
     (void)user_gpio;
     (void)level;
     (void)tick;
-    // left wheel direction
+    // Left wheel direction
     // CCW - forward
     // CW - backward
 
@@ -50,7 +50,7 @@ void right_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick)
     (void)user_gpio;
     (void)level;
     (void)tick;
-    // right wheel direction
+    // Right wheel direction
     // CW - forward,
     // CCW - backward
 

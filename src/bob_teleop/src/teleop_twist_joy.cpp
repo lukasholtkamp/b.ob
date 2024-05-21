@@ -52,8 +52,13 @@ namespace teleop_twist_joy
     bool inverted_reverse;
 
     std::map<std::string, int64_t> axis_linear_map;
+
+    // Added linear reverse map
     std::map<std::string, int64_t> axis_linear_reverse_map;
+
     std::map<std::string, std::map<std::string, double>> scale_linear_map;
+
+    // Added scale linear reverse map    
     std::map<std::string, std::map<std::string, double>> scale_linear_reverse_map;
 
     std::map<std::string, int64_t> axis_angular_map;
@@ -104,6 +109,7 @@ namespace teleop_twist_joy
     this->declare_parameters("axis_linear", default_linear_map);
     this->get_parameters("axis_linear", pimpl_->axis_linear_map);
 
+    // Default values for reverse map
     std::map<std::string, int64_t> default_linear_reverse_map{
         {"x", -1L},
         {"y", -1L},
@@ -128,6 +134,7 @@ namespace teleop_twist_joy
     this->declare_parameters("scale_linear", default_scale_linear_normal_map);
     this->get_parameters("scale_linear", pimpl_->scale_linear_map["normal"]);
 
+    // Default reverse scale values
     std::map<std::string, double> default_scale_linear_reverse_normal_map{
         {"x", 0.5},
         {"y", 0.0},
@@ -144,6 +151,7 @@ namespace teleop_twist_joy
     this->declare_parameters("scale_linear_turbo", default_scale_linear_turbo_map);
     this->get_parameters("scale_linear_turbo", pimpl_->scale_linear_map["turbo"]);
 
+    // Default reverse turbo map
     std::map<std::string, double> default_scale_linear_reverse_turbo_map{
         {"x", 1.0},
         {"y", 0.0},
@@ -189,6 +197,7 @@ namespace teleop_twist_joy
           pimpl_->scale_linear_map["turbo"][it->first]);
     }
 
+    // For loop to print the reverse axis details 
     for (std::map<std::string, int64_t>::iterator it = pimpl_->axis_linear_reverse_map.begin();
          it != pimpl_->axis_linear_reverse_map.end(); ++it)
     {
@@ -197,7 +206,7 @@ namespace teleop_twist_joy
           it->first.c_str(), it->second, pimpl_->scale_linear_reverse_map["normal"][it->first]);
       ROS_INFO_COND_NAMED(
           pimpl_->enable_turbo_button >= 0 && it->second != -1, "TeleopTwistJoy",
-          "Turbo for linear axis %s is scale %f.", it->first.c_str(),
+          "Turbo for reverse linear axis %s is scale %f.", it->first.c_str(),
           pimpl_->scale_linear_reverse_map["turbo"][it->first]);
     }
 
@@ -250,8 +259,10 @@ namespace teleop_twist_joy
         }
         else if (parameter.get_name() == "axis_linear.z")
         {
-          this->pimpl_->axis_linear_reverse_map["z"] = parameter.get_value<rclcpp::PARAMETER_INTEGER>();
+          this->pimpl_->axis_linear_map["z"] = parameter.get_value<rclcpp::PARAMETER_INTEGER>();
         }
+
+        // Read yaml file values
         else if (parameter.get_name() == "axis_linear_reverse.x")
         {
           this->pimpl_->axis_linear_reverse_map["x"] = parameter.get_value<rclcpp::PARAMETER_INTEGER>();
@@ -262,8 +273,10 @@ namespace teleop_twist_joy
         }
         else if (parameter.get_name() == "axis_linear_reverse.z")
         {
-          this->pimpl_->axis_linear_map["z"] = parameter.get_value<rclcpp::PARAMETER_INTEGER>();
+          this->pimpl_->axis_linear_reverse_map["z"] = parameter.get_value<rclcpp::PARAMETER_INTEGER>();
         }
+
+
         else if (parameter.get_name() == "axis_angular.yaw")
         {
           this->pimpl_->axis_angular_map["yaw"] = parameter.get_value<rclcpp::PARAMETER_INTEGER>();
@@ -307,6 +320,8 @@ namespace teleop_twist_joy
           this->pimpl_->scale_linear_map["normal"]["z"] =
               parameter.get_value<rclcpp::PARAMETER_DOUBLE>();
         }
+
+        // Read yaml file values
         else if (parameter.get_name() == "scale_linear_reverse.x")
         {
           this->pimpl_->scale_linear_reverse_map["normal"]["x"] =
@@ -322,6 +337,8 @@ namespace teleop_twist_joy
           this->pimpl_->scale_linear_reverse_map["normal"]["z"] =
               parameter.get_value<rclcpp::PARAMETER_DOUBLE>();
         }
+
+
         else if (parameter.get_name() == "scale_angular_turbo.yaw")
         {
           this->pimpl_->scale_angular_map["turbo"]["yaw"] =
@@ -410,16 +427,20 @@ namespace teleop_twist_joy
       const std::string &which_map,
       geometry_msgs::msg::Twist *cmd_vel_msg)
   {
+    // Instantiate variables
     double reverse;
     double forward;
 
     double lin_x = 0;
 
+    // Check if using triggers for driving forward or backward
     if (axis_linear_reverse_map.at("x") == 4 || axis_linear_reverse_map.at("x") == 5 || axis_linear_map.at("x") == 4 || axis_linear_map.at("x") == 5)
     {
+      // Map the trigger values to 0 to 1
       reverse = std::round(-0.5 * (1 - joy_msg->axes[axis_linear_reverse_map.at("x")]) * 1000000.0) / 1000000.0;
       forward = std::round(0.5 * (1 - joy_msg->axes[axis_linear_map.at("x")]) * 1000000.0) / 1000000.0;
 
+      // Ensure that only driving forward or backward
       if (reverse < 0 && forward == 0)
       {
         lin_x = reverse * scale_linear_reverse_map[which_map].at("x");
@@ -431,6 +452,7 @@ namespace teleop_twist_joy
       }
     }
 
+    // Default method in original code
     else
     {
       lin_x = get_val(joy_msg, axis_linear_map, scale_linear_map[which_map], "x");

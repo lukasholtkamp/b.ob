@@ -12,12 +12,12 @@ import launch_ros.actions
 
 def generate_launch_description():
 
-    # get config path of the teleop settings
+    # Get config path of the teleop settings
     config_filepath = os.path.join(
         Path.cwd(), "src", "bob_teleop", "config", "xbox.config.yaml"
     )
 
-    # launch node
+    # Launch node
     return launch.LaunchDescription(
         [
             launch_ros.actions.Node(

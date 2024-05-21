@@ -93,7 +93,7 @@ namespace bob_base
     //! Left Wheel object
     Wheel left_wheel_;
 
-    //! right Wheel object
+    //! Right Wheel object
     Wheel right_wheel_;
 
     //! ROS Logger for displaying messages in terminal
