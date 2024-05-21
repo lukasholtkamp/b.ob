@@ -12,6 +12,7 @@ int right_wheel_pulse_count = 0;
 int left_wheel_direction = CCW;
 int right_wheel_direction = CW;
 
+// ID for pi obtained from running pigio package
 extern int pi_sig;
 
 // Read wheel encoder values

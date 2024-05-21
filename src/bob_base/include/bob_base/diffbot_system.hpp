@@ -59,15 +59,15 @@ namespace bob_base
     //! Configuration parameters and the wheel objects are setup in this function.
     CallbackReturn on_init(const hardware_interface::HardwareInfo &info) override;
 
+    //! Function that gets called when the unconfigured state switches to the inactive state. <br>
+    //! The gpio pins for the motor driver, encoder and alarm are setup in this function.
+    CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override;
+
     //! Function to declare which state interfaces exist
     std::vector<hardware_interface::StateInterface> export_state_interfaces() override;
 
     //! Function to declare which command interfaces exist
     std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
-
-    //! Function that gets called when the unconfigured state switches to the inactive state. <br>
-    //! The gpio pins for the motor driver, encoder and alarm are setup in this function.
-    CallbackReturn on_configure(const rclcpp_lifecycle::State &previous_state) override;
 
     //! Function that gets called when the inactive state switches to the active state. <br>
     //! Unused but can be used to engage actuators.

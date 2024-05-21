@@ -54,8 +54,8 @@ namespace teleop_twist_joy
     std::map<std::string, int64_t> axis_linear_map;
     std::map<std::string, int64_t> axis_linear_reverse_map;
     std::map<std::string, std::map<std::string, double>> scale_linear_map;
+    //! added a scale_linear_reverse_map
     std::map<std::string, std::map<std::string, double>> scale_linear_reverse_map;
-
     std::map<std::string, int64_t> axis_angular_map;
     std::map<std::string, std::map<std::string, double>> scale_angular_map;
 
