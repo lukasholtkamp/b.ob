@@ -104,22 +104,22 @@ std::string find_button(std::vector<int> buttons)
     if (buttons[6] == 1)
     {
         // Button LB
-        return "Button Left Bumper is pressed!";
+        return "";
     }
     if (buttons[7] == 1)
     {
         // Button RB
-        return "Button Right Bumper is pressed!";
+        return "";
     }
     if (buttons[13] == 1)
     {
         // Button LTS
-        return "Button Left Thumbstick is pressed!";
+        return "";
     }
     if (buttons[14] == 1)
     {
         // Button RTS
-        return "Button Right Thumbstick is pressed!";
+        return "";
     }
     if (buttons[11] == 1)
     {
