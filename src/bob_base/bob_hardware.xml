@@ -1,3 +1,6 @@
+<!--Based on: https://github.com/TheNoobInventor/lidarbot/blob/main/lidarbot_base/lidarbot_hardware.xml-->
+<!--Date of Retrieval: 17.05.2024-->
+
 <library path="bob_base">
   <class name="bob_base/DiffDriveBobHardware"
          type="bob_base::DiffDriveBobHardware"

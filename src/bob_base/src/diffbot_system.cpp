@@ -18,6 +18,7 @@ namespace bob_base
   hardware_interface::CallbackReturn DiffDriveBobHardware::on_init(
       const hardware_interface::HardwareInfo &info)
   {
+    // Check for errors
     if (
         hardware_interface::SystemInterface::on_init(info) !=
         hardware_interface::CallbackReturn::SUCCESS)
@@ -27,7 +28,7 @@ namespace bob_base
 
     RCLCPP_INFO(logger_, "Initializing...");
 
-    // read configuration parameters from the hardware information given in diffbot.ros2_control.xacro
+    // Read configuration parameters from the hardware information given in diffbot.ros2_control.xacro
     config_.left_wheel_name = info_.hardware_parameters["left_wheel_name"];
     config_.right_wheel_name = info_.hardware_parameters["right_wheel_name"];
     config_.enc_ticks_per_rev = std::stoi(info_.hardware_parameters["enc_ticks_per_rev"]);
@@ -40,28 +41,6 @@ namespace bob_base
     RCLCPP_INFO(logger_, "Finished initialization");
 
     return hardware_interface::CallbackReturn::SUCCESS;
-  }
-
-  std::vector<hardware_interface::StateInterface> DiffDriveBobHardware::export_state_interfaces()
-  {
-    std::vector<hardware_interface::StateInterface> state_interfaces;
-    // Declare both position and velocity states for both wheels
-    state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_VELOCITY, &left_wheel_.velocity));
-    state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_POSITION, &left_wheel_.position));
-    state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, hardware_interface::HW_IF_VELOCITY, &right_wheel_.velocity));
-    state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, hardware_interface::HW_IF_POSITION, &right_wheel_.position));
-
-    return state_interfaces;
-  }
-
-  std::vector<hardware_interface::CommandInterface> DiffDriveBobHardware::export_command_interfaces()
-  {
-    std::vector<hardware_interface::CommandInterface> command_interfaces;
-    // Declare velocity command interface for both wheels
-    command_interfaces.emplace_back(hardware_interface::CommandInterface(left_wheel_.name, hardware_interface::HW_IF_VELOCITY, &left_wheel_.command));
-    command_interfaces.emplace_back(hardware_interface::CommandInterface(right_wheel_.name, hardware_interface::HW_IF_VELOCITY, &right_wheel_.command));
-
-    return command_interfaces;
   }
 
   hardware_interface::CallbackReturn DiffDriveBobHardware::on_configure(
@@ -112,6 +91,28 @@ namespace bob_base
     RCLCPP_INFO(logger_, "Successfully configured motors and encoders!");
 
     return hardware_interface::CallbackReturn::SUCCESS;
+  }
+
+  std::vector<hardware_interface::StateInterface> DiffDriveBobHardware::export_state_interfaces()
+  {
+    std::vector<hardware_interface::StateInterface> state_interfaces;
+    // Declare both position and velocity states for both wheels
+    state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_VELOCITY, &left_wheel_.velocity));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_POSITION, &left_wheel_.position));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, hardware_interface::HW_IF_VELOCITY, &right_wheel_.velocity));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, hardware_interface::HW_IF_POSITION, &right_wheel_.position));
+
+    return state_interfaces;
+  }
+
+  std::vector<hardware_interface::CommandInterface> DiffDriveBobHardware::export_command_interfaces()
+  {
+    std::vector<hardware_interface::CommandInterface> command_interfaces;
+    // Declare velocity command interface for both wheels
+    command_interfaces.emplace_back(hardware_interface::CommandInterface(left_wheel_.name, hardware_interface::HW_IF_VELOCITY, &left_wheel_.command));
+    command_interfaces.emplace_back(hardware_interface::CommandInterface(right_wheel_.name, hardware_interface::HW_IF_VELOCITY, &right_wheel_.command));
+
+    return command_interfaces;
   }
 
   hardware_interface::CallbackReturn DiffDriveBobHardware::on_activate(

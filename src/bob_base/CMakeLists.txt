@@ -1,3 +1,6 @@
+# Based on: https://github.com/TheNoobInventor/lidarbot/blob/main/lidarbot_base/CMakeLists.txt
+# Date of Retrieval: 17.05.2024
+
 cmake_minimum_required(VERSION 3.16)
 project(bob_base LANGUAGES CXX)
 
