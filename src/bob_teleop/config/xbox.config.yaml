@@ -17,6 +17,4 @@ teleop_twist_joy_node:
 
     publish_stamped_twist: True
 
-    require_enable_button: True
-
-    enable_button: 7
+    require_enable_button: False

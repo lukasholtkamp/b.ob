@@ -2,7 +2,7 @@
 # Date of Retrieval: 17.05.2024
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, RegisterEventHandler
+from launch.actions import DeclareLaunchArgument, RegisterEventHandler,LogInfo
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
 from launch.substitutions import (
@@ -139,6 +139,17 @@ def generate_launch_description():
         )
     )
 
+    # Send message to turn on Xbox controller
+    turn_on_xbox= (
+        RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=robot_controller_spawner,
+                on_exit=[LogInfo(msg='Turn on Xbox controller')],
+            )
+        )
+    )
+           
+
     nodes = [
         joy_node,
         drive_selection_node,
@@ -146,6 +157,7 @@ def generate_launch_description():
         robot_state_pub_node,
         joint_state_broadcaster_spawner,
         delay_for_joint_state_broadcaster_spawner,
+        turn_on_xbox,
     ]
 
     return LaunchDescription(declared_arguments + nodes)
