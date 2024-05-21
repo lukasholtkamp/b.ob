@@ -1,0 +1,13 @@
+<!--Based on: https://github.com/TheNoobInventor/lidarbot/blob/main/lidarbot_base/lidarbot_hardware.xml-->
+<!--Date of Retrieval: 17.05.2024-->
+
+<library path="bob_base">
+  <class name="bob_base/DiffDriveBobHardware"
+         type="bob_base::DiffDriveBobHardware"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      This is a copy of the ros2_control DiffBot example using a system hardware interface-type. It uses velocity command and position state interface. The example is the starting point to implement a hardware interface for differential-drive mobile robots.
+    </description>
+  </class>
+</library>
+

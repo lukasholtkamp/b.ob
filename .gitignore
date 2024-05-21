@@ -1,2 +1,6 @@
 .vscode
-log
+log/
+install/
+build/
+html/
+latex/
