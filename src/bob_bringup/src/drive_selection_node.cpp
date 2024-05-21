@@ -89,7 +89,6 @@ std::string find_button(std::vector<int> buttons)
     if (buttons[1] == 1)
     {
         // Button B
-        // system("killall teleop_node");
         return "Emergency Stop";
     }
     if (buttons[4] == 1)
@@ -100,7 +99,6 @@ std::string find_button(std::vector<int> buttons)
     if (buttons[3] == 1)
     {
         // Button X
-        // system("ros2 launch joy_linux basic_drive.launch.py");
         return "Basic Drive Mode";
     }
     if (buttons[6] == 1)
