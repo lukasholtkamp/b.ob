@@ -46,9 +46,13 @@ namespace bob_base
     //! Configuration struct with name and motor parameter information
     struct Config
     {
+      //! Name that can be found in the URDF description of B.ob
       std::string left_wheel_name = "left_wheel";
+      //! Name that can be found in the URDF description of B.ob
       std::string right_wheel_name = "right_wheel";
+      //! The number of encoder ticks in one revolution
       int enc_ticks_per_rev = 98;
+      //! The loop rate of sending reading and writing commands to B.ob
       double loop_rate = 30.0;
     };
 

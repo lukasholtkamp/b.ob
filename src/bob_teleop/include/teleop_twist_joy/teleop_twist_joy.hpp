@@ -22,7 +22,10 @@ namespace teleop_twist_joy
 
   private:
     struct Impl;
+    //! A struct with all the parameters for teleoperation
     Impl *pimpl_;
+
+    //! Callback function handle for the joy_sub subscriber to listen to the joy topic
     OnSetParametersCallbackHandle::SharedPtr callback_handle;
   };
 
