@@ -32,37 +32,58 @@ namespace teleop_twist_joy
    */
   struct TeleopTwistJoy::Impl
   {
+    //! Callback function for the joy_sub subscriber to listen to the joy topic
     void joy_callback(const sensor_msgs::msg::Joy::SharedPtr joy);
+    //! Function to publish calculated velocity to cmd_vel_pub
     void send_cmd_vel_msg(const sensor_msgs::msg::Joy::SharedPtr, const std::string &which_map);
+    //! Function for filling out the cmd_vel_msg
     void fill_cmd_vel_msg(
         const sensor_msgs::msg::Joy::SharedPtr, const std::string &which_map,
         geometry_msgs::msg::Twist *cmd_vel_msg);
 
+    //! Subscriber to listen to joy topic for the speed controlling axes
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub;
+    //! Publisher for sending the command velocity on the /cmd_vel topic
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub;
+    //! Publisher for sending the time stamped command velocity on the /cmd_vel topic
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr cmd_vel_stamped_pub;
+    //! Clock used for time stamping
     rclcpp::Clock::SharedPtr clock;
 
+    //! Boolean to decide whether the command velocity is time stmapped or not
     bool publish_stamped_twist;
+    //! ID for the frame
     std::string frame_id;
+    //! Boolean for whether a enable button needs to be held for the messages to be sent
     bool require_enable_button;
+    //! Integer of the button used for the enable functionality
     int64_t enable_button;
+    //! Integer of the button used for a turbo functionality
     int64_t enable_turbo_button;
-
+    //! Boolean to inverse the axis directions
     bool inverted_reverse;
 
+    //! Axis mapping from joystick for linear motion
     std::map<std::string, int64_t> axis_linear_map;
 
     // Added linear reverse map
+    //! Axis mapping from joystick for reverse driving
     std::map<std::string, int64_t> axis_linear_reverse_map;
 
+    //! Scale map to scale the linear limits
     std::map<std::string, std::map<std::string, double>> scale_linear_map;
 
-    // Added scale linear reverse map    
+    // Added scale linear reverse map  
+    //! Scale map to scale the reverse linear limits
     std::map<std::string, std::map<std::string, double>> scale_linear_reverse_map;
+
+    //! Axis mapping from joystick for angular motion
     std::map<std::string, int64_t> axis_angular_map;
+
+    //! Scale map to scale the angular limits
     std::map<std::string, std::map<std::string, double>> scale_angular_map;
 
+    //! Boolean used for sending 0 command velocity for the enable driving button functionality
     bool sent_disable_msg;
   };
 

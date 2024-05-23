@@ -10,11 +10,17 @@
 class Wheel
 {
 public:
+  //! Name that can be found in the URDF description of B.ob
   std::string name = "";
+  //! Counter to track 
   int encoder_ticks = 0;
+  //! Target velocity of wheel
   double command = 0.0;
+  //! Position of wheel according to encoder ticks
   double position = 0.0;
+  //! Velocity of wheel according to encoder ticks
   double velocity = 0.0;
+  //! The amount radian change with one encoder tick
   double rads_per_tick = 0.0;
 
   Wheel() = default;

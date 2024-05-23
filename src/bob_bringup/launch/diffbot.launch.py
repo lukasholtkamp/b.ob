@@ -1,5 +1,10 @@
-# Based on: https://github.com/ros-controls/ros2_control_demos/blob/master/example_2/bringup/launch/diffbot.launch.py
-# Date of Retrieval: 17.05.2024
+"""
+Launch file which calls all necessary nodes for running B.ob.
+
+Based on: https://github.com/ros-controls/ros2_control_demos/blob/master/example_2/bringup/launch/diffbot.launch.py
+Date of Retrieval: 17.05.2024
+
+"""
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, RegisterEventHandler,LogInfo
@@ -21,7 +26,11 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-
+    """
+    This function finds all need parameter files, robot descriptions and passes them to the necessary Nodes.
+    See https://github.com/lukasholtkamp/b.ob/wiki/Software-Documentation for detail about which nodes.
+    return: a Launch Description with all needed arguments and nodes
+    """
     # Declare arguments
     declared_arguments = []
 
