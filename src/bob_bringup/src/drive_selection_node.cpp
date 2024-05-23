@@ -42,7 +42,7 @@ private:
      * @brief Callback function called from the gamepad_subscriber which calls find_button to find which button was pressed and publishes this on the drive_mode_status topic
      *
      */
-    void topic_joy(const sensor_msgs::msg::Joy &joy_msg)
+    void joy_callback(const sensor_msgs::msg::Joy &joy_msg)
     {
         auto drive_mode_status_msg = std_msgs::msg::String();
 
