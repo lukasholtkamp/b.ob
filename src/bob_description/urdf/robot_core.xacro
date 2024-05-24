@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" >
 
-    <xacro:macro name="diffbot" params="prefix">
-    
     <!-- Body Dimensions -->
     <xacro:property name="main_body_x_dim" value="0.4"/>
     <xacro:property name="main_body_y_dim" value="0.3"/>
