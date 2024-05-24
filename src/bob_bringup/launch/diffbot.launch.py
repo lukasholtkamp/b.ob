@@ -66,16 +66,6 @@ def generate_launch_description():
         Path.cwd(), "src", "bob_bringup", "config", "bob_controllers.yaml"
     )
 
-    joy_params = os.path.join(
-        Path.cwd(), "src", "bob_teleop", "config", "xbox.config.yaml"
-    )
-
-    # Obtain the x scale
-    with open(joy_params, "r") as file:
-        params = yaml.safe_load(file)
-
-    x_scale = params["teleop_twist_joy_node"]["ros__parameters"]["scale_linear"]["x"]
-
     # Implement the launching Nodes with all parameters and declaring all necessary settings
     # Scale the max and min velocities by the x_scale
     control_node = Node(
@@ -83,8 +73,6 @@ def generate_launch_description():
         executable="ros2_control_node",
         parameters=[
             robot_controllers,
-            {"linear.x.max_velocity": 0.122 * x_scale},
-            {"linear.x.min_velocity": -0.122 * x_scale},
         ],
         output="both",
         remappings=[
