@@ -1,21 +1,25 @@
 <?xml version="1.0"?>
-<!-- Basic differential drive mobile base -->
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="diffdrive_robot">
-  <xacro:arg name="prefix" default="" />
-  <xacro:arg name="use_mock_hardware" default="false" />
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro"  name="robot">
+^   <xacro:arg name="prefix" default="" />
+    <xacro:arg name="use_mock_hardware" default="false" />
 
-  <xacro:include filename="$(find bob_description)/urdf/diffbot_description.urdf.xacro" />
+    <xacro:include filename="$(find bob_description)/urdf/robot_core.xacro" />
 
-  <!-- Import Rviz colors -->
-  <xacro:include filename="$(find bob_description)/urdf/diffbot.materials.xacro" />
+    <xacro:include filename="$(find bob_description)/urdf/robot.gazebo" />
 
-  <!-- Import diffbot ros2_control description -->
-  <xacro:include filename="$(find bob_description)/ros2_control/diffbot.ros2_control.xacro" />
+    <xacro:include filename="$(find bob_description)/urdf/lidar.xacro" />
 
-  <xacro:diffbot prefix="$(arg prefix)" />
+    <xacro:include filename="$(find bob_description)/urdf/camera.xacro" />
 
-  <xacro:diffbot_ros2_control
-    name="DiffBot" prefix="$(arg prefix)" use_mock_hardware="$(arg use_mock_hardware)"/>
+    <xacro:include filename="$(find bob_description)/urdf/accelerometer.xacro" />
+
+    <!-- Import diffbot ros2_control description -->
+    <xacro:include filename="$(find bob_description)/ros2_control/diffbot.ros2_control.xacro" />
+
+
+    <xacro:diffbot prefix="$(arg prefix)" />
+
+    <xacro:diffbot_ros2_control
+        name="DiffBot" prefix="$(arg prefix)" use_mock_hardware="$(arg use_mock_hardware)"/>
 
 </robot>
-
