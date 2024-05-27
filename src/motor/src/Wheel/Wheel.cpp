@@ -35,6 +35,7 @@ double Wheel::calculate_encoder_angle()
 
 void Wheel::set_speed(double speed){
     command = speed;
+    Motor.setSpeed(speed);
 }
 
 void Wheel::update(){
