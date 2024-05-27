@@ -161,8 +161,8 @@ namespace bob_base
       const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
   {
     // Map command velocity to value between 0 and 255
-    double left_motor_speed = ceil(351.1478 * left_wheel_.command);
-    double right_motor_speed = ceil(351.1478 * right_wheel_.command);
+    double left_motor_speed = ceil(22.42 * left_wheel_.command);
+    double right_motor_speed = ceil(22.42 * right_wheel_.command);
 
     // Cap max and min velocities
     if (left_motor_speed >= 255)
