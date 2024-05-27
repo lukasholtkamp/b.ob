@@ -26,7 +26,7 @@
 
     <!-- Rear Wheel Dimensions -->
     <xacro:property name="wheel_link_radius" value="0.08255"/>
-    <xacro:property name="wheel_link_length" value="0.037"/>
+    <xacro:property name="wheel_link_length" value="0.068"/>
     <xacro:property name="wheel_link_z_location" value="0"/>
 
     <!-- Front Wheel Dimensions -->

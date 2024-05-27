@@ -3,10 +3,15 @@
 
 #include "motor.hpp"
 #include <math.h>
+#include <iostream>
 
 // Initialize pulse counters
 int left_wheel_pulse_count = 0;
 int right_wheel_pulse_count = 0;
+u_int32_t _high_tick = 0;
+u_int32_t _period = 0;
+double radius = 0.08255;
+double ticks_per_rev = 98.0;
 
 // ID for pi obtained from running pigio package
 extern int pi_sig;
@@ -18,12 +23,20 @@ void read_encoder_values(int *left_encoder_value, int *right_encoder_value)
     *right_encoder_value = right_wheel_pulse_count;
 }
 
+/** 
+ * @brief calculate difference between two times
+ * @param o_tick old tick
+ * @param c_tick current tick
+ * @return time difference in microseconds
+ */
+u_int32_t tick_diff(u_int32_t o_tick, u_int32_t c_tick){
+  return c_tick-o_tick;
+}
+
 // Left wheel callback function
 void left_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick)
 {
     (void)user_gpio;
-    (void)level;
-    (void)tick;
     // Left wheel direction
     // CCW - forward
     // CW - backward
@@ -39,6 +52,21 @@ void left_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick)
     {
         left_wheel_pulse_count--;
     }
+
+    // rising edge
+    if(level == 1){
+
+        if(_high_tick != 0){
+            // find period between last pulse and this pulse
+            _period = tick_diff(_high_tick,tick);
+
+            double freq = 1000000.0/double(_period);
+            double speed = radius*2*M_PI*(freq/ticks_per_rev);
+            std::cout << "Left Wheel Speed Encoder: " << speed << std::endl;
+        }
+        _high_tick = tick;
+    }
+
 }
 
 // Right wheel callback function
@@ -93,6 +121,7 @@ void set_motor_speeds(int pi, double left_wheel_command, double right_wheel_comm
     set_PWM_dutycycle(pi, LEFT_PWM_PIN, (int)abs(left_wheel_command));
     set_PWM_dutycycle(pi, RIGHT_PWM_PIN, (int)abs(right_wheel_command));
 }
+
 
 void handler(int signo)
 {
