@@ -8,10 +8,6 @@
 int left_wheel_pulse_count = 0;
 int right_wheel_pulse_count = 0;
 
-// Initialize wheel directions
-int left_wheel_direction = CCW;
-int right_wheel_direction = CW;
-
 // ID for pi obtained from running pigio package
 extern int pi_sig;
 
@@ -33,7 +29,7 @@ void left_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick)
     // CW - backward
 
     // Read encoder direction value for left wheel
-    left_wheel_direction = gpio_read(pi, LEFT_DIRECTION_PIN);
+    int left_wheel_direction = gpio_read(pi, LEFT_DIRECTION_PIN);
 
     if (left_wheel_direction == CCW)
     {
@@ -56,7 +52,7 @@ void right_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick)
     // CCW - backward
 
     // Read encoder direction value for right wheel
-    right_wheel_direction = gpio_read(pi, RIGHT_DIRECTION_PIN);
+    int right_wheel_direction = gpio_read(pi, RIGHT_DIRECTION_PIN);
 
     if (right_wheel_direction == CW)
     {

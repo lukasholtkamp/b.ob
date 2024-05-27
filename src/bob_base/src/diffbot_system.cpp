@@ -154,6 +154,8 @@ namespace bob_base
     right_wheel_.position = right_wheel_.calculate_encoder_angle();
     right_wheel_.velocity = (right_wheel_.position - previous_position) / delta_seconds;
 
+    RCLCPP_INFO(logger_, "Left motor encoder velocity: %f", left_wheel_.velocity);
+
     return hardware_interface::return_type::OK;
   }
 
@@ -184,7 +186,7 @@ namespace bob_base
     }
 
     RCLCPP_INFO(logger_, "Left wheel command: %f", left_wheel_.command);
-    RCLCPP_INFO(logger_, "Left motor speed: %f", left_motor_speed);
+    RCLCPP_INFO(logger_, "Left motor speed signal: %f", left_motor_speed);
 
     // Send commands to motor driver
     set_motor_speeds(pi_int, left_motor_speed, right_motor_speed);
