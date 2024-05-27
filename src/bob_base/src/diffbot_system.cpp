@@ -145,6 +145,12 @@ namespace bob_base
     // Obtain encoder values
     read_encoder_values(&left_wheel_.encoder_ticks, &right_wheel_.encoder_ticks);
 
+
+    // Print encoder values to the terminal
+    RCLCPP_INFO(logger_, "Left wheel encoder ticks: %d", left_wheel_.encoder_ticks);
+    RCLCPP_INFO(logger_, "Right wheel encoder ticks: %d", right_wheel_.encoder_ticks);
+    // left_wheel_.encoder_ticks ++;
+
     // Calculate wheel positions and velocities
     double previous_position = left_wheel_.position;
     left_wheel_.position = left_wheel_.calculate_encoder_angle();
@@ -161,8 +167,12 @@ namespace bob_base
       const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
   {
     // Map command velocity to value between 0 and 255
-    double left_motor_speed = ceil(351.1478 * left_wheel_.command);
-    double right_motor_speed = ceil(351.1478 * right_wheel_.command);
+    double left_motor_speed = ceil(21.42 * left_wheel_.command);
+    double right_motor_speed = ceil(21.42 * right_wheel_.command);
+
+    // RCLCPP_INFO(logger_, "Left wheel command: %f", left_wheel_.command);
+    // RCLCPP_INFO(logger_, "Left motor speed: %f", left_motor_speed);
+
 
     // Cap max and min velocities
     if (left_motor_speed >= 255)
