@@ -183,6 +183,9 @@ namespace bob_base
       right_motor_speed = -255;
     }
 
+    RCLCPP_INFO(logger_, "Left wheel command: %f", left_wheel_.command);
+    RCLCPP_INFO(logger_, "Left motor speed: %f", left_motor_speed);
+
     // Send commands to motor driver
     set_motor_speeds(pi_int, left_motor_speed, right_motor_speed);
 
