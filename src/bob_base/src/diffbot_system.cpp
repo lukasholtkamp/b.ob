@@ -163,8 +163,16 @@ namespace bob_base
     // RCLCPP_INFO(logger_, "Left motor ros velocity: %f", left_wheel_.velocity);
     // RCLCPP_INFO(logger_, "Right motor ros velocity: %f", right_wheel_.velocity);
 
-    left_wheel_.alarm_status = gpio_read(pi_sig, LEFT_ALARM_PIN);
+    if(abs(right_wheel_.velocity)>0 && abs(left_wheel_.velocity)>0){
+      read_rpm_values(&left_wheel_.wheel_rpm,&right_wheel_.wheel_rpm);
+    }
+    else{
+      left_wheel_.wheel_rpm=0.0;
+      right_wheel_.wheel_rpm=0.0;
+    }
+    
     right_wheel_.alarm_status = gpio_read(pi_sig, RIGHT_ALARM_PIN);
+    left_wheel_.alarm_status = gpio_read(pi_sig, LEFT_ALARM_PIN);
 
     return hardware_interface::return_type::OK;
   }
