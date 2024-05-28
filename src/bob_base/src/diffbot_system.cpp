@@ -100,13 +100,13 @@ namespace bob_base
     // Declare both position and velocity states for both wheels
     state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_VELOCITY, &left_wheel_.velocity));
     state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_POSITION, &left_wheel_.position));
-    state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, &left_wheel_.rpm_name, &left_wheel_.wheel_rpm));
-    state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, &left_wheel_.alarm_name, &left_wheel_.alarm_status));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, left_wheel_.rpm_name, &left_wheel_.wheel_rpm));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, left_wheel_.alarm_name, &left_wheel_.alarm_status));
 
     state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, hardware_interface::HW_IF_VELOCITY, &right_wheel_.velocity));
     state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, hardware_interface::HW_IF_POSITION, &right_wheel_.position));
-    state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, &right_wheel_.rpm_name, &right_wheel_.wheel_rpm));
-    state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, &right_wheel_.alarm_name, &right_wheel_.alarm_status));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, right_wheel_.rpm_name, &right_wheel_.wheel_rpm));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, right_wheel_.alarm_name, &right_wheel_.alarm_status));
 
     return state_interfaces;
   }
@@ -160,8 +160,11 @@ namespace bob_base
     right_wheel_.position = right_wheel_.wheel_radius*right_wheel_.calculate_encoder_angle();
     right_wheel_.velocity = (right_wheel_.position - previous_position) / delta_seconds;
 
-    RCLCPP_INFO(logger_, "Left motor ros velocity: %f", left_wheel_.velocity);
-    RCLCPP_INFO(logger_, "Right motor ros velocity: %f", right_wheel_.velocity);
+    // RCLCPP_INFO(logger_, "Left motor ros velocity: %f", left_wheel_.velocity);
+    // RCLCPP_INFO(logger_, "Right motor ros velocity: %f", right_wheel_.velocity);
+
+    left_wheel_.alarm_status = gpio_read(pi_sig, LEFT_ALARM_PIN);
+    right_wheel_.alarm_status = gpio_read(pi_sig, RIGHT_ALARM_PIN);
 
     return hardware_interface::return_type::OK;
   }

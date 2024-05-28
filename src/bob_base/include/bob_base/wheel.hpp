@@ -29,7 +29,7 @@ public:
   double wheel_rpm = 0.0;
 
   std::string alarm_name = "alarm";
-  int alarm_status = 0;
+  double alarm_status = 0.0;
 
   Wheel() = default;
 
