@@ -51,9 +51,11 @@ namespace bob_base
       //! Name that can be found in the URDF description of B.ob
       std::string right_wheel_name = "right_wheel";
       //! The number of encoder ticks in one revolution
-      int enc_ticks_per_rev = 98;
+      int enc_ticks_per_rev = 45;
       //! The loop rate of sending reading and writing commands to B.ob
       double loop_rate = 30.0;
+      //! The wheel radius of B.ob
+      double wheel_radius = 0.08255;
     };
 
   public:

@@ -4,16 +4,17 @@
 #include "wheel.hpp"
 
 // Wheel constructor
-Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev)
+Wheel::Wheel(const std::string &wheel_name, int ticks_per_rev,double wheel_r)
 {
-    setup(wheel_name, ticks_per_rev);
+    setup(wheel_name, ticks_per_rev, wheel_r);
 }
 
 // Wheel setup function to assign values
-void Wheel::setup(const std::string &wheel_name, int ticks_per_rev)
+void Wheel::setup(const std::string &wheel_name, int ticks_per_rev,double wheel_r)
 {
     name = wheel_name;
     rads_per_tick = (2 * M_PI) / ticks_per_rev;
+    wheel_radius = wheel_r;
 }
 
 // Calculate the encoder angle
