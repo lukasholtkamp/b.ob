@@ -8,10 +8,12 @@
 // Initialize pulse counters
 int left_wheel_pulse_count = 0;
 int right_wheel_pulse_count = 0;
-u_int32_t _high_tick = 0;
-u_int32_t _period = 0;
+u_int32_t _high_tick_r = 0;
+u_int32_t _period_r = 0;
+u_int32_t _high_tick_l = 0;
+u_int32_t _period_l = 0;
 double radius = 0.08255;
-double ticks_per_rev = 98.0;
+double ticks_per_rev = 45.0;
 
 // ID for pi obtained from running pigio package
 extern int pi_sig;
@@ -56,15 +58,15 @@ void left_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick)
     // rising edge
     if(level == 1){
 
-        if(_high_tick != 0){
+        if(_high_tick_r != 0){
             // find period between last pulse and this pulse
-            _period = tick_diff(_high_tick,tick);
+            _period_l = tick_diff(_high_tick_l,tick);
 
-            double freq = 1000000.0/double(_period);
+            double freq = 1000000.0/double(_period_l);
             double speed = radius*2*M_PI*(freq/ticks_per_rev);
             std::cout << "Left Wheel Speed Encoder: " << speed << std::endl;
         }
-        _high_tick = tick;
+        _high_tick_l = tick;
     }
 
 }
@@ -89,6 +91,21 @@ void right_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick)
     else
     {
         right_wheel_pulse_count--;
+    }
+
+    // rising edge
+    if(level == 1){
+
+        if(_high_tick_r != 0){
+            // find period between last pulse and this pulse
+            _period_r = tick_diff(_high_tick_r,tick);
+
+            double freq = 1000000.0/double(_period_r);
+            double speed = radius*2*M_PI*(freq/ticks_per_rev);
+            std::cout << "Right Wheel Speed Encoder: " << speed << std::endl;
+            system("clear");
+        }
+        _high_tick_r = tick;
     }
 }
 
