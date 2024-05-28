@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(bob_description)
+project(bob_simulation)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -7,7 +7,7 @@ find_package(urdf REQUIRED)
 
 # install
 install(
-  DIRECTORY urdf ros2_control rviz
+  DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
 )
 

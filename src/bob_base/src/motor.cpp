@@ -3,14 +3,17 @@
 
 #include "motor.hpp"
 #include <math.h>
+#include <iostream>
 
 // Initialize pulse counters
 int left_wheel_pulse_count = 0;
 int right_wheel_pulse_count = 0;
-
-// Initialize wheel directions
-int left_wheel_direction = CCW;
-int right_wheel_direction = CW;
+u_int32_t _high_tick_r = 0;
+u_int32_t _period_r = 0;
+u_int32_t _high_tick_l = 0;
+u_int32_t _period_l = 0;
+double radius = 0.08255;
+double ticks_per_rev = 45.0;
 
 // ID for pi obtained from running pigio package
 extern int pi_sig;
@@ -22,18 +25,26 @@ void read_encoder_values(int *left_encoder_value, int *right_encoder_value)
     *right_encoder_value = right_wheel_pulse_count;
 }
 
+/** 
+ * @brief calculate difference between two times
+ * @param o_tick old tick
+ * @param c_tick current tick
+ * @return time difference in microseconds
+ */
+u_int32_t tick_diff(u_int32_t o_tick, u_int32_t c_tick){
+  return c_tick-o_tick;
+}
+
 // Left wheel callback function
 void left_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick)
 {
     (void)user_gpio;
-    (void)level;
-    (void)tick;
     // Left wheel direction
     // CCW - forward
     // CW - backward
 
     // Read encoder direction value for left wheel
-    left_wheel_direction = gpio_read(pi, LEFT_DIRECTION_PIN);
+    int left_wheel_direction = gpio_read(pi, LEFT_DIRECTION_PIN);
 
     if (left_wheel_direction == CCW)
     {
@@ -43,6 +54,23 @@ void left_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick)
     {
         left_wheel_pulse_count--;
     }
+
+    // // rising edge
+    // if(level == 1){
+
+    //     if(_high_tick_r != 0){
+    //         // find period between last pulse and this pulse
+    //         _period_l = tick_diff(_high_tick_l,tick);
+
+    //         double freq = 1000000.0/double(_period_l);
+    //         double speed = radius*2*M_PI*(freq/ticks_per_rev);
+    //         double RPM = (60*freq)/ticks_per_rev;
+
+    //         std::cout << "Left Wheel RPM Encoder: " << RPM << std::endl;
+    //     }
+    //     _high_tick_l = tick;
+    // }
+
 }
 
 // Right wheel callback function
@@ -56,7 +84,7 @@ void right_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick)
     // CCW - backward
 
     // Read encoder direction value for right wheel
-    right_wheel_direction = gpio_read(pi, RIGHT_DIRECTION_PIN);
+    int right_wheel_direction = gpio_read(pi, RIGHT_DIRECTION_PIN);
 
     if (right_wheel_direction == CW)
     {
@@ -66,6 +94,22 @@ void right_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick)
     {
         right_wheel_pulse_count--;
     }
+
+    // // rising edge
+    // if(level == 1){
+
+    //     if(_high_tick_r != 0){
+    //         // find period between last pulse and this pulse
+    //         _period_r = tick_diff(_high_tick_r,tick);
+
+    //         double freq = 1000000.0/double(_period_r);
+    //         double speed = radius*2*M_PI*(freq/ticks_per_rev);
+    //         double RPM = (60*freq)/ticks_per_rev;
+
+    //         std::cout << "Right Wheel RPM Encoder: " << RPM << std::endl;
+    //     }
+    //     _high_tick_r = tick;
+    // }
 }
 
 // Set each motor speed from the respective velocity command interface
@@ -97,6 +141,7 @@ void set_motor_speeds(int pi, double left_wheel_command, double right_wheel_comm
     set_PWM_dutycycle(pi, LEFT_PWM_PIN, (int)abs(left_wheel_command));
     set_PWM_dutycycle(pi, RIGHT_PWM_PIN, (int)abs(right_wheel_command));
 }
+
 
 void handler(int signo)
 {

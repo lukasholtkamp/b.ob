@@ -33,10 +33,11 @@ namespace bob_base
     config_.right_wheel_name = info_.hardware_parameters["right_wheel_name"];
     config_.enc_ticks_per_rev = std::stoi(info_.hardware_parameters["enc_ticks_per_rev"]);
     config_.loop_rate = std::stod(info_.hardware_parameters["loop_rate"]);
+    config_.wheel_radius = std::stod(info_.hardware_parameters["wheel_radius"]);
 
     // Set up wheels with names and the encoder ticks per revolution
-    left_wheel_.setup(config_.left_wheel_name, config_.enc_ticks_per_rev);
-    right_wheel_.setup(config_.right_wheel_name, config_.enc_ticks_per_rev);
+    left_wheel_.setup(config_.left_wheel_name, config_.enc_ticks_per_rev,config_.wheel_radius);
+    right_wheel_.setup(config_.right_wheel_name, config_.enc_ticks_per_rev,config_.wheel_radius);
 
     RCLCPP_INFO(logger_, "Finished initialization");
 
@@ -145,20 +146,17 @@ namespace bob_base
     // Obtain encoder values
     read_encoder_values(&left_wheel_.encoder_ticks, &right_wheel_.encoder_ticks);
 
-
-    // Print encoder values to the terminal
-    RCLCPP_INFO(logger_, "Left wheel encoder ticks: %d", left_wheel_.encoder_ticks);
-    RCLCPP_INFO(logger_, "Right wheel encoder ticks: %d", right_wheel_.encoder_ticks);
-    // left_wheel_.encoder_ticks ++;
-
     // Calculate wheel positions and velocities
     double previous_position = left_wheel_.position;
-    left_wheel_.position = left_wheel_.calculate_encoder_angle();
+    left_wheel_.position = left_wheel_.wheel_radius*left_wheel_.calculate_encoder_angle();
     left_wheel_.velocity = (left_wheel_.position - previous_position) / delta_seconds;
 
     previous_position = right_wheel_.position;
-    right_wheel_.position = right_wheel_.calculate_encoder_angle();
+    right_wheel_.position = right_wheel_.wheel_radius*right_wheel_.calculate_encoder_angle();
     right_wheel_.velocity = (right_wheel_.position - previous_position) / delta_seconds;
+
+    RCLCPP_INFO(logger_, "Left motor ros velocity: %f", left_wheel_.velocity);
+    RCLCPP_INFO(logger_, "Right motor ros velocity: %f", right_wheel_.velocity);
 
     return hardware_interface::return_type::OK;
   }
@@ -167,12 +165,8 @@ namespace bob_base
       const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
   {
     // Map command velocity to value between 0 and 255
-    double left_motor_speed = ceil(21.42 * left_wheel_.command);
-    double right_motor_speed = ceil(21.42 * right_wheel_.command);
-
-    // RCLCPP_INFO(logger_, "Left wheel command: %f", left_wheel_.command);
-    // RCLCPP_INFO(logger_, "Left motor speed: %f", left_motor_speed);
-
+    double left_motor_speed = ceil(263.13 * left_wheel_.command);
+    double right_motor_speed = ceil(263.13 * right_wheel_.command);
 
     // Cap max and min velocities
     if (left_motor_speed >= 255)
@@ -192,6 +186,9 @@ namespace bob_base
     {
       right_motor_speed = -255;
     }
+
+    // RCLCPP_INFO(logger_, "Left wheel command: %f", left_wheel_.command);
+    // RCLCPP_INFO(logger_, "Left motor speed signal: %f", left_motor_speed);
 
     // Send commands to motor driver
     set_motor_speeds(pi_int, left_motor_speed, right_motor_speed);

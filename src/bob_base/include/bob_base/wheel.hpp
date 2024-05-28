@@ -22,14 +22,16 @@ public:
   double velocity = 0.0;
   //! The amount radian change with one encoder tick
   double rads_per_tick = 0.0;
+  //! Wheel radius
+  double wheel_radius = 0.0;
 
   Wheel() = default;
 
   //! Wheel Constructor
-  Wheel(const std::string &wheel_name, int ticks_per_rev);
+  Wheel(const std::string &wheel_name, int ticks_per_rev, double wheel_r);
 
   //! Function to assign variables
-  void setup(const std::string &wheel_name, int ticks_per_rev);
+  void setup(const std::string &wheel_name, int ticks_per_rev,double wheel_r);
 
   //! Function to calculate the encoder angle in radians
   double calculate_encoder_angle();

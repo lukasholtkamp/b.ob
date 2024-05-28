@@ -8,12 +8,12 @@ teleop_twist_joy_node:
     axis_angular:
       yaw: 0
     scale_angular:
-      yaw: 0.35
+      yaw: 1.0
 
     axis_linear_reverse:
       x: 5
     scale_linear_reverse:
-      x: 0.4
+      x: 1.0
 
     publish_stamped_twist: True
 

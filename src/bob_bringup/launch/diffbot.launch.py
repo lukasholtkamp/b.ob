@@ -19,7 +19,7 @@ from launch.substitutions import (
 
 from pathlib import Path
 import os
-import yaml
+import xacro
 
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -36,34 +36,41 @@ def generate_launch_description():
 
     declared_arguments.append(
         DeclareLaunchArgument(
-            "use_mock_hardware",
+            "gui",
+            default_value="true",
+            description="Start RViz2 automatically with this launch file.",
+        )
+    )
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "use_sim_time",
             default_value="false",
-            description="Start robot with mock hardware mirroring command to its states.",
+            description="Use sim time if true",
         )
     )
 
     # Initialize Arguments
-    use_mock_hardware = LaunchConfiguration("use_mock_hardware")
+    gui = LaunchConfiguration("gui")
+    use_sim_time = LaunchConfiguration("use_sim_time")
 
     # Get URDF via xacro
-    robot_description_content = Command(
-        [
-            PathJoinSubstitution([FindExecutable(name="xacro")]),
-            " ",
-            PathJoinSubstitution(
-                [FindPackageShare("bob_description"), "urdf", "diffbot.urdf.xacro"]
-            ),
-            " ",
-            "use_mock_hardware:=",
-            use_mock_hardware,
-        ]
-    )
 
-    robot_description = {"robot_description": robot_description_content}
+    # Process the URDF file
+    pkg_path = os.path.join(Path.cwd(), "src", "bob_description")
+    xacro_file = os.path.join(pkg_path,'urdf','robot.urdf.xacro')
+    robot_description_config = xacro.process_file(xacro_file)
+    
+    robot_description = {'robot_description': robot_description_config.toxml(), 'use_sim_time': use_sim_time}
+
 
     # Get settings file paths
     robot_controllers = os.path.join(
         Path.cwd(), "src", "bob_bringup", "config", "bob_controllers.yaml"
+    )
+
+    rviz_config_file = os.path.join(
+        Path.cwd(), "src", "bob_description", "rviz", "diffbot_view.rviz"
     )
 
     # Implement the launching Nodes with all parameters and declaring all necessary settings
@@ -91,12 +98,21 @@ def generate_launch_description():
         ],
     )
 
+    rviz_node = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        output="log",
+        arguments=["-d", rviz_config_file],
+        condition=IfCondition(gui),
+    )
+
     # Launch Joint broadcaster to read all state interfaces
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
         arguments=[
-            "joint_state_broadcaster",
+            "joint_state_broadcaster",  
             "--controller-manager",
             "/controller_manager",
         ],
@@ -126,6 +142,14 @@ def generate_launch_description():
         output="screen",
     )
 
+    # Delay rviz start after `joint_state_broadcaster`
+    delay_rviz_after_joint_state_broadcaster_spawner = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=joint_state_broadcaster_spawner,
+            on_exit=[rviz_node],
+        )
+    )
+
     # Delay start of robot_controller after `joint_state_broadcaster`
     delay_for_joint_state_broadcaster_spawner = (
         RegisterEventHandler(
@@ -153,6 +177,7 @@ def generate_launch_description():
         control_node,
         robot_state_pub_node,
         joint_state_broadcaster_spawner,
+        delay_rviz_after_joint_state_broadcaster_spawner,
         delay_for_joint_state_broadcaster_spawner,
         turn_on_xbox,
     ]

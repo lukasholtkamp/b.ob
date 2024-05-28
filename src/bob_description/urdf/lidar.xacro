@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+    <xacro:property name="lidar_radius" value="0.035"/>
+    <xacro:property name="lidar_length" value="0.055"/>
+
+    <xacro:property name="lidar_x_offset" value="0.28"/>
+    <xacro:property name="lidar_x_location" value="${main_body_x_dim+front_wheel_mount_x_dim-lidar_x_offset}"/>
+
+    <xacro:property name="lidar_density" value="2710.0"/>
+
+    <xacro:property name="lidar_mass" value="${lidar_density*pi_const*lidar_radius*lidar_radius*lidar_length}"/>
+    
+    <!-- LIDAR LINK -->
+
+	<joint name="lidar_joint" type="fixed">
+        <parent link="chassis"/>
+        <child link="lidar_frame"/>
+        <origin xyz="${lidar_x_location} 0 ${lidar_length*0.5+main_body_z_dim}" rpy="0 0 0"/>
+    </joint>
+
+    <link name="lidar_frame">
+        <visual>
+            <geometry>
+                <cylinder radius="${lidar_radius}" length="${lidar_length}"/>
+            </geometry>
+            <material name="red"/>
+        </visual>
+
+        <collision>
+            <geometry>
+                <cylinder radius="${lidar_radius}" length="${lidar_length}"/>
+            </geometry>
+        </collision>
+        
+        <inertial>
+            <mass value="${lidar_mass}"/>
+            <inertia ixx="${(1.0/12.0)*lidar_mass*(3.0*lidar_radius*lidar_radius+lidar_length*lidar_length)}" ixy="0.0" ixz="0.0" iyy="${(1.0/12.0)*lidar_mass*(3.0*lidar_radius*lidar_radius+lidar_length*lidar_length)}" iyz="0.0" izz="${0.5*lidar_mass*lidar_radius*lidar_radius}" />
+        </inertial>
+    </link>
+
+    
+
+</robot>
