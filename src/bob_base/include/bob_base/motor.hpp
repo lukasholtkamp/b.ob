@@ -8,7 +8,7 @@
 #include <pigpiod_if2.h> //<-- Used to read the gpio on the Raspberry Pi
 
 #define LEFT_ALARM_PIN 22    //<-- Pin number for the direction of the left motor
-#define RIGHT_ALARM_PIN 25   //<-- Pin number for the pwm of the left motor
+#define RIGHT_ALARM_PIN 26   //<-- Pin number for the pwm of the left motor
 #define LEFT_ENCODER_PIN 23  //<-- Pin number for the left motor encoder
 #define RIGHT_ENCODER_PIN 24 //<-- Pin number for the right motor encoder
 
