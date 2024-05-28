@@ -25,6 +25,12 @@ public:
   //! Wheel radius
   double wheel_radius = 0.0;
 
+  std::string rpm_name = "rpm";
+  double wheel_rpm = 0.0;
+
+  std::string alarm_name = "alarm";
+  int alarm_status = 0;
+
   Wheel() = default;
 
   //! Wheel Constructor

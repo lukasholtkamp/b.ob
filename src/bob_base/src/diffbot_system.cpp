@@ -100,8 +100,13 @@ namespace bob_base
     // Declare both position and velocity states for both wheels
     state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_VELOCITY, &left_wheel_.velocity));
     state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_POSITION, &left_wheel_.position));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, &left_wheel_.rpm_name, &left_wheel_.wheel_rpm));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, &left_wheel_.alarm_name, &left_wheel_.alarm_status));
+
     state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, hardware_interface::HW_IF_VELOCITY, &right_wheel_.velocity));
     state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, hardware_interface::HW_IF_POSITION, &right_wheel_.position));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, &right_wheel_.rpm_name, &right_wheel_.wheel_rpm));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, &right_wheel_.alarm_name, &right_wheel_.alarm_status));
 
     return state_interfaces;
   }
