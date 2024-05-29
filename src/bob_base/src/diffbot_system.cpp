@@ -28,7 +28,7 @@ namespace bob_base
 
     RCLCPP_INFO(logger_, "Initializing...");
 
-    // Read configuration parameters from the hardware information given in diffbot.ros2_control.xacro
+    // Read configuration parameters from the hardware information given in bob.ros2_control.xacro
     config_.left_wheel_name = info_.hardware_parameters["left_wheel_name"];
     config_.right_wheel_name = info_.hardware_parameters["right_wheel_name"];
     config_.enc_ticks_per_rev = std::stoi(info_.hardware_parameters["enc_ticks_per_rev"]);

@@ -51,7 +51,7 @@ def generate_launch_description():
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
             PathJoinSubstitution(
-                [FindPackageShare("bob_description"), "urdf", "diffbot.urdf.xacro"]
+                [FindPackageShare("bob_description"), "urdf", "bob.urdf.xacro"]
             ),
             " ",
             "use_mock_hardware:=",
