@@ -36,14 +36,14 @@ def generate_launch_description():
 
     declared_arguments.append(
         DeclareLaunchArgument(
-            "use_mock_hardware",
-            default_value="false",
-            description="Start robot with mock hardware mirroring command to its states.",
+        name="use_ros2_control",
+        default_value="True",
+        description="Use ros2_control if true",
         )
     )
 
     # Initialize Arguments
-    use_mock_hardware = LaunchConfiguration("use_mock_hardware")
+    use_ros2_control = LaunchConfiguration("use_ros2_control")
 
     # Get URDF via xacro
     robot_description_content = Command(
@@ -54,8 +54,8 @@ def generate_launch_description():
                 [FindPackageShare("bob_description"), "urdf", "bob.urdf.xacro"]
             ),
             " ",
-            "use_mock_hardware:=",
-            use_mock_hardware,
+            "use_ros2_control:=",
+            use_ros2_control,
         ]
     )
 
