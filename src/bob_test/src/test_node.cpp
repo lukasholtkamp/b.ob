@@ -66,8 +66,11 @@ private:
     {
 
         auto twist_msg = geometry_msgs::msg::TwistStamped();
-    
-        if (!test_complete && odom.pose.pose.position.x < (1.0f))
+
+
+        //1m Forward
+
+        if (!test_complete && odom.pose.pose.position.x < 1.0)
         {
             twist_msg.twist.linear.x = 0.2;
             std::cout << odom.pose.pose.position.x << std::endl;
@@ -77,9 +80,23 @@ private:
             std::cout << "Test Completed"<< std::endl; 
             twist_msg.twist.linear.x = 0.0;       
             test_complete = true;
+            twist_publisher->publish(twist_msg);
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+
+        }
+        //1m Backward 
+         if (test_complete && odom.pose.pose.position.x != 0.0)
+        {
+            twist_msg.twist.linear.x = -0.2;
+            std::cout << odom.pose.pose.position.x << std::endl;
+        }
+        else
+        {
+            std::cout << "Test Completed"<< std::endl; 
+            twist_msg.twist.linear.x = 0.0;       
+            test_complete = false;
         }
 
-        // std::cout << twist_msg.twist.linear.x << std::endl;
         twist_publisher->publish(twist_msg);
     }
       
