@@ -28,7 +28,7 @@ namespace bob_base
 
     RCLCPP_INFO(logger_, "Initializing...");
 
-    // Read configuration parameters from the hardware information given in diffbot.ros2_control.xacro
+    // Read configuration parameters from the hardware information given in bob.ros2_control.xacro
     config_.left_wheel_name = info_.hardware_parameters["left_wheel_name"];
     config_.right_wheel_name = info_.hardware_parameters["right_wheel_name"];
     config_.enc_ticks_per_rev = std::stoi(info_.hardware_parameters["enc_ticks_per_rev"]);
@@ -100,8 +100,13 @@ namespace bob_base
     // Declare both position and velocity states for both wheels
     state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_VELOCITY, &left_wheel_.velocity));
     state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_POSITION, &left_wheel_.position));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, left_wheel_.rpm_name, &left_wheel_.wheel_rpm));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, left_wheel_.alarm_name, &left_wheel_.alarm_status));
+
     state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, hardware_interface::HW_IF_VELOCITY, &right_wheel_.velocity));
     state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, hardware_interface::HW_IF_POSITION, &right_wheel_.position));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, right_wheel_.rpm_name, &right_wheel_.wheel_rpm));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, right_wheel_.alarm_name, &right_wheel_.alarm_status));
 
     return state_interfaces;
   }
@@ -155,8 +160,19 @@ namespace bob_base
     right_wheel_.position = right_wheel_.wheel_radius*right_wheel_.calculate_encoder_angle();
     right_wheel_.velocity = (right_wheel_.position - previous_position) / delta_seconds;
 
-    RCLCPP_INFO(logger_, "Left motor ros velocity: %f", left_wheel_.velocity);
-    RCLCPP_INFO(logger_, "Right motor ros velocity: %f", right_wheel_.velocity);
+    // RCLCPP_INFO(logger_, "Left motor ros velocity: %f", left_wheel_.velocity);
+    // RCLCPP_INFO(logger_, "Right motor ros velocity: %f", right_wheel_.velocity);
+
+    if(abs(right_wheel_.velocity)>0 && abs(left_wheel_.velocity)>0){
+      read_rpm_values(&left_wheel_.wheel_rpm,&right_wheel_.wheel_rpm);
+    }
+    else{
+      left_wheel_.wheel_rpm=0.0;
+      right_wheel_.wheel_rpm=0.0;
+    }
+    
+    right_wheel_.alarm_status = gpio_read(pi_sig, RIGHT_ALARM_PIN);
+    left_wheel_.alarm_status = gpio_read(pi_sig, LEFT_ALARM_PIN);
 
     return hardware_interface::return_type::OK;
   }

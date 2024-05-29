@@ -56,3 +56,4 @@ diffbot_base_controller:
     angular.z.min_acceleration: 0.0
     angular.z.max_jerk: 0.0
     angular.z.min_jerk: 0.0
+

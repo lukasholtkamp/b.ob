@@ -8,7 +8,7 @@
 #include <pigpiod_if2.h> //<-- Used to read the gpio on the Raspberry Pi
 
 #define LEFT_ALARM_PIN 22    //<-- Pin number for the direction of the left motor
-#define RIGHT_ALARM_PIN 25   //<-- Pin number for the pwm of the left motor
+#define RIGHT_ALARM_PIN 26   //<-- Pin number for the pwm of the left motor
 #define LEFT_ENCODER_PIN 23  //<-- Pin number for the left motor encoder
 #define RIGHT_ENCODER_PIN 24 //<-- Pin number for the right motor encoder
 
@@ -35,8 +35,13 @@ void set_motor_speeds(int pi, double left_wheel_command, double right_wheel_comm
 //! Function to return the pulse count values
 void read_encoder_values(int *left_encoder_value, int *right_encoder_value);
 
+void read_rpm_values(double *left_rpm_value, double *right_rpm_value);
+
 extern int left_wheel_pulse_count;
 extern int right_wheel_pulse_count;
+
+extern double left_rpm;
+extern double right_rpm;
 
 extern int left_wheel_direction;
 extern int right_wheel_direction;

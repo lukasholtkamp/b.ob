@@ -50,19 +50,27 @@ def generate_launch_description():
         )
     )
 
+    declared_arguments.append(
+        DeclareLaunchArgument(
+        name="use_ros2_control",
+        default_value="True",
+        description="Use ros2_control if true",
+        )
+    )
+
     # Initialize Arguments
     gui = LaunchConfiguration("gui")
     use_sim_time = LaunchConfiguration("use_sim_time")
+    use_ros2_control = LaunchConfiguration("use_ros2_control")
 
     # Get URDF via xacro
 
     # Process the URDF file
     pkg_path = os.path.join(Path.cwd(), "src", "bob_description")
-    xacro_file = os.path.join(pkg_path,'urdf','robot.urdf.xacro')
+    xacro_file = os.path.join(pkg_path,'urdf','bob.urdf.xacro')
     robot_description_config = xacro.process_file(xacro_file)
     
-    robot_description = {'robot_description': robot_description_config.toxml(), 'use_sim_time': use_sim_time}
-
+    robot_description = {'robot_description': robot_description_config.toxml(), 'use_sim_time': use_sim_time, 'use_ros2_control': use_ros2_control}
 
     # Get settings file paths
     robot_controllers = os.path.join(

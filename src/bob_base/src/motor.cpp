@@ -8,6 +8,10 @@
 // Initialize pulse counters
 int left_wheel_pulse_count = 0;
 int right_wheel_pulse_count = 0;
+
+double left_rpm = 0;
+double right_rpm = 0;
+
 u_int32_t _high_tick_r = 0;
 u_int32_t _period_r = 0;
 u_int32_t _high_tick_l = 0;
@@ -23,6 +27,13 @@ void read_encoder_values(int *left_encoder_value, int *right_encoder_value)
 {
     *left_encoder_value = left_wheel_pulse_count;
     *right_encoder_value = right_wheel_pulse_count;
+}
+
+// Read wheel encoder values
+void read_rpm_values(double *left_rpm_value, double *right_rpm_value)
+{
+    *left_rpm_value = left_rpm;
+    *right_rpm_value = right_rpm;
 }
 
 /** 
@@ -55,21 +66,23 @@ void left_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick)
         left_wheel_pulse_count--;
     }
 
-    // // rising edge
-    // if(level == 1){
+    // rising edge
+    if(level == 1){
 
-    //     if(_high_tick_r != 0){
-    //         // find period between last pulse and this pulse
-    //         _period_l = tick_diff(_high_tick_l,tick);
+        if(_high_tick_r != 0){
+            // find period between last pulse and this pulse
+            _period_l = tick_diff(_high_tick_l,tick);
 
-    //         double freq = 1000000.0/double(_period_l);
-    //         double speed = radius*2*M_PI*(freq/ticks_per_rev);
-    //         double RPM = (60*freq)/ticks_per_rev;
+            double freq = 1000000.0/double(_period_l);
+            double speed = radius*2*M_PI*(freq/ticks_per_rev);
+            left_rpm = (60*freq)/ticks_per_rev;
 
-    //         std::cout << "Left Wheel RPM Encoder: " << RPM << std::endl;
-    //     }
-    //     _high_tick_l = tick;
-    // }
+            (void)speed;
+
+            // std::cout << "Left Wheel RPM Encoder: " << RPM << std::endl;
+        }
+        _high_tick_l = tick;
+    }
 
 }
 
@@ -95,21 +108,23 @@ void right_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick)
         right_wheel_pulse_count--;
     }
 
-    // // rising edge
-    // if(level == 1){
+    // rising edge
+    if(level == 1){
 
-    //     if(_high_tick_r != 0){
-    //         // find period between last pulse and this pulse
-    //         _period_r = tick_diff(_high_tick_r,tick);
+        if(_high_tick_r != 0){
+            // find period between last pulse and this pulse
+            _period_r = tick_diff(_high_tick_r,tick);
 
-    //         double freq = 1000000.0/double(_period_r);
-    //         double speed = radius*2*M_PI*(freq/ticks_per_rev);
-    //         double RPM = (60*freq)/ticks_per_rev;
+            double freq = 1000000.0/double(_period_r);
+            double speed = radius*2*M_PI*(freq/ticks_per_rev);
+            right_rpm = (60*freq)/ticks_per_rev;
 
-    //         std::cout << "Right Wheel RPM Encoder: " << RPM << std::endl;
-    //     }
-    //     _high_tick_r = tick;
-    // }
+            (void)speed;
+
+            // std::cout << "Right Wheel RPM Encoder: " << RPM << std::endl;
+        }
+        _high_tick_r = tick;
+    }
 }
 
 // Set each motor speed from the respective velocity command interface
