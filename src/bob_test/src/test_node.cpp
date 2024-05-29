@@ -66,33 +66,24 @@ private:
     {
 
         auto twist_msg = geometry_msgs::msg::TwistStamped();
-        // auto odom_msg = nav_msgs::msg::Odometry();
-    if (!test_complete && (odom.pose.pose.position.x == 0))
-    {
-        twist_msg.twist.linear.x = 0.2;
-        twist_publisher->publish(twist_msg);
-        test_complete = true;
-    }
     
-    if (test_complete)
-     {
-        if (odom.pose.pose.position.x < 1.0f)
+        if (!test_complete && odom.pose.pose.position.x < (1.0f))
         {
-            std::cout << (odom.pose.pose.position.x)<< std::endl; 
+            twist_msg.twist.linear.x = 0.2;
+            std::cout << odom.pose.pose.position.x << std::endl;
         }
         else
         {
-            // system("clear")
-        std::cout << "Test Completed"<< std::endl; 
-        twist_msg.twist.linear.x = 0.0;       
-        twist_publisher->publish(twist_msg);
-        test_complete = false;
-
+            std::cout << "Test Completed"<< std::endl; 
+            twist_msg.twist.linear.x = 0.0;       
+            test_complete = true;
         }
-       
-     }
-       
+
+        // std::cout << twist_msg.twist.linear.x << std::endl;
+        twist_publisher->publish(twist_msg);
     }
+      
+    
     
     //! Subscriber to read from the odom topic
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber;
