@@ -37,7 +37,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
         name="use_ros2_control",
-        default_value="True",
+        default_value="true",
         description="Use ros2_control if true",
         )
     )

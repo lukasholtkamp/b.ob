@@ -3,7 +3,7 @@
 
   <!-- Real robot ros2_control -->
   <xacro:unless value="$(arg sim_mode)">
-    <ros2_control name='RealRobot' type='system'>
+    <ros2_control name='B.ob' type='system'>
       <hardware>
         <plugin>bob_base/DiffDriveBobHardware</plugin>
           <param name="left_wheel_name">left_wheel_joint</param>
@@ -27,6 +27,7 @@
         <state_interface name="alarm"/>
       </joint>
     </ros2_control>
+  </xacro:unless>
 
   <!-- Gazebo ros2_control -->
   <xacro:if value="$(arg sim_mode)">

@@ -17,8 +17,8 @@ diffbot_base_controller:
     wheel_radius: 0.08255
 
     wheel_separation_multiplier: 2.72
-    left_wheel_radius_multiplier: 8.49
-    right_wheel_radius_multiplier: 8.49
+    left_wheel_radius_multiplier: 12.5
+    right_wheel_radius_multiplier: 12.5
 
     publish_rate: 50.0
     use_stamped_vel: true
