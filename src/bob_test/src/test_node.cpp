@@ -38,7 +38,7 @@ public:
 
     }
 
-    bool test_complete = true;
+    bool test_complete = false;
 
 
 private:
@@ -49,16 +49,16 @@ private:
 
     void jointstate_callback(const sensor_msgs::msg::JointState &state)
     {
-        if (!(test_complete))
-        {   
-            std::cout << "LE:  " << state.velocity[0] << "\n"<< "RE:  " << state.velocity[1] << std::endl;
-            // if ((state.velocity[0] && state.velocity[1]) > 1)
-            // {
-            //     system("clear");
-            //     std::cout << "Encoder test completed" << std::endl;
-            // }
+        // if (!(test_complete))
+        // {   
+        //     std::cout << "LE:  " << state.velocity[0] << "\n"<< "RE:  " << state.velocity[1] << std::endl;
+        //     // if ((state.velocity[0] && state.velocity[1]) > 1)
+        //     // {
+        //     //     system("clear");
+        //     //     std::cout << "Encoder test completed" << std::endl;
+        //     // }
             
-        }
+        // }
         
     }
 
@@ -67,29 +67,33 @@ private:
 
         auto twist_msg = geometry_msgs::msg::TwistStamped();
         // auto odom_msg = nav_msgs::msg::Odometry();
-
-        std::cout << (odom.pose.pose.position.x ) << std::endl;
-    if (test_complete)
+    if (!test_complete && (odom.pose.pose.position.x == 0))
     {
-        if (odom.pose.pose.position.x < 1.0)
-            {
-               twist_msg.twist.linear.x = 0.2;
-            }
-        else
-            {   
-                system("clear");
-                std::cout << "Test Completed"<< std::endl; 
-                test_complete = false;
-                twist_msg.twist.linear.x = 0.0;
-            }
-       
+        twist_msg.twist.linear.x = 0.2;
         twist_publisher->publish(twist_msg);
+        test_complete = true;
     }
     
+    if (test_complete)
+     {
+        if (odom.pose.pose.position.x < 1.0f)
+        {
+            std::cout << (odom.pose.pose.position.x)<< std::endl; 
+        }
+        else
+        {
+            // system("clear")
+        std::cout << "Test Completed"<< std::endl; 
+        twist_msg.twist.linear.x = 0.0;       
+        twist_publisher->publish(twist_msg);
+        test_complete = false;
 
+        }
+       
+     }
+       
     }
-
-
+    
     //! Subscriber to read from the odom topic
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber;
 
