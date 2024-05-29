@@ -5,6 +5,9 @@ project(bob_test)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+
 
 #install
 install(
@@ -16,7 +19,10 @@ install(
 add_executable(test_node src/test_node.cpp)
 ament_target_dependencies(test_node
 "rclcpp"
-"sensor_msgs")
+"sensor_msgs"
+"geometry_msgs"
+"nav_msgs"
+)
 
 #install
 install(TARGETS test_node DESTINATION lib/${PROJECT_NAME})
