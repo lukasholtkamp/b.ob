@@ -9,6 +9,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 
 from launch_ros.actions import Node
+from launch.conditions import IfCondition
 
 from pathlib import Path
 
@@ -17,8 +18,10 @@ def generate_launch_description():
 
     pkg_path = os.path.join(Path.cwd(), "src", "bob_simulation")
     pkg_teleop = os.path.join(Path.cwd(), "src", "bob_teleop")
+    pkg_navigation = os.path.join(Path.cwd(), "src", "bob_navigation")
 
     gazebo_params_file = os.path.join(pkg_path, "config/gazebo_params.yaml")
+    ekf_params_file = os.path.join(pkg_navigation, "config/ekf.yaml")
     world_filename = "obstacle.world"
     world_path = os.path.join(pkg_path, "worlds", world_filename)
 
@@ -26,6 +29,7 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time")
     use_ros2_control = LaunchConfiguration("use_ros2_control")
     world = LaunchConfiguration("world")
+    use_robot_localization = LaunchConfiguration("use_robot_localization")
 
     # Declare the launch arguments
     declare_use_sim_time_cmd = DeclareLaunchArgument(
@@ -44,6 +48,12 @@ def generate_launch_description():
         name="world",
         default_value=world_path,
         description="Full path to the world model to load",
+    )
+
+    declare_use_robot_localization_cmd = DeclareLaunchArgument(
+        name="use_robot_localization",
+        default_value="True",
+        description="Use robot_localization package if true",
     )
 
     rsp = IncludeLaunchDescription(
@@ -66,6 +76,14 @@ def generate_launch_description():
                                    '-entity', 'bob'],
                         output='screen',
                         remappings=[("~/robot_description", "/robot_description"),],)
+    
+    # Start robot localization using an Extended Kalman Filter
+    start_robot_localization_cmd = Node(
+        condition=IfCondition(use_robot_localization),
+        package="robot_localization",
+        executable="ekf_node",
+        parameters=[ekf_params_file],
+    )
 
     # Launch joy node to read gamepad commands
     joy_node = Node(
@@ -93,13 +111,16 @@ def generate_launch_description():
     ld.add_action(declare_use_sim_time_cmd)
     ld.add_action(declare_use_ros2_control_cmd)
     ld.add_action(declare_world_cmd)
+    ld.add_action(declare_use_robot_localization_cmd)
 
     # Add any actions
     ld.add_action(rsp)
     ld.add_action(gazebo)
     ld.add_action(spawn_entity)
+    ld.add_action(start_robot_localization_cmd)
     ld.add_action(joy_node)
     ld.add_action(teleop_node)
+
 
     # Launch them all!
     return ld
