@@ -23,7 +23,7 @@ def generate_launch_description():
     """
     # Get config path of the teleop settings
     config_filepath = os.path.join(
-        Path.cwd(), "src", "bob_teleop", "config", "xbox.config.yaml"
+        Path.cwd(), "src", "bob_teleop", "config", "ps2.config.yaml"
     )
 
     # Launch node

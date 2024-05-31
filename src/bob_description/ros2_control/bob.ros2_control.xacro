@@ -3,7 +3,7 @@
 
   <!-- Real robot ros2_control -->
   <xacro:unless value="$(arg sim_mode)">
-    <ros2_control name='RealRobot' type='system'>
+    <ros2_control name='B.ob' type='system'>
       <hardware>
         <plugin>bob_base/DiffDriveBobHardware</plugin>
           <param name="left_wheel_name">left_wheel_joint</param>
@@ -33,7 +33,7 @@
       <hardware>
         <plugin>bob_bringup/MPU6050Hardware</plugin>
           <param name='sensor_name'>mpu6050</param>
-          <param name='frame_id'>imu_link</param>
+          <param name='frame_id'>imu_frame</param>
       </hardware>
       <sensor name='mpu6050'>
         <state_interface name='orientation.x'/>

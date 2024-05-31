@@ -9,6 +9,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 from launch_ros.actions import Node
 
+from pathlib import Path
 
 
 def generate_launch_description():
@@ -38,6 +39,26 @@ def generate_launch_description():
                         output='screen',
                         remappings=[("~/robot_description", "/robot_description"),],)
 
+    # Launch joy node to read gamepad commands
+    joy_node = Node(
+        package="joy",
+        executable="joy_node",
+    )
+
+    config_filepath = os.path.join(
+        Path.cwd(), "src", "bob_teleop", "config", "ps2.config.yaml"
+    )
+
+    # Launch drive selection node to be able to switch between the modes
+    teleop_node = Node(
+                package="teleop_twist_joy",
+                executable="teleop_node",
+                name="teleop_twist_joy_node",
+                parameters=[
+                    config_filepath,
+                ],
+                output="screen",
+            )
 
 
     # Launch them all!
@@ -45,4 +66,6 @@ def generate_launch_description():
         rsp,
         gazebo,
         spawn_entity,
+        joy_node,
+        teleop_node
     ])
