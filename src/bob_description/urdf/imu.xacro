@@ -2,35 +2,35 @@
 
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" >
 
-    <xacro:property name="acc_x_dim" value="0.02"/>
-    <xacro:property name="acc_y_dim" value="0.015"/>
-    <xacro:property name="acc_z_dim" value="0.001"/>
+    <xacro:property name="imu_x_dim" value="0.02"/>
+    <xacro:property name="imu_y_dim" value="0.015"/>
+    <xacro:property name="imu_z_dim" value="0.001"/>
 
-    <xacro:property name="acc_x_offset" value="0.13"/>
+    <xacro:property name="imu_x_offset" value="0.13"/>
 
-    <xacro:property name="acc_density" value="2710.0"/>
+    <xacro:property name="imu_density" value="2710.0"/>
 
-    <xacro:property name="acc_mass" value="${acc_density*acc_x_dim*acc_y_dim*acc_z_dim}"/>
+    <xacro:property name="imu_mass" value="${imu_density*imu_x_dim*imu_y_dim*imu_z_dim}"/>
     
     <!-- LIDAR LINK -->
 
-	<joint name="acc_joint" type="fixed">
+	<joint name="imu_joint" type="fixed">
         <parent link="chassis"/>
         <child link="imu_frame"/>
-        <origin xyz="${acc_x_offset} 0 ${acc_z_dim*0.5+main_body_z_dim}"/>
+        <origin xyz="${imu_x_offset} 0 ${imu_z_dim*0.5+main_body_z_dim}"/>
     </joint>
 
     <link name="imu_frame">
         <visual>
             <geometry>
-                <box size="${acc_x_dim} ${acc_y_dim} ${acc_z_dim}"/>
+                <box size="${imu_x_dim} ${imu_y_dim} ${imu_z_dim}"/>
             </geometry>
             <material name="blue"/>
         </visual>
 
         <collision>
             <geometry>
-                <box size="${acc_x_dim} ${acc_y_dim} ${acc_z_dim}"/>
+                <box size="${imu_x_dim} ${imu_y_dim} ${imu_z_dim}"/>
             </geometry>
         </collision>
     </link>
