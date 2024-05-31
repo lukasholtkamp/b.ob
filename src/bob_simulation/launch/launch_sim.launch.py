@@ -103,6 +103,14 @@ def generate_launch_description():
                 ],
                 output="screen",
             )
+    
+    rviz_node = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        output="log",
+    )
+
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -120,6 +128,7 @@ def generate_launch_description():
     ld.add_action(start_robot_localization_cmd)
     ld.add_action(joy_node)
     ld.add_action(teleop_node)
+    ld.add_action(rviz_node)
 
 
     # Launch them all!

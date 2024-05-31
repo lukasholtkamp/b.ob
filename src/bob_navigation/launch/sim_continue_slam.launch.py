@@ -53,7 +53,7 @@ def generate_launch_description():
         condition=IfCondition(rviz),
     )
 
-    localisation = IncludeLaunchDescription(
+    continue_slam = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(
                     pkg_slam,'launch','online_async_launch.py'
                 )]),launch_arguments={'slam_params_file': slam_params_file,}.items()
@@ -70,7 +70,7 @@ def generate_launch_description():
     # Add any actions
     ld.add_action(sim)
     ld.add_action(rviz_node)
-    ld.add_action(localisation)
+    ld.add_action(continue_slam)
 
     # Launch them all!
     return ld
