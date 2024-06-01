@@ -138,7 +138,7 @@ def generate_launch_description():
     ld.add_action(joy_node)
     ld.add_action(teleop_node)
     ld.add_action(start_twist_mux_cmd)
-    # ld.add_action(rviz_node)
+    ld.add_action(rviz_node)
 
 
     # Launch them all!
