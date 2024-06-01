@@ -36,8 +36,10 @@ def generate_launch_description():
                 parameters=[
                     config_filepath,
                 ],
-                remappings=[("/cmd_vel", "/diffbot_base_controller/cmd_vel")],
+                remappings=[("/cmd_vel", "/cmd_vel_joy")],
                 output="screen",
             ),
         ]
     )
+
+# remappings=[("/cmd_vel", "/diffbot_base_controller/cmd_vel")],

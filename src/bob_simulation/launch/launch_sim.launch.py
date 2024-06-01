@@ -21,8 +21,9 @@ def generate_launch_description():
     pkg_navigation = os.path.join(Path.cwd(), "src", "bob_navigation")
 
     gazebo_params_file = os.path.join(pkg_path, "config/gazebo_params.yaml")
+    twist_mux_params_file = os.path.join(pkg_teleop, "config/twist_mux.yaml")
     ekf_params_file = os.path.join(pkg_navigation, "config/ekf.yaml")
-    world_filename = "obstacle.world"
+    world_filename = "obstacle_lidar.world"
     world_path = os.path.join(pkg_path, "worlds", world_filename)
 
     # Launch configuration variables specific to simulation
@@ -104,6 +105,14 @@ def generate_launch_description():
                 output="screen",
             )
     
+    # Start twist mux
+    start_twist_mux_cmd = Node(
+        package="twist_mux",
+        executable="twist_mux",
+        parameters=[twist_mux_params_file, {"use_sim_time": True}],
+        remappings=[("/cmd_vel_out", "/diffbot_base_controller/cmd_vel")],
+    )
+    
     rviz_node = Node(
         package="rviz2",
         executable="rviz2",
@@ -128,6 +137,7 @@ def generate_launch_description():
     ld.add_action(start_robot_localization_cmd)
     ld.add_action(joy_node)
     ld.add_action(teleop_node)
+    ld.add_action(start_twist_mux_cmd)
     # ld.add_action(rviz_node)
 
 
