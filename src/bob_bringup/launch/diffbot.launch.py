@@ -183,7 +183,7 @@ def generate_launch_description():
                 target_action=robot_controller_spawner,
                 on_exit=[
                 LogInfo(msg='Turn on Xbox controller'),
-                LogInfo(msg='For Testing press D-PAD button'),
+                LogInfo(msg='For Testing press back button'),
                 LogInfo(msg='For Basic driving press X button')
                 ],
             )

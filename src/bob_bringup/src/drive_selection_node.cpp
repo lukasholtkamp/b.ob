@@ -125,9 +125,9 @@ private:
             return "";
         }
         
-        if (buttons[0.0] == 1)
+        if (buttons[10] == 1)
         {
-            // Button D-PAD
+            // Button back
             return "Test mode";
         }
         
