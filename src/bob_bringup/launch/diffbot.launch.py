@@ -7,7 +7,8 @@ Date of Retrieval: 17.05.2024
 """
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, RegisterEventHandler,LogInfo
+from launch.actions import DeclareLaunchArgument, RegisterEventHandler,LogInfo,IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
 from launch.substitutions import (
@@ -66,6 +67,7 @@ def generate_launch_description():
     # Get URDF via xacro
 
     # Process the URDF file
+    pkg_bring_up = os.path.join(Path.cwd(), "src", "bob_bringup")
     pkg_path = os.path.join(Path.cwd(), "src", "bob_description")
     xacro_file = os.path.join(pkg_path,'urdf','bob.urdf.xacro')
     robot_description_config = xacro.process_file(xacro_file)
@@ -181,6 +183,12 @@ def generate_launch_description():
             )
         )
     )
+
+    lidar = IncludeLaunchDescription(
+                PythonLaunchDescriptionSource([os.path.join(
+                    pkg_bring_up,'launch','view_rplidar.launch.py'
+                )])
+    )
            
 
     nodes = [
@@ -192,6 +200,7 @@ def generate_launch_description():
         delay_rviz_after_joint_state_broadcaster_spawner,
         delay_for_joint_state_broadcaster_spawner,
         turn_on_xbox,
+        lidar,
     ]
 
     return LaunchDescription(declared_arguments + nodes)
