@@ -172,7 +172,7 @@ def generate_launch_description():
 
     lidar = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(
-                    pkg_bring_up,'launch','view_rplidar.launch.py'
+                    pkg_bring_up,'launch','rplidar.launch.py'
                 )])
     )
 
