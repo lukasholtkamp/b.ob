@@ -38,7 +38,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "gui",
-            default_value="true",
+            default_value="false",
             description="Start RViz2 automatically with this launch file.",
         )
     )
@@ -170,6 +170,12 @@ def generate_launch_description():
         )
     )
 
+    lidar = IncludeLaunchDescription(
+                PythonLaunchDescriptionSource([os.path.join(
+                    pkg_bring_up,'launch','view_rplidar.launch.py'
+                )])
+    )
+
     # Send message to turn on Xbox controller
     turn_on_xbox= (
         RegisterEventHandler(
@@ -183,12 +189,6 @@ def generate_launch_description():
             )
         )
     )
-
-    lidar = IncludeLaunchDescription(
-                PythonLaunchDescriptionSource([os.path.join(
-                    pkg_bring_up,'launch','view_rplidar.launch.py'
-                )])
-    )
            
 
     nodes = [
@@ -199,8 +199,8 @@ def generate_launch_description():
         joint_state_broadcaster_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
         delay_for_joint_state_broadcaster_spawner,
-        turn_on_xbox,
         lidar,
+        turn_on_xbox,
     ]
 
     return LaunchDescription(declared_arguments + nodes)

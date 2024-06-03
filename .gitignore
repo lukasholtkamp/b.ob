@@ -4,3 +4,4 @@ install/
 build/
 html/
 latex/
+__pycache__/
