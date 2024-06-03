@@ -15,6 +15,8 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <control_msgs/msg/dynamic_joint_state.hpp>
+#include <control_msgs/msg/interface_value.hpp>
+
 
 using std::placeholders::_1;
 
@@ -32,9 +34,9 @@ public:
         // jointstate_subscriber = this->create_subscription<sensor_msgs::msg::JointState>(
         //     "joint_state", 10, std::bind(&TestNode::jointstate_callback, this, _1));
 
-        // // Implementing the Subscriber for dynamic_joint_state topic
-        // dynamic_jointstate_subscriber = this->create_subscription<control_msgs::msg::DynamicJointState>(
-        //     "dynamic_joint_state", 10, std::bind(&TestNode::dynamic_jointstate_callback, this, _1));
+        // Implementing the Subscriber for dynamic_joint_state topic
+        dynamic_jointstate_subscriber = this->create_subscription<control_msgs::msg::DynamicJointState>(
+            "dynamic_joint_states", 10, std::bind(&TestNode::dynamic_jointstate_callback, this, _1));
 
 
         // Implementing the Publisher cmd_vel topic
@@ -51,24 +53,41 @@ private:
     };
 
     State current_state = FORWARD;
-    std::vector<double> target_yaws = {1.5708, 0.0, -1.5708, 0.0, 6.2832}; // π/2, 0, -π/2, 0, 2π
+    std::vector<double> target_yaws = {1.5708, 0.0, -1.5708, 0.0, 0.0}; // π/2, 0, -π/2, 0, 2π
     uint8_t yaw_index = 0;
     bool complete = false;
     bool check_alm = false;
-    bool check_encoder= false;
+    bool check_encoder = false;
+    std::chrono::high_resolution_clock::time_point time_stamp = std::chrono::high_resolution_clock::now();
+    bool timer_started = false;
 
     // void jointstate_callback(const sensor_msgs::msg::JointState &state)
     // {
     //     //Encoder
     // }
 
-    // void dynamic_jointstate_callback(const control_msgs::msg::DynamicJointState &d_state)
-    // {
-    //     //ALM
-    // }
+    void dynamic_jointstate_callback(const control_msgs::msg::DynamicJointState &d_state)
+    {
+        if (complete)
+        {
+        system("clear");
+        RCLCPP_INFO(this->get_logger(),"Press the Emergency Button");
 
+            if (((d_state.interface_values[0].values[3]) && (d_state.interface_values[1].values[3])) == 0)
+                {
+                std::cout << "Left Weehl Alarm" << d_state.interface_values[0].values[3] <<std::endl;
+                std::cout << "Rigth Weehl Alarm" << d_state.interface_values[1].values[3] <<std::endl;
+
+                RCLCPP_INFO(this->get_logger(),"Alarm Test Completed");
+                check_alm = true;
+                std::this_thread::sleep_for(std::chrono::seconds(5));
+                }
+        }
+    }
     void odom_callback(const nav_msgs::msg::Odometry &odom)
     {
+
+
         auto twist_msg = geometry_msgs::msg::TwistStamped();
 
         switch (current_state) 
@@ -177,12 +196,38 @@ private:
                     double roll, pitch, yaw;
                     mat.getRPY(roll, pitch, yaw);
 
+                    // yaw = fmod(yaw,M_2_PI);
+
+                    // if (yaw < 0){
+                    //     yaw += M_2_PI;
+                    // }
+
                     // Print the yaw angle
-                    RCLCPP_INFO(this->get_logger(), "Yaw: %f", yaw);
+                    // RCLCPP_INFO(this->get_logger(), "Yaw: %f", yaw);
 
                     // Check if yaw angle is approximately the target yaw
-                    twist_msg.twist.angular.z = 0.2;
-                    if (std::abs(yaw - target_yaws[yaw_index]) < 0.1) 
+
+                    if (yaw_index == 0 || yaw_index == 3 )
+                    {
+                         twist_msg.twist.angular.z = 0.1;   
+                    }
+                    else
+                    {
+                         twist_msg.twist.angular.z = -0.1;   
+                    }
+
+                    if (yaw_index == 4 && !timer_started)
+                    {
+                        time_stamp = std::chrono::high_resolution_clock::now();
+                        timer_started = true;
+
+                    }
+                    
+                    RCLCPP_INFO(this->get_logger(), "D_Yaw: %f", (std::abs(yaw - target_yaws[yaw_index])));
+
+                    std::chrono::duration<double> diff = std::chrono::high_resolution_clock::now() - time_stamp;
+                    
+                    if (std::abs(yaw - target_yaws[yaw_index]) <= 0.03 && diff.count() > 0.3) 
                     {
                         twist_msg.twist.angular.z = 0.0;
                         twist_publisher->publish(twist_msg);
@@ -219,6 +264,7 @@ private:
                 RCLCPP_INFO(this->get_logger(), "All Tests Completed");
                 std::this_thread::sleep_for(std::chrono::seconds(3));
                 complete = true;
+                check_encoder =true;
                 break;
         }
 
@@ -249,8 +295,8 @@ private:
     //! Subscriber to read from the joint_state topic
     rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr jointstate_subscriber;
 
-    // //! Subscriber to read from the dynamic_joint_state topic
-    // rclcpp::Subscription<control_msgs::msg::DynamicJointState>::SharedPtr dynamic_jointstate_subscriber;
+    //! Subscriber to read from the dynamic_joint_state topic
+    rclcpp::Subscription<control_msgs::msg::DynamicJointState>::SharedPtr dynamic_jointstate_subscriber;
 
     //! Publisher to publish to the cmd_vel topic
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr twist_publisher;
