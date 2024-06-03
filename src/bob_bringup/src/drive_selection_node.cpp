@@ -124,6 +124,13 @@ private:
             // Button RTS
             return "";
         }
+        
+        if (buttons[0.0] == 1)
+        {
+            // Button D-PAD
+            return "Test mode";
+        }
+        
         if (buttons[11] == 1)
         {
             // Menu Button
@@ -144,6 +151,10 @@ private:
         if (last_mode == "Basic Drive Mode")
         {
             system("killall teleop_node");
+        }
+        if (drive_mode_status == "Test Mode")
+        {
+            system("ros2 launch bob_test test.launch.py &");
         }
         if (drive_mode_status == "Basic Drive Mode")
         {
