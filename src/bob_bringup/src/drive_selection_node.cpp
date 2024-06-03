@@ -127,7 +127,7 @@ private:
         
         if (buttons[10] == 1)
         {
-            // Button back
+            // Button BACK
             return "Test mode";
         }
         
@@ -154,7 +154,7 @@ private:
         }
         if (drive_mode_status == "Test Mode")
         {
-            system("ros2 launch bob_test test.launch.py &");
+            system("ros2 run bob_test test_node &");
         }
         if (drive_mode_status == "Basic Drive Mode")
         {

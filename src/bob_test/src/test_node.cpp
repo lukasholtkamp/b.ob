@@ -52,7 +52,7 @@ private:
         COMPLETE
     };
 
-    State current_state = FORWARD;
+    State current_state = COMPLETE;
     std::vector<double> target_yaws = {1.5708, 0.0, -1.5708, 0.0, 0.0}; // π/2, 0, -π/2, 0, 2π
     uint8_t yaw_index = 0;
     bool complete = false;
@@ -70,17 +70,34 @@ private:
     {
         if (complete)
         {
-        system("clear");
-        RCLCPP_INFO(this->get_logger(),"Press the Emergency Button");
-
+            if (((d_state.interface_values[0].values[3]) && (d_state.interface_values[1].values[3])) == 1 && !check_alm)
+            {
+                system("clear");
+                RCLCPP_INFO(this->get_logger(),"Press the Emergency Button");
+            }
+                
+        
             if (((d_state.interface_values[0].values[3]) && (d_state.interface_values[1].values[3])) == 0)
                 {
-                std::cout << "Left Weehl Alarm" << d_state.interface_values[0].values[3] <<std::endl;
-                std::cout << "Rigth Weehl Alarm" << d_state.interface_values[1].values[3] <<std::endl;
+                std::cout << "Left Weehl Alarm  " << d_state.interface_values[0].values[3] <<std::endl;
+                std::cout << "Rigth Weehl Alarm  " << d_state.interface_values[1].values[3] <<std::endl;
 
                 RCLCPP_INFO(this->get_logger(),"Alarm Test Completed");
-                check_alm = true;
-                std::this_thread::sleep_for(std::chrono::seconds(5));
+                std::this_thread::sleep_for(std::chrono::seconds(2));
+                RCLCPP_INFO(this->get_logger(), "All Tests Completed");
+                std::this_thread::sleep_for(std::chrono::seconds(2));
+                system("clear");
+                RCLCPP_INFO(this->get_logger(), "Pull the Emergency Button and type (y) to finish the Test");
+                char response;
+                std::cin >> response;
+                if (((d_state.interface_values[0].values[3]) && (d_state.interface_values[1].values[3])) == 1 && (response == 'y' || response == 'Y'))
+                    {                
+                        check_alm = true;
+                        RCLCPP_INFO(this->get_logger(), "Close the Node");
+                        std::this_thread::sleep_for(std::chrono::seconds(5));
+
+
+                    }
                 }
         }
     }
@@ -101,7 +118,6 @@ private:
                     {
                         twist_msg.twist.linear.x = 0.0;
                         twist_publisher->publish(twist_msg);
-                        std::this_thread::sleep_for(std::chrono::seconds(5));
                         std::cout << "Has B.ob driven 1m? (y/n): ";
                         char response;
                         std::cin >> response;
@@ -129,7 +145,6 @@ private:
                     {
                         twist_msg.twist.linear.x = 0.0;
                         twist_publisher->publish(twist_msg);
-                        std::this_thread::sleep_for(std::chrono::seconds(5));
                         std::cout << "Has B.ob driven back to start? (y/n): ";
                         char response;
                         std::cin >> response;
@@ -158,7 +173,6 @@ private:
                     {
                         twist_msg.twist.linear.x = 0.0;
                         twist_publisher->publish(twist_msg);
-                        std::this_thread::sleep_for(std::chrono::seconds(5));
                         std::cout << "Has B.ob driven 2m? (y/n): ";
                         char response;
                         std::cin >> response;
@@ -231,7 +245,7 @@ private:
                     {
                         twist_msg.twist.angular.z = 0.0;
                         twist_publisher->publish(twist_msg);
-                        std::this_thread::sleep_for(std::chrono::seconds(5));
+                        std::this_thread::sleep_for(std::chrono::seconds(1));
                         std::cout << "Has B.ob achieved yaw " << (int)((target_yaws[yaw_index]*57.29564553f)) << " degree ? (y/n): ";
                         char response;
                         std::cin >> response;
@@ -261,8 +275,7 @@ private:
                 break;
 
             case COMPLETE:
-                RCLCPP_INFO(this->get_logger(), "All Tests Completed");
-                std::this_thread::sleep_for(std::chrono::seconds(3));
+
                 complete = true;
                 check_encoder =true;
                 break;
@@ -278,10 +291,8 @@ private:
         {
             
             // Launch diffbot.launch.py and exit this node
-            RCLCPP_INFO(this->get_logger(), "Restarting");
-            system("ros2 launch bob_bringup diffbot.launch.py");
+            RCLCPP_INFO(this->get_logger(), "Close the Node");
             rclcpp::shutdown();
-
         }
 
         
