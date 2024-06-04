@@ -136,7 +136,7 @@ private:
             // Menu Button
             return "Shutdown";
         }
-        if (axes[4] == 2.0)
+        if (axes[7] == 1.0)
         {
             return "Test Mode";
         }

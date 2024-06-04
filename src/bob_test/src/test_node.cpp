@@ -61,10 +61,11 @@ private:
     std::chrono::high_resolution_clock::time_point time_stamp = std::chrono::high_resolution_clock::now();
     bool timer_started = false;
 
-    // void jointstate_callback(const sensor_msgs::msg::JointState &state)
-    // {
-    //     //Encoder
-    // }
+    // // void jointstate_callback(const sensor_msgs::msg::JointState &state)
+    // // {
+    // //     Encoder
+        
+    // // }
 
     void dynamic_jointstate_callback(const control_msgs::msg::DynamicJointState &d_state)
     {
