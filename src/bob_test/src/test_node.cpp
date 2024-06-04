@@ -57,7 +57,7 @@ private:
     uint8_t yaw_index = 0;
     bool complete = false;
     bool check_alm = false;
-    bool check_encoder = false;
+    bool test_finished = false;
     std::chrono::high_resolution_clock::time_point time_stamp = std::chrono::high_resolution_clock::now();
     bool timer_started = false;
 
@@ -70,15 +70,17 @@ private:
     {
         if (complete)
         {
-            if (((d_state.interface_values[0].values[3]) && (d_state.interface_values[1].values[3])) == 1 && !check_alm)
+            if(!test_finished)
             {
                 system("clear");
                 RCLCPP_INFO(this->get_logger(),"Press the Emergency Button");
+
             }
+
+
                 
-        
             if (((d_state.interface_values[0].values[3]) && (d_state.interface_values[1].values[3])) == 0)
-                {
+            {
                 std::cout << "Left Weehl Alarm  " << d_state.interface_values[0].values[3] <<std::endl;
                 std::cout << "Rigth Weehl Alarm  " << d_state.interface_values[1].values[3] <<std::endl;
 
@@ -90,15 +92,20 @@ private:
                 RCLCPP_INFO(this->get_logger(), "Pull the Emergency Button and type (y) to finish the Test");
                 char response;
                 std::cin >> response;
-                if (((d_state.interface_values[0].values[3]) && (d_state.interface_values[1].values[3])) == 1 && (response == 'y' || response == 'Y'))
-                    {                
-                        check_alm = true;
-                        RCLCPP_INFO(this->get_logger(), "Close the Node");
-                        std::this_thread::sleep_for(std::chrono::seconds(5));
+                std::this_thread::sleep_for(std::chrono::seconds(1));
 
+                if ((response == 'y' || response == 'Y'))
+                {                
+                    RCLCPP_INFO(this->get_logger(), "Test Finished");
+                    test_finished = true;
+                    std::this_thread::sleep_for(std::chrono::seconds(2));
 
-                    }
                 }
+             }
+            if (((d_state.interface_values[0].values[3]) && (d_state.interface_values[1].values[3])) == 1 && test_finished)
+            {
+                check_alm = true;
+            }
         }
     }
     void odom_callback(const nav_msgs::msg::Odometry &odom)
@@ -130,7 +137,6 @@ private:
                         {
                             complete = true;
                             check_alm = true;
-                            check_encoder = true;
                         }
                     }
                
@@ -157,7 +163,6 @@ private:
                         {
                             complete = true;
                             check_alm = true;
-                            check_encoder = true;
                         }
                     }
                 
@@ -185,7 +190,6 @@ private:
                         {
                             complete = true;
                             check_alm = true;
-                            check_encoder = true;
                         }
                     }
                
@@ -263,7 +267,6 @@ private:
                         {
                             complete = true;
                             check_alm = true;
-                            check_encoder = true;
                         }
                     }
                 } 
@@ -277,7 +280,6 @@ private:
             case COMPLETE:
 
                 complete = true;
-                check_encoder =true;
                 break;
         }
 
@@ -287,7 +289,7 @@ private:
             twist_publisher->publish(twist_msg);
         }
 
-        if (complete && check_alm && check_encoder)
+        if (complete && check_alm )
         {
             
             // Launch diffbot.launch.py and exit this node
