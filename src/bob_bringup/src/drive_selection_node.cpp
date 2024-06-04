@@ -12,7 +12,7 @@
 
 using std::placeholders::_1;
 
-std::string find_button(std::vector<int> buttons);         // <-- Implement find_button function
+std::string find_button(std::vector<int> buttons , std::vector<float>axes);         // <-- Implement find_button function
 void launch_call(std::string mode, std::string last_mode); // <-- Implement launch_call function
 
 /*! Class for changing the different driving modes e.g. Manual Driving, Autonomous Driving*/
@@ -47,13 +47,13 @@ private:
         auto drive_mode_status_msg = std_msgs::msg::String();
 
         // Read button input, transfer it to the button output function and write it to the drive mode status
-        if (find_button(joy_msg.buttons) == "")
+        if (find_button(joy_msg.buttons, joy_msg.axes) == "")
         {
             drive_mode_status_msg.data = last_mode;
         }
         else
         {
-            drive_mode_status_msg.data = find_button(joy_msg.buttons);
+            drive_mode_status_msg.data = find_button(joy_msg.buttons ,joy_msg.axes);
         }
 
         // Transfers the drive mode status to the publisher
@@ -81,7 +81,7 @@ private:
      *
      * @return Which button is pressed and writes it to the terminal
      */
-    std::string find_button(std::vector<int> buttons)
+    std::string find_button(std::vector<int> buttons , std::vector<float>axes)
     {
 
         if (buttons[0] == 1)
@@ -128,7 +128,7 @@ private:
         if (buttons[10] == 1)
         {
             // Button BACK
-            return "Test mode";
+            return "";
         }
         
         if (buttons[11] == 1)
@@ -136,6 +136,15 @@ private:
             // Menu Button
             return "Shutdown";
         }
+        if (axes[4] == 2.0)
+        {
+            return "Test Mode";
+        }
+        if (axes[4] == -1.0)
+        {
+            return "Yes";
+        }
+        
         else
         {
             return "";
@@ -159,6 +168,8 @@ private:
         if (drive_mode_status == "Basic Drive Mode")
         {
             system("ros2 launch teleop_twist_joy teleop.launch.py &");
+            // system("ros2 run bob_test test_node &");
+
         }
         if (drive_mode_status == "Shutdown")
         {
@@ -167,6 +178,10 @@ private:
         if (drive_mode_status == "Emergency Stop")
         {
             kill(getppid(), 9);
+        }
+        if (drive_mode_status == "Yes")
+        {
+            system("y");
         }
     }
 
