@@ -54,8 +54,7 @@ public:
         if (logFile.is_open())
         {
             logFile << logEntry.str();
-            logFile
-                .flush(); // Ensure immediate write to file
+            logFile.flush(); // Ensure immediate write to file
         }
     }
 
