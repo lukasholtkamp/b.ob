@@ -32,7 +32,7 @@ public:
 
         // // Implementing the Subscriber for joint_state topic
         // jointstate_subscriber = this->create_subscription<sensor_msgs::msg::JointState>(
-        //     "joint_state", 10, std::bind(&TestNode::jointstate_callback, this, _1));
+        //     "joint_states", 10, std::bind(&TestNode::jointstate_callback, this, _1));
 
         // Implementing the Subscriber for dynamic_joint_state topic
         dynamic_jointstate_subscriber = this->create_subscription<control_msgs::msg::DynamicJointState>(
@@ -93,7 +93,7 @@ private:
                 RCLCPP_INFO(this->get_logger(), "Pull the Emergency Button and type (y) to finish the Test");
                 char response;
                 std::cin >> response;
-                std::this_thread::sleep_for(std::chrono::seconds(1));
+                std::this_thread::sleep_for(std::chrono::seconds(3));
 
                 if ((response == 'y' || response == 'Y'))
                 {                
