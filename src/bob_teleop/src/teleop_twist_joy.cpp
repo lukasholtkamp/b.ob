@@ -119,7 +119,7 @@ namespace teleop_twist_joy
         std::bind(&TeleopTwistJoy::Impl::joy_callback, this->pimpl_, std::placeholders::_1));
     
     pimpl_ -> jointstate_subscriber = this->create_subscription<sensor_msgs::msg::JointState>(
-            "joint_state", 10, std::bind(&TestNode::jointstate_callback, this, _1));
+            "joint_state", 10, std::bind(&TeleopTwistJoy::Impl::jointstate_callback, this, _1));
 
     pimpl_->require_enable_button = this->declare_parameter("require_enable_button", true);
 
