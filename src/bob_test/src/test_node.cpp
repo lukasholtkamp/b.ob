@@ -16,6 +16,7 @@
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <control_msgs/msg/dynamic_joint_state.hpp>
 #include <control_msgs/msg/interface_value.hpp>
+#include <sensor_msgs/msg/joy.hpp>
 
 
 using std::placeholders::_1;
@@ -38,6 +39,10 @@ public:
         dynamic_jointstate_subscriber = this->create_subscription<control_msgs::msg::DynamicJointState>(
             "dynamic_joint_states", 10, std::bind(&TestNode::dynamic_jointstate_callback, this, _1));
 
+        // Implementing the Subscriber for the Button and axes request
+        gamepad_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
+            "joy", 10, std::bind(&TestNode::joy_callback, this, _1));
+
 
         // Implementing the Publisher cmd_vel topic
         twist_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>("diffbot_base_controller/cmd_vel", 10);
@@ -52,7 +57,7 @@ private:
         COMPLETE
     };
 
-    State current_state = COMPLETE;
+    State current_state = FORWARD;
     std::vector<double> target_yaws = {1.5708, 0.0, -1.5708, 0.0, 0.0}; // π/2, 0, -π/2, 0, 2π
     uint8_t yaw_index = 0;
     bool complete = false;
@@ -60,12 +65,26 @@ private:
     bool test_finished = false;
     std::chrono::high_resolution_clock::time_point time_stamp = std::chrono::high_resolution_clock::now();
     bool timer_started = false;
+    bool test_break = false;
 
     // // void jointstate_callback(const sensor_msgs::msg::JointState &state)
     // // {
     // //     Encoder
         
     // // }
+
+    void joy_callback(const sensor_msgs::msg::Joy &joy_msg)
+    {
+        if (joy_msg.axes[6] == 1.0)
+        {
+            test_break = true;
+        }
+        if (joy_msg.axes[6] == -1.0)
+        {
+            system("y");
+        }
+    }
+
 
     void dynamic_jointstate_callback(const control_msgs::msg::DynamicJointState &d_state)
     {
@@ -74,39 +93,33 @@ private:
             if(!test_finished)
             {
                 system("clear");
-                RCLCPP_INFO(this->get_logger(),"Press the Emergency Button");
+                std::cout << "Press the Emergency Button" << std::endl;                
+                std::cout << "\nNote: If Button is pressed and nothing has changed press left-D-PAD button to escape" << std::endl;
 
             }
 
-
-                
             if (((d_state.interface_values[0].values[3]) && (d_state.interface_values[1].values[3])) == 0)
             {
-                std::cout << "Left Weehl Alarm  " << d_state.interface_values[0].values[3] <<std::endl;
-                std::cout << "Rigth Weehl Alarm  " << d_state.interface_values[1].values[3] <<std::endl;
-
-                RCLCPP_INFO(this->get_logger(),"Alarm Test Completed");
-                std::this_thread::sleep_for(std::chrono::seconds(2));
-                RCLCPP_INFO(this->get_logger(), "All Tests Completed");
-                std::this_thread::sleep_for(std::chrono::seconds(2));
                 system("clear");
-                RCLCPP_INFO(this->get_logger(), "Pull the Emergency Button and type (y) to finish the Test");
-                char response;
-                std::cin >> response;
+                std::cout << "Alarm Test Completed" << std::endl;
                 std::this_thread::sleep_for(std::chrono::seconds(3));
-
-                if ((response == 'y' || response == 'Y'))
-                {                
-                    RCLCPP_INFO(this->get_logger(), "Test Finished");
-                    test_finished = true;
-                    std::this_thread::sleep_for(std::chrono::seconds(2));
-
-                }
+                std::cout << "Pull the Emergency Button" << std::endl;
+                std::this_thread::sleep_for(std::chrono::seconds(3));
+                test_finished = true;
              }
             if (((d_state.interface_values[0].values[3]) && (d_state.interface_values[1].values[3])) == 1 && test_finished)
             {
-                check_alm = true;
+                
+                    std::cout <<"Test Finished" << std::endl;
+                    std::this_thread::sleep_for(std::chrono::seconds(3));
+                    check_alm = true;
+                
             }
+        }
+        if (test_break)
+        {
+            std::cout << "\nAlarm Test Failed" << std::endl;
+            check_alm = true;
         }
     }
     void odom_callback(const nav_msgs::msg::Odometry &odom)
@@ -131,7 +144,7 @@ private:
                         std::cin >> response;
                         if (response == 'y' || response == 'Y') 
                         {
-                            RCLCPP_INFO(this->get_logger(),"Forward Test Completed");
+                            std::cout << "Forward Test Completed"<< std::endl;
                             current_state = BACKWARD;
                         }
                         else 
@@ -157,7 +170,7 @@ private:
                         std::cin >> response;
                         if (response == 'y' || response == 'Y') 
                         {
-                            RCLCPP_INFO(this->get_logger(), "Backward Test Completed");
+                            std::cout << "Backward Test Completed"<< std::endl;
                             current_state = FORWARD_2METER;
                         }
                         else 
@@ -184,7 +197,7 @@ private:
                         std::cin >> response;
                         if (response == 'y' || response == 'Y') 
                         {
-                            RCLCPP_INFO(this->get_logger(),"Forward 2m Test Completed");
+                            std::cout << "Forward 2m Test Completed"<< std::endl;
                             current_state = YAW;
                         }
                         else 
@@ -242,7 +255,7 @@ private:
 
                     }
                     
-                    RCLCPP_INFO(this->get_logger(), "D_Yaw: %f", (std::abs(yaw - target_yaws[yaw_index])));
+                    // RCLCPP_INFO(this->get_logger(), "D_Yaw: %f", (std::abs(yaw - target_yaws[yaw_index])));
 
                     std::chrono::duration<double> diff = std::chrono::high_resolution_clock::now() - time_stamp;
                     
@@ -257,7 +270,7 @@ private:
                         if (response == 'y' || response == 'Y') 
                         {
 
-                            RCLCPP_INFO(this->get_logger(), "Yaw Test Completed: Yaw is approximately %d", (int)((target_yaws[yaw_index]*57.29564553f)));
+                            // RCLCPP_INFO(this->get_logger(), "Yaw Test Completed: Yaw is approximately %d", (int)((target_yaws[yaw_index]*57.29564553f)));
                             yaw_index++;
                             if (yaw_index >= target_yaws.size()) 
                             {
@@ -288,19 +301,25 @@ private:
         if (!complete)
         {
             twist_publisher->publish(twist_msg);
+        if (test_break)
+        {
+            std::cout << "Driving Test Failed" << std::endl;
+            complete = true;
+            check_alm = true;
+        }
+
         }
 
         if (complete && check_alm )
         {
             
             // Launch diffbot.launch.py and exit this node
-            RCLCPP_INFO(this->get_logger(), "Close the Node");
+            std::cout << "Close the Node" << std::endl;
             rclcpp::shutdown();
         }
 
         
-        
-    
+     
     }
 
     //! Subscriber to read from the odom topic
@@ -314,6 +333,10 @@ private:
 
     //! Publisher to publish to the cmd_vel topic
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr twist_publisher;
+
+    //! Subscriber to read from the joy topic to know which buttons have been pressed
+    rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr gamepad_subscriber;
+
 };
 
 int main(int argc, char *argv[])

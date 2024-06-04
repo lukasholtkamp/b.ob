@@ -140,11 +140,6 @@ private:
         {
             return "Test Mode";
         }
-        // if (axes[7] == -1.0)
-        // {
-        //     return "Yes";
-        // }
-        
         else
         {
             return "";
@@ -168,8 +163,6 @@ private:
         if (drive_mode_status == "Basic Drive Mode")
         {
             system("ros2 launch teleop_twist_joy teleop.launch.py &");
-            // system("ros2 run bob_test test_node &");
-
         }
         if (drive_mode_status == "Shutdown")
         {
@@ -178,10 +171,6 @@ private:
         if (drive_mode_status == "Emergency Stop")
         {
             kill(getppid(), 9);
-        }
-        if (drive_mode_status == "Yes")
-        {
-            system("y");
         }
     }
 
