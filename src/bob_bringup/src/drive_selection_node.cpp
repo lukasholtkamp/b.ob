@@ -140,10 +140,10 @@ private:
         {
             return "Test Mode";
         }
-        if (axes[4] == -1.0)
-        {
-            return "Yes";
-        }
+        // if (axes[4] == -1.0)
+        // {
+        //     return "Yes";
+        // }
         
         else
         {
