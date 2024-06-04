@@ -13,7 +13,7 @@ def generate_launch_description():
                 'serial_port': '/dev/ttyUSB0',
                 'serial_baudrate': 115200,  # A1 / A2
                 # 'serial_baudrate': 256000, # A3
-                'frame_id': 'laser_frame',
+                'frame_id': 'lidar_frame',
                 'inverted': False,
                 'angle_compensate': True,
             }],
