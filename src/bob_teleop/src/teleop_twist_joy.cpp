@@ -15,6 +15,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
 #include <sensor_msgs/msg/joy.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 
 #include "teleop_twist_joy/teleop_twist_joy.hpp"
 
@@ -40,6 +41,8 @@ namespace teleop_twist_joy
     void fill_cmd_vel_msg(
         const sensor_msgs::msg::Joy::SharedPtr, const std::string &which_map,
         geometry_msgs::msg::Twist *cmd_vel_msg);
+
+    void jointstate_callback(const sensor_msgs::msg::JointState &state);
 
     //! Subscriber to listen to joy topic for the speed controlling axes
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub;
@@ -119,7 +122,7 @@ namespace teleop_twist_joy
         std::bind(&TeleopTwistJoy::Impl::joy_callback, this->pimpl_, std::placeholders::_1));
     
     pimpl_ -> jointstate_subscriber = this->create_subscription<sensor_msgs::msg::JointState>(
-            "joint_state", 10, std::bind(&TeleopTwistJoy::Impl::jointstate_callback, this, _1));
+            "joint_state", 10, std::bind(&TeleopTwistJoy::Impl::jointstate_callback, this->pimpl_, std::placeholders::_1));
 
     pimpl_->require_enable_button = this->declare_parameter("require_enable_button", true);
 
