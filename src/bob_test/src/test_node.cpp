@@ -76,7 +76,13 @@ private:
     bool next_test = false;
 
     
-    // Callback function to read the Inputs (Buttons and Axes)
+    /**
+     * @brief Callback function for the gamepad_subscriber to handle joystick inputs (Buttons and Axes).
+     *
+     * Updates `test_break` if the D-PAD is pressed left, and `next_test` if the D-PAD is pressed right.
+     * 
+     * @param joy_msg The message containing joystick data.
+     */
     void joy_callback(const sensor_msgs::msg::Joy &joy_msg)
     {
         if (joy_msg.axes[6] == 1.0)
@@ -89,7 +95,13 @@ private:
         }
     }
 
-    // Callback function to test the Alarm
+    /**
+     * @brief Callback function to test the Alarm.
+     *
+     * Checks the emergency button state from dynamic joint state messages and updates `check_alm` and `test_finished` flags.
+     *
+     * @param d_state The message containing dynamic joint state data.
+     */
     void dynamic_jointstate_callback(const control_msgs::msg::DynamicJointState &d_state)
     {
         if (driving_test_complete)
@@ -131,7 +143,13 @@ private:
         }
     }
 
-    // Callback funktion to test B.ob in all directions 
+    /**
+     * @brief Callback function to test B.ob's movement in all directions.
+     *
+     * Uses odometry data to update B.ob's state and publish twist messages.
+     *
+     * @param odom The message containing odometry data.
+     */
     void odom_callback(const nav_msgs::msg::Odometry &odom)
     {
 
