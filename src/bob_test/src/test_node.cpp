@@ -172,15 +172,14 @@ private:
                         twist_publisher->publish(twist_msg);
                         system("clear");
                         std::cout << "Has B.ob driven 1m? \nPress Right-D-PAD for Yes , Left-D-PAD for No : " << std::endl;
-                        std::this_thread::sleep_for(std::chrono::seconds(3));
 
                         // Check if Right-D-PAD Button is pressed to continue the test
                         if (next_test) 
                         {
                             std::cout << "Forward Test Completed"<< std::endl;
-                            std::this_thread::sleep_for(std::chrono::seconds(2));
                             next_test =false;
                             current_state = BACKWARD;
+                            std::this_thread::sleep_for(std::chrono::seconds(2));
                         }
 
                         // Check if the Left-D-PAD Button is pressed to abort the test
@@ -206,15 +205,14 @@ private:
                         twist_publisher->publish(twist_msg);
                         system("clear");
                         std::cout << "Has B.ob driven back to start? \nPress right-D-PAD for Yes , Left-D-PAD for No : " << std::endl;
-                        std::this_thread::sleep_for(std::chrono::seconds(3));
 
                         // Check if Right-D-PAD Button is pressed to continue the test
                         if (next_test) 
                         {
                             std::cout << "Backward Test Completed"<< std::endl;
-                            std::this_thread::sleep_for(std::chrono::seconds(2));
                             next_test =false;
                             current_state = FORWARD_2METER;
+                            std::this_thread::sleep_for(std::chrono::seconds(2));
                         }
 
                         // Check if the Left-D-PAD Button is pressed to abort the test
@@ -241,15 +239,14 @@ private:
                         twist_publisher->publish(twist_msg);
                         system("clear");
                         std::cout << "Has B.ob driven 2m? \nPress right-D-PAD for Yes , Left-D-PAD for No : " << std::endl;
-                        std::this_thread::sleep_for(std::chrono::seconds(3));
 
                         // Check if Right-D-PAD Button is pressed to continue the test
                         if (next_test) 
                         {
                             std::cout << "Forward 2m Test Completed"<< std::endl;
-                            std::this_thread::sleep_for(std::chrono::seconds(2));
                             next_test =false;
                             current_state = YAW;
+                            std::this_thread::sleep_for(std::chrono::seconds(2));
                         }
 
                         // Check if the Left-D-PAD Button is pressed to abort the test
@@ -309,16 +306,16 @@ private:
                         // Stop publishing
                         twist_msg.twist.angular.z = 0.0;
                         twist_publisher->publish(twist_msg);
-                        std::this_thread::sleep_for(std::chrono::seconds(1));
                         system("clear");
                         std::cout << "Has B.ob achieved yaw " << (int)((target_yaws[yaw_index]*57.29564553f)) << " degree ? \nPress right-D-PAD for Yes , Left-D-PAD for No : " << std::endl;
-                        std::this_thread::sleep_for(std::chrono::seconds(3));
 
                         // Check if Right-D-PAD Button is pressed to continue the test
                         if (next_test) 
                         {
                             next_test =false;
                             yaw_index++;
+                            std::this_thread::sleep_for(std::chrono::seconds(2));
+
                             
                             // Check if the Left-D-PAD Button is pressed to abort the test
                             if (yaw_index >= target_yaws.size()) 
@@ -369,6 +366,7 @@ private:
             // Closes the Node
             // TODO: Launch diffbot.launch.py and exit this node
             std::cout << "Close the Node" << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds(2));
             rclcpp::shutdown();
         }
 
