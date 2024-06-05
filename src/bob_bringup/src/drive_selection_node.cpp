@@ -34,7 +34,7 @@ public:
         status_publisher = this->create_publisher<std_msgs::msg::String>("drive_mode_status", 10);
     }
 
-    //! string to know when there is a transition in driving mode
+    //! String to know when there is a transition in driving mode
     std::string last_mode = "IDLE"; // <-- Implementing the las_mode variable for the drive_mode_status request
 
 private:

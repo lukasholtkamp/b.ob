@@ -31,10 +31,6 @@ public:
         odom_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
             "diffbot_base_controller/odom", 10, std::bind(&TestNode::odom_callback, this, _1));
 
-        // // Implementing the Subscriber for joint_states topic
-        // jointstate_subscriber = this->create_subscription<sensor_msgs::msg::JointState>(
-        //     "joint_states", 10, std::bind(&TestNode::jointstate_callback, this, _1));
-
         // Implementing the Subscriber for dynamic_joint_states topic
         dynamic_jointstate_subscriber = this->create_subscription<control_msgs::msg::DynamicJointState>(
             "dynamic_joint_states", 10, std::bind(&TestNode::dynamic_jointstate_callback, this, _1));
@@ -58,23 +54,27 @@ private:
         COMPLETE
     };
 
+    //! Enum variable for the test state
     State current_state = FORWARD;
+    //! Vector of target yaw values
     std::vector<double> target_yaws = {1.5708, 0.0, -1.5708, 0.0, 0.0}; // π/2, 0, -π/2, 0, 2π
+    //! Iterator for the target yaw values
     uint8_t yaw_index = 0;
-    bool complete = false;
-    bool check_alm = false;
-    bool test_finished = false;
+    //! Boolean to know when each driving test is finished
+    bool driving_test_complete = false;
+    //! Boolean to know when alarm test is complete
+    bool alm_complete = false;
+    //! Boolean to know when all tests are complete
+    bool tests_finished = false;
+    //! Time stamp used for doing the 360 degree turn
     std::chrono::high_resolution_clock::time_point time_stamp = std::chrono::high_resolution_clock::now();
+    //! Boolean to know when to start timer
     bool timer_started = false;
+    //! Boolean to abort tests
     bool test_break = false;
+    //! Boolean to move on to next driving test
     bool next_test = false;
 
-
-    // // void jointstate_callback(const sensor_msgs::msg::JointState &state)
-    // // {
-    // //     Encoder
-        
-    // // }
     
     // Callback function to read the Inputs (Buttons and Axes)
     void joy_callback(const sensor_msgs::msg::Joy &joy_msg)
@@ -92,9 +92,9 @@ private:
     // Callback function to test the Alarm
     void dynamic_jointstate_callback(const control_msgs::msg::DynamicJointState &d_state)
     {
-        if (complete)
+        if (driving_test_complete)
         {
-            if(!test_finished)
+            if(!tests_finished)
             {
                 system("clear");
                 std::cout << "Press the Emergency Button" << std::endl;                
@@ -110,16 +110,16 @@ private:
                 std::this_thread::sleep_for(std::chrono::seconds(3));
                 std::cout << "Release the Emergency Button" << std::endl;
                 std::this_thread::sleep_for(std::chrono::seconds(3));
-                test_finished = true;
+                tests_finished = true;
              }
 
             // Check if the Emergency Button is released and finish the test
-            if (((d_state.interface_values[0].values[3]) && (d_state.interface_values[1].values[3])) == 1 && test_finished)
+            if (((d_state.interface_values[0].values[3]) && (d_state.interface_values[1].values[3])) == 1 && tests_finished)
             {
 
                     std::cout <<"Test Finished" << std::endl;
                     std::this_thread::sleep_for(std::chrono::seconds(3));
-                    check_alm = true;
+                    alm_complete = true;
                 
             }
         }
@@ -127,7 +127,7 @@ private:
         if (test_break)
         {
             std::cout << "\nAlarm Test Failed" << std::endl;
-            check_alm = true;
+            alm_complete = true;
         }
     }
 
@@ -247,7 +247,7 @@ private:
             case YAW:
                 
                 // Check if the current yaw index is less than the size of target_yaws (5) and the driving test is not complete
-                if (yaw_index < target_yaws.size() && !complete) 
+                if (yaw_index < target_yaws.size() && !driving_test_complete) 
                 {
                     // Extract quaternion
                     auto quaternion = odom.pose.pose.orientation;
@@ -326,30 +326,30 @@ private:
 
             case COMPLETE:
 
-                complete = true;
+                driving_test_complete = true;
                 break;
         }
 
 
-        if (!complete)
+        if (!driving_test_complete)
         {
-            // Publishing
+            // Publish
             twist_publisher->publish(twist_msg);
 
         // Check if the Left-D-PAD Button is pressed to abort the driving test
         if (test_break)
         {
             std::cout << "Driving Test Failed" << std::endl;
-            complete = true;
+            driving_test_complete = true;
             test_break = false;
         }
 
         }
 
-        if (complete && check_alm )
+        if (driving_test_complete && alm_complete )
         {
-            
-            // Launch diffbot.launch.py and exit this node
+            // Closes the Node
+            // TODO: Launch diffbot.launch.py and exit this node
             std::cout << "Close the Node" << std::endl;
             rclcpp::shutdown();
         }
@@ -361,10 +361,10 @@ private:
     //! Subscriber to read from the odom topic
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber;
 
-    //! Subscriber to read from the joint_state topic
+    //! Subscriber to read from the joint_states topic
     rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr jointstate_subscriber;
 
-    //! Subscriber to read from the dynamic_joint_state topic
+    //! Subscriber to read from the dynamic_joint_states topic
     rclcpp::Subscription<control_msgs::msg::DynamicJointState>::SharedPtr dynamic_jointstate_subscriber;
 
     //! Publisher to publish to the cmd_vel topic
