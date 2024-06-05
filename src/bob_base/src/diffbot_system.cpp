@@ -97,7 +97,7 @@ namespace bob_base
   std::vector<hardware_interface::StateInterface> DiffDriveBobHardware::export_state_interfaces()
   {
     std::vector<hardware_interface::StateInterface> state_interfaces;
-    // Declare both position and velocity states for both wheels
+    // Declare both position, velocity, rpm and alarm states for both wheels
     state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_VELOCITY, &left_wheel_.velocity));
     state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_POSITION, &left_wheel_.position));
     state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, left_wheel_.rpm_name, &left_wheel_.wheel_rpm));
@@ -160,10 +160,9 @@ namespace bob_base
     right_wheel_.position = right_wheel_.wheel_radius*right_wheel_.calculate_encoder_angle();
     right_wheel_.velocity = (right_wheel_.position - previous_position) / delta_seconds;
 
-    // RCLCPP_INFO(logger_, "Left motor ros velocity: %f", left_wheel_.velocity);
-    // RCLCPP_INFO(logger_, "Right motor ros velocity: %f", right_wheel_.velocity);
-
+    // This if statement prevents the problem of the callback function not updating
     if(abs(right_wheel_.velocity)>0 && abs(left_wheel_.velocity)>0){
+      // Read the rpm of the motors
       read_rpm_values(&left_wheel_.wheel_rpm,&right_wheel_.wheel_rpm);
     }
     else{
@@ -171,6 +170,7 @@ namespace bob_base
       right_wheel_.wheel_rpm=0.0;
     }
     
+    // Read Alarm state of the wheels
     right_wheel_.alarm_status = gpio_read(pi_sig, RIGHT_ALARM_PIN);
     left_wheel_.alarm_status = gpio_read(pi_sig, LEFT_ALARM_PIN);
 
@@ -202,9 +202,6 @@ namespace bob_base
     {
       right_motor_speed = -255;
     }
-
-    // RCLCPP_INFO(logger_, "Left wheel command: %f", left_wheel_.command);
-    // RCLCPP_INFO(logger_, "Left motor speed signal: %f", left_motor_speed);
 
     // Send commands to motor driver
     set_motor_speeds(pi_int, left_motor_speed, right_motor_speed);

@@ -170,6 +170,7 @@ def generate_launch_description():
         )
     )
 
+    # Launch Lidar Node from launch file
     lidar = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(
                     pkg_bring_up,'launch','rplidar.launch.py'

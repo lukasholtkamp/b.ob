@@ -41,7 +41,7 @@ namespace teleop_twist_joy
     void fill_cmd_vel_msg(
         const sensor_msgs::msg::Joy::SharedPtr, const std::string &which_map,
         geometry_msgs::msg::Twist *cmd_vel_msg);
-
+    //! Function for updating the reversing boolean
     void jointstate_callback(const sensor_msgs::msg::JointState &state);
 
     //! Subscriber to listen to joy topic for the speed controlling axes
@@ -50,7 +50,7 @@ namespace teleop_twist_joy
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub;
     //! Publisher for sending the time stamped command velocity on the /cmd_vel topic
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr cmd_vel_stamped_pub;
-
+    //! Subscriber to read wheel movements
     rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr jointstate_subscriber;
 
     //! Clock used for time stamping
@@ -92,6 +92,7 @@ namespace teleop_twist_joy
     //! Boolean used for sending 0 command velocity for the enable driving button functionality
     bool sent_disable_msg;
 
+    //! Boolean used for checking if B.ob is reversing
     bool reversing_check;
   };
 
@@ -121,6 +122,7 @@ namespace teleop_twist_joy
         "joy", rclcpp::QoS(10),
         std::bind(&TeleopTwistJoy::Impl::joy_callback, this->pimpl_, std::placeholders::_1));
     
+    // subscriber to read wheel movements
     pimpl_ -> jointstate_subscriber = this->create_subscription<sensor_msgs::msg::JointState>(
             "joint_states", 10, std::bind(&TeleopTwistJoy::Impl::jointstate_callback, this->pimpl_, std::placeholders::_1));
 
@@ -255,7 +257,8 @@ namespace teleop_twist_joy
 
     pimpl_->sent_disable_msg = false;
 
-    pimpl_ -> reversing_check = true;
+    // set reverse boolean to false
+    pimpl_ -> reversing_check = false;
 
     auto param_callback =
         [this](std::vector<rclcpp::Parameter> parameters)
@@ -491,6 +494,7 @@ namespace teleop_twist_joy
       lin_x = get_val(joy_msg, axis_linear_map, scale_linear_map[which_map], "x");
     }
 
+    // If driving command is forward but B.ob is still reversing, do not move (to prevent wheelie)
     if(lin_x > 0 && reversing_check){
       lin_x = 0;
     }
@@ -545,6 +549,7 @@ namespace teleop_twist_joy
 
   void TeleopTwistJoy::Impl::jointstate_callback(const sensor_msgs::msg::JointState &state)
   {
+    // Checks if both wheels are still reversing 
     if( state.velocity[0] < 0.0 && state.velocity[1] < 0.0){
       reversing_check = true;
     }
