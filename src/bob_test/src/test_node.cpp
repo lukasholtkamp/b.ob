@@ -1,7 +1,7 @@
 #include <memory>
 #include <string>
 #include <iostream>
-#include <stdint.h> 
+#include <stdint.h>
 #include <thread>
 #include <cmath>
 #include <tf2/LinearMath/Quaternion.h>
@@ -12,12 +12,11 @@
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <geometry_msgs/msg/pose_with_covariance.hpp>
-#include <nav_msgs/msg/odometry.hpp>                   
-#include <geometry_msgs/msg/quaternion.hpp>            // msg_type to handle with Quarternion
-#include <control_msgs/msg/dynamic_joint_state.hpp>    // msg_type for reading the alarm state
-#include <control_msgs/msg/interface_value.hpp>        // msg_type to alow the converting from Quaternion to an Euler angle
+#include <nav_msgs/msg/odometry.hpp>
+#include <geometry_msgs/msg/quaternion.hpp>         // msg_type to handle with Quarternion
+#include <control_msgs/msg/dynamic_joint_state.hpp> // msg_type for reading the alarm state
+#include <control_msgs/msg/interface_value.hpp>     // msg_type to alow the converting from Quaternion to an Euler angle
 #include <sensor_msgs/msg/joy.hpp>
-
 
 using std::placeholders::_1;
 
@@ -39,14 +38,14 @@ public:
         gamepad_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
             "joy", 10, std::bind(&TestNode::joy_callback, this, _1));
 
-
         // Implementing the Publisher for the cmd_vel topic
         twist_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>("diffbot_base_controller/cmd_vel", 10);
     }
 
 private:
-        // The Test States  
-    enum State {
+    // The Test States
+    enum State
+    {
         FORWARD,
         FORWARD_2METER,
         BACKWARD,
@@ -62,6 +61,8 @@ private:
     uint8_t yaw_index = 0;
     //! Boolean to know when each driving test is finished
     bool driving_test_complete = false;
+    //! Boolean to stop puplishing the twist_msg
+    bool stop_publishing = false;
     //! Boolean to know when alarm test is complete
     bool alm_complete = false;
     //! Boolean to know when all tests are complete
@@ -75,12 +76,11 @@ private:
     //! Boolean to move on to next driving test
     bool next_test = false;
 
-    
     /**
      * @brief Callback function for the gamepad_subscriber to handle joystick inputs (Buttons and Axes).
      *
      * Updates `test_break` if the D-PAD is pressed left, and `next_test` if the D-PAD is pressed right.
-     * 
+     *
      * @param joy_msg The message containing joystick data.
      */
     void joy_callback(const sensor_msgs::msg::Joy &joy_msg)
@@ -106,12 +106,11 @@ private:
     {
         if (driving_test_complete)
         {
-            if(!tests_finished)
+            if (!tests_finished)
             {
                 system("clear");
-                std::cout << "Press the Emergency Button" << std::endl;                
+                std::cout << "Press the Emergency Button" << std::endl;
                 std::cout << "\nNote: If the Button is pressed and nothing has changed press Left-D-PAD button to escape" << std::endl;
-
             }
 
             // Check if the Emergency Button is pressed
@@ -123,16 +122,15 @@ private:
                 std::cout << "Release the Emergency Button" << std::endl;
                 std::this_thread::sleep_for(std::chrono::seconds(3));
                 tests_finished = true;
-             }
+            }
 
             // Check if the Emergency Button is released and finish the test
             if (((d_state.interface_values[0].values[3]) && (d_state.interface_values[1].values[3])) == 1 && tests_finished)
             {
 
-                    std::cout <<"Test Finished" << std::endl;
-                    std::this_thread::sleep_for(std::chrono::seconds(3));
-                    alm_complete = true;
-                
+                std::cout << "Test Finished" << std::endl;
+                std::this_thread::sleep_for(std::chrono::seconds(3));
+                alm_complete = true;
             }
         }
         // Check if the Left-D-PAD Button is pressed to abort the test
@@ -153,215 +151,221 @@ private:
     void odom_callback(const nav_msgs::msg::Odometry &odom)
     {
 
-
         auto twist_msg = geometry_msgs::msg::TwistStamped();
 
-        switch (current_state) 
+        switch (current_state)
         {
-            case FORWARD:
+        case FORWARD:
 
-                    // Move B.ob forward with velocity_command value 0.2
-                    twist_msg.twist.linear.x = 0.2;
-                    std::cout << odom.pose.pose.position.x << std::endl;
+            // Move B.ob forward with velocity_command value 0.2
+            if (!stop_publishing)
+            {
+                twist_msg.twist.linear.x = 0.2;
+                std::cout << odom.pose.pose.position.x << std::endl;
+            }
 
-                    // Check if B.ob has reached 1 meter
-                    if (odom.pose.pose.position.x >= 1.0) 
-                    {
-                        // Stop publishing
-                        twist_msg.twist.linear.x = 0.0;
-                        twist_publisher->publish(twist_msg);
-                        system("clear");
-                        std::cout << "Has B.ob driven 1m? \nPress Right-D-PAD for Yes , Left-D-PAD for No : " << std::endl;
+            // Check if B.ob has reached 1 meter
+            if (odom.pose.pose.position.x >= 1.0)
+            {
+                // Stop publishing
+                stop_publishing = true;
+                twist_msg.twist.linear.x = 0.0;
+                twist_publisher->publish(twist_msg);
+                system("clear");
+                std::cout << "Has B.ob driven 1m? \nPress Right-D-PAD for Yes , Left-D-PAD for No : " << std::endl;
 
-                        // Check if Right-D-PAD Button is pressed to continue the test
-                        if (next_test) 
-                        {
-                            std::cout << "Forward Test Completed"<< std::endl;
-                            next_test =false;
-                            current_state = BACKWARD;
-                            std::this_thread::sleep_for(std::chrono::seconds(2));
-                        }
-
-                        // Check if the Left-D-PAD Button is pressed to abort the test
-                        else if (test_break)
-                        {
-                            current_state = COMPLETE;
-                        }
-                    }
-               
-                break;
-
-            case BACKWARD:
-
-                    // Move B.ob backward with velocity_command value -0.2
-                    twist_msg.twist.linear.x = -0.2;
-                    std::cout << odom.pose.pose.position.x << std::endl;
-
-                    // Check if B.ob has reached the start position
-                    if (odom.pose.pose.position.x <= 0.0) 
-                    {
-                        // Stop publishing
-                        twist_msg.twist.linear.x = 0.0;
-                        twist_publisher->publish(twist_msg);
-                        system("clear");
-                        std::cout << "Has B.ob driven back to start? \nPress right-D-PAD for Yes , Left-D-PAD for No : " << std::endl;
-
-                        // Check if Right-D-PAD Button is pressed to continue the test
-                        if (next_test) 
-                        {
-                            std::cout << "Backward Test Completed"<< std::endl;
-                            next_test =false;
-                            current_state = FORWARD_2METER;
-                            std::this_thread::sleep_for(std::chrono::seconds(2));
-                        }
-
-                        // Check if the Left-D-PAD Button is pressed to abort the test
-                        else if (test_break)
-                        {
-                            current_state = COMPLETE;
-                        }
-                    }
-                
-                break;
-                
-
-            case FORWARD_2METER:
-
-                    // Move B.ob forward with velocity_command value 0.2
-                    twist_msg.twist.linear.x = 0.2;
-                    std::cout << odom.pose.pose.position.x << std::endl;
-
-                    // Check if B.ob has reached 2 meters
-                    if (odom.pose.pose.position.x >= 2.0) 
-                    {
-                        // Stop publishing
-                        twist_msg.twist.linear.x = 0.0;
-                        twist_publisher->publish(twist_msg);
-                        system("clear");
-                        std::cout << "Has B.ob driven 2m? \nPress right-D-PAD for Yes , Left-D-PAD for No : " << std::endl;
-
-                        // Check if Right-D-PAD Button is pressed to continue the test
-                        if (next_test) 
-                        {
-                            std::cout << "Forward 2m Test Completed"<< std::endl;
-                            next_test =false;
-                            current_state = YAW;
-                            std::this_thread::sleep_for(std::chrono::seconds(2));
-                        }
-
-                        // Check if the Left-D-PAD Button is pressed to abort the test
-                        else if (test_break)
-                        {
-                            current_state = COMPLETE;
-                        }
-                    }
-               
-                break;
-                
-
-            case YAW:
-                
-                // Check if the current yaw index is less than the size of target_yaws (5) and the driving test is not complete
-                if (yaw_index < target_yaws.size() && !driving_test_complete) 
+                // Check if Right-D-PAD Button is pressed to continue the test
+                if (next_test)
                 {
-                    // Extract quaternion
-                    auto quaternion = odom.pose.pose.orientation;
+                    std::cout << "Forward Test Completed" << std::endl;
+                    next_test = false;
+                    current_state = BACKWARD;
+                    stop_publishing = false;
+                    std::this_thread::sleep_for(std::chrono::seconds(2));
+                }
 
-                    // Convert quaternion to tf2::Quaternion
-                    tf2::Quaternion tf2_quaternion(
-                        quaternion.x,
-                        quaternion.y,
-                        quaternion.z,
-                        quaternion.w);
-
-                    // Convert tf2::Quaternion to Euler angles
-                    tf2::Matrix3x3 mat(tf2_quaternion);
-                    double roll, pitch, yaw;
-                    mat.getRPY(roll, pitch, yaw);
-                    
-                    // Set angular velocity based on yaw_index
-                    if (yaw_index == 0 || yaw_index == 3 )
-                    {
-                         twist_msg.twist.angular.z = 0.1;           // Move B.ob to the right    
-                    }
-                    else
-                    {
-                         twist_msg.twist.angular.z = -0.1;          // Move B.ob to the left   
-                    }
-
-                    // Start timer for the last yaw (360°) to make a small adjustment before checking the condition
-                    if (yaw_index == 4 && !timer_started)
-                    {
-                        time_stamp = std::chrono::high_resolution_clock::now();
-                        timer_started = true;
-
-                    }
-                    
-                    // Calculate the time difference
-                    std::chrono::duration<double> diff = std::chrono::high_resolution_clock::now() - time_stamp;
-                    
-                    // Check if the current yaw is within the target range and a sufficient amount of time has passed
-                    if (std::abs(yaw - target_yaws[yaw_index]) <= 0.03 && diff.count() > 0.3) 
-                    {
-                        // Stop publishing
-                        twist_msg.twist.angular.z = 0.0;
-                        twist_publisher->publish(twist_msg);
-                        system("clear");
-                        std::cout << "Has B.ob achieved yaw " << (int)((target_yaws[yaw_index]*57.29564553f)) << " degree ? \nPress right-D-PAD for Yes , Left-D-PAD for No : " << std::endl;
-
-                        // Check if Right-D-PAD Button is pressed to continue the test
-                        if (next_test) 
-                        {
-                            next_test =false;
-                            yaw_index++;
-                            std::this_thread::sleep_for(std::chrono::seconds(2));
-
-                            
-                            // Check if the Left-D-PAD Button is pressed to abort the test
-                            if (yaw_index >= target_yaws.size()) 
-                            {
-                                current_state = COMPLETE;
-                            }
-                        }
-
-                        // Check if the Left-D-PAD Button is pressed to abort the test
-                        else if (test_break)
-                        {
-                            current_state = COMPLETE;
-                        }
-                    }
-                } 
-                
-                // Check if the current yaw index has reached the size of target_yaws to finish the driving test
-                else if (yaw_index >= target_yaws.size()) 
+                // Check if the Left-D-PAD Button is pressed to abort the test
+                else if (test_break)
                 {
                     current_state = COMPLETE;
                 }
-                break;
+            }
 
-            case COMPLETE:
+            break;
 
-                driving_test_complete = true;
-                break;
+        case BACKWARD:
+
+            // Move B.ob backward with velocity_command value -0.2
+            if (!stop_publishing)
+            {
+                twist_msg.twist.linear.x = -0.2;
+                std::cout << odom.pose.pose.position.x << std::endl;
+            }
+            // Check if B.ob has reached the start position
+            if (odom.pose.pose.position.x <= 0.0)
+            {
+                // Stop publishing
+                stop_publishing = true;
+                twist_msg.twist.linear.x = 0.0;
+                twist_publisher->publish(twist_msg);
+                system("clear");
+                std::cout << "Has B.ob driven back to start? \nPress right-D-PAD for Yes , Left-D-PAD for No : " << std::endl;
+
+                // Check if Right-D-PAD Button is pressed to continue the test
+                if (next_test)
+                {
+                    std::cout << "Backward Test Completed" << std::endl;
+                    next_test = false;
+                    current_state = FORWARD_2METER;
+                    stop_publishing = false;
+                    std::this_thread::sleep_for(std::chrono::seconds(2));
+                }
+
+                // Check if the Left-D-PAD Button is pressed to abort the test
+                else if (test_break)
+                {
+                    current_state = COMPLETE;
+                }
+            }
+
+            break;
+
+        case FORWARD_2METER:
+
+            // Move B.ob forward with velocity_command value 0.2
+            if (!stop_publishing)
+            {
+                twist_msg.twist.linear.x = 0.2;
+                std::cout << odom.pose.pose.position.x << std::endl;
+            }
+            // Check if B.ob has reached 2 meters
+            if (odom.pose.pose.position.x >= 2.0)
+            {
+                // Stop publishing
+                stop_publishing = true;
+                twist_msg.twist.linear.x = 0.0;
+                twist_publisher->publish(twist_msg);
+                system("clear");
+                std::cout << "Has B.ob driven 2m? \nPress right-D-PAD for Yes , Left-D-PAD for No : " << std::endl;
+
+                // Check if Right-D-PAD Button is pressed to continue the test
+                if (next_test)
+                {
+                    std::cout << "Forward 2m Test Completed" << std::endl;
+                    next_test = false;
+                    current_state = YAW;
+                    stop_publishing = false;
+                    std::this_thread::sleep_for(std::chrono::seconds(2));
+                }
+
+                // Check if the Left-D-PAD Button is pressed to abort the test
+                else if (test_break)
+                {
+                    current_state = COMPLETE;
+                }
+            }
+
+            break;
+
+        case YAW:
+
+            // Check if the current yaw index is less than the size of target_yaws (5) and the driving test is not complete
+            if (yaw_index < target_yaws.size() && !driving_test_complete)
+            {
+                // Extract quaternion
+                auto quaternion = odom.pose.pose.orientation;
+
+                // Convert quaternion to tf2::Quaternion
+                tf2::Quaternion tf2_quaternion(
+                    quaternion.x,
+                    quaternion.y,
+                    quaternion.z,
+                    quaternion.w);
+
+                // Convert tf2::Quaternion to Euler angles
+                tf2::Matrix3x3 mat(tf2_quaternion);
+                double roll, pitch, yaw;
+                mat.getRPY(roll, pitch, yaw);
+
+                // Set angular velocity based on yaw_index
+                if (yaw_index == 0 || yaw_index == 3)
+                {
+                    twist_msg.twist.angular.z = 0.1; // Move B.ob to the right
+                }
+                else
+                {
+                    twist_msg.twist.angular.z = -0.1; // Move B.ob to the left
+                }
+
+                // Start timer for the last yaw (360°) to make a small adjustment before checking the condition
+                if (yaw_index == 4 && !timer_started)
+                {
+                    time_stamp = std::chrono::high_resolution_clock::now();
+                    timer_started = true;
+                }
+
+                // Calculate the time difference
+                std::chrono::duration<double> diff = std::chrono::high_resolution_clock::now() - time_stamp;
+
+                // Check if the current yaw is within the target range and a sufficient amount of time has passed
+                if (std::abs(yaw - target_yaws[yaw_index]) <= 0.03 && diff.count() > 0.3)
+                {
+                    // Stop publishing
+                    twist_msg.twist.angular.z = 0.0;
+                    twist_publisher->publish(twist_msg);
+                    system("clear");
+                    std::cout << "Has B.ob achieved yaw " << (int)((target_yaws[yaw_index] * 57.29564553f)) << " degree ? \nPress right-D-PAD for Yes , Left-D-PAD for No : " << std::endl;
+
+                    // Check if Right-D-PAD Button is pressed to continue the test
+                    if (next_test)
+                    {
+                        next_test = false;
+                        yaw_index++;
+                        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+                        // Check if the Left-D-PAD Button is pressed to abort the test
+                        if (yaw_index >= target_yaws.size())
+                        {
+                            current_state = COMPLETE;
+                        }
+                    }
+
+                    // Check if the Left-D-PAD Button is pressed to abort the test
+                    else if (test_break)
+                    {
+                        current_state = COMPLETE;
+                    }
+                }
+            }
+
+            // Check if the current yaw index has reached the size of target_yaws to finish the driving test
+            else if (yaw_index >= target_yaws.size())
+            {
+                current_state = COMPLETE;
+            }
+            break;
+
+        case COMPLETE:
+
+            driving_test_complete = true;
+            break;
         }
-
 
         if (!driving_test_complete)
         {
             // Publish
             twist_publisher->publish(twist_msg);
 
-        // Check if the Left-D-PAD Button is pressed to abort the driving test
-        if (test_break)
-        {
-            std::cout << "Driving Test Failed" << std::endl;
-            driving_test_complete = true;
-            test_break = false;
+            // Check if the Left-D-PAD Button is pressed to abort the driving test
+            if (test_break)
+            {
+                std::cout << "Driving Test Failed" << std::endl;
+                driving_test_complete = true;
+                test_break = false;
+            }
         }
 
-        }
-
-        if (driving_test_complete && alm_complete )
+        if (driving_test_complete && alm_complete)
         {
             // Closes the Node
             // TODO: Launch diffbot.launch.py and exit this node
@@ -369,9 +373,6 @@ private:
             std::this_thread::sleep_for(std::chrono::seconds(2));
             rclcpp::shutdown();
         }
-
-        
-     
     }
 
     //! Subscriber to read from the odom topic
@@ -388,7 +389,6 @@ private:
 
     //! Subscriber to read from the joy topic to know which buttons have been pressed
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr gamepad_subscriber;
-
 };
 
 int main(int argc, char *argv[])
