@@ -65,10 +65,12 @@ def generate_launch_description():
         )
     )
 
-    declare_use_robot_localization_cmd = DeclareLaunchArgument(
+    declared_arguments.append(
+            DeclareLaunchArgument(
         name="use_robot_localization",
         default_value="True",
         description="Use robot_localization package if true",
+    )
     )
 
     # Initialize Arguments
@@ -238,7 +240,7 @@ def generate_launch_description():
         joint_state_broadcaster_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
         delay_for_joint_state_broadcaster_spawner,
-        lidar,
+        # lidar,
         turn_on_xbox,
         start_delayed_imu_broadcaster_spawner,
         start_robot_localization_cmd,

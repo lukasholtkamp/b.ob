@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro"  name="robot">
 
-    <xacro:arg name="use_ros2_control" default="false"/>
-    <xacro:arg name="sim_mode" default="true"/>
+    <xacro:arg name="use_ros2_control" default="True"/>
+    <xacro:arg name="sim_mode" default="False"/>
 
     <xacro:include filename="bob_core.xacro" />
 
     <xacro:if value="$(arg use_ros2_control)">
-        <xacro:include filename="$(find bob_description)/ros2_control/bob.ros2_control.xacro"/>
+        <xacro:include filename="$(find bob_description)/ros2_control/bob_ros2_control.xacro"/>
     </xacro:if>
 
     <xacro:unless value="$(arg use_ros2_control)">
