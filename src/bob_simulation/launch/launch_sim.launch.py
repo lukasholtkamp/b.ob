@@ -92,7 +92,7 @@ def generate_launch_description():
         executable="joy_node",
     )
 
-    config_filepath = os.path.join(pkg_teleop, "config", "ps2.config.yaml")
+    config_filepath = os.path.join(pkg_teleop, "config", "xbox.config.yaml")
 
     # Launch drive selection node to be able to switch between the modes
     teleop_node = Node(
