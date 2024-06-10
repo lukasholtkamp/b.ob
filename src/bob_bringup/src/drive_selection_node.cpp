@@ -12,7 +12,7 @@
 
 using std::placeholders::_1;
 
-std::string find_button(std::vector<int> buttons);         // <-- Implement find_button function
+std::string find_button(std::vector<int> buttons , std::vector<float>axes);         // <-- Implement find_button function
 void launch_call(std::string mode, std::string last_mode); // <-- Implement launch_call function
 
 /*! Class for changing the different driving modes e.g. Manual Driving, Autonomous Driving*/
@@ -34,7 +34,7 @@ public:
         status_publisher = this->create_publisher<std_msgs::msg::String>("drive_mode_status", 10);
     }
 
-    //! string to know when there is a transition in driving mode
+    //! String to know when there is a transition in driving mode
     std::string last_mode = "IDLE"; // <-- Implementing the las_mode variable for the drive_mode_status request
 
 private:
@@ -47,13 +47,13 @@ private:
         auto drive_mode_status_msg = std_msgs::msg::String();
 
         // Read button input, transfer it to the button output function and write it to the drive mode status
-        if (find_button(joy_msg.buttons) == "")
+        if (find_button(joy_msg.buttons, joy_msg.axes) == "")
         {
             drive_mode_status_msg.data = last_mode;
         }
         else
         {
-            drive_mode_status_msg.data = find_button(joy_msg.buttons);
+            drive_mode_status_msg.data = find_button(joy_msg.buttons ,joy_msg.axes);
         }
 
         // Transfers the drive mode status to the publisher
@@ -81,7 +81,7 @@ private:
      *
      * @return Which button is pressed and writes it to the terminal
      */
-    std::string find_button(std::vector<int> buttons)
+    std::string find_button(std::vector<int> buttons , std::vector<float>axes)
     {
 
         if (buttons[0] == 1)
@@ -124,10 +124,21 @@ private:
             // Button RTS
             return "";
         }
+        
+        if (buttons[10] == 1)
+        {
+            // Button BACK
+            return "";
+        }
+        
         if (buttons[11] == 1)
         {
             // Menu Button
             return "Shutdown";
+        }
+        if (axes[7] == 1.0)
+        {
+            return "Test Mode";
         }
         else
         {
@@ -144,6 +155,10 @@ private:
         if (last_mode == "Basic Drive Mode")
         {
             system("killall teleop_node");
+        }
+        if (drive_mode_status == "Test Mode")
+        {
+            system("ros2 run bob_test test_node &");
         }
         if (drive_mode_status == "Basic Drive Mode")
         {

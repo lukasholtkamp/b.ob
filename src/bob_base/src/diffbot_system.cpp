@@ -28,15 +28,16 @@ namespace bob_base
 
     RCLCPP_INFO(logger_, "Initializing...");
 
-    // Read configuration parameters from the hardware information given in diffbot.ros2_control.xacro
+    // Read configuration parameters from the hardware information given in bob.ros2_control.xacro
     config_.left_wheel_name = info_.hardware_parameters["left_wheel_name"];
     config_.right_wheel_name = info_.hardware_parameters["right_wheel_name"];
     config_.enc_ticks_per_rev = std::stoi(info_.hardware_parameters["enc_ticks_per_rev"]);
     config_.loop_rate = std::stod(info_.hardware_parameters["loop_rate"]);
+    config_.wheel_radius = std::stod(info_.hardware_parameters["wheel_radius"]);
 
     // Set up wheels with names and the encoder ticks per revolution
-    left_wheel_.setup(config_.left_wheel_name, config_.enc_ticks_per_rev);
-    right_wheel_.setup(config_.right_wheel_name, config_.enc_ticks_per_rev);
+    left_wheel_.setup(config_.left_wheel_name, config_.enc_ticks_per_rev,config_.wheel_radius);
+    right_wheel_.setup(config_.right_wheel_name, config_.enc_ticks_per_rev,config_.wheel_radius);
 
     RCLCPP_INFO(logger_, "Finished initialization");
 
@@ -96,11 +97,16 @@ namespace bob_base
   std::vector<hardware_interface::StateInterface> DiffDriveBobHardware::export_state_interfaces()
   {
     std::vector<hardware_interface::StateInterface> state_interfaces;
-    // Declare both position and velocity states for both wheels
+    // Declare both position, velocity, rpm and alarm states for both wheels
     state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_VELOCITY, &left_wheel_.velocity));
     state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_POSITION, &left_wheel_.position));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, left_wheel_.rpm_name, &left_wheel_.wheel_rpm));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, left_wheel_.alarm_name, &left_wheel_.alarm_status));
+
     state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, hardware_interface::HW_IF_VELOCITY, &right_wheel_.velocity));
     state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, hardware_interface::HW_IF_POSITION, &right_wheel_.position));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, right_wheel_.rpm_name, &right_wheel_.wheel_rpm));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(right_wheel_.name, right_wheel_.alarm_name, &right_wheel_.alarm_status));
 
     return state_interfaces;
   }
@@ -147,12 +153,26 @@ namespace bob_base
 
     // Calculate wheel positions and velocities
     double previous_position = left_wheel_.position;
-    left_wheel_.position = left_wheel_.calculate_encoder_angle();
+    left_wheel_.position = left_wheel_.wheel_radius*left_wheel_.calculate_encoder_angle();
     left_wheel_.velocity = (left_wheel_.position - previous_position) / delta_seconds;
 
     previous_position = right_wheel_.position;
-    right_wheel_.position = right_wheel_.calculate_encoder_angle();
+    right_wheel_.position = right_wheel_.wheel_radius*right_wheel_.calculate_encoder_angle();
     right_wheel_.velocity = (right_wheel_.position - previous_position) / delta_seconds;
+
+    // This if statement prevents the problem of the callback function not updating
+    if(abs(right_wheel_.velocity)>0 && abs(left_wheel_.velocity)>0){
+      // Read the rpm of the motors
+      read_rpm_values(&left_wheel_.wheel_rpm,&right_wheel_.wheel_rpm);
+    }
+    else{
+      left_wheel_.wheel_rpm=0.0;
+      right_wheel_.wheel_rpm=0.0;
+    }
+    
+    // Read Alarm state of the wheels
+    right_wheel_.alarm_status = gpio_read(pi_sig, RIGHT_ALARM_PIN);
+    left_wheel_.alarm_status = gpio_read(pi_sig, LEFT_ALARM_PIN);
 
     return hardware_interface::return_type::OK;
   }
@@ -161,8 +181,8 @@ namespace bob_base
       const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
   {
     // Map command velocity to value between 0 and 255
-    double left_motor_speed = ceil(351.1478 * left_wheel_.command);
-    double right_motor_speed = ceil(351.1478 * right_wheel_.command);
+    double left_motor_speed = ceil(263.13 * left_wheel_.command);
+    double right_motor_speed = ceil(263.13 * right_wheel_.command);
 
     // Cap max and min velocities
     if (left_motor_speed >= 255)

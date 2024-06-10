@@ -7,8 +7,7 @@ Date of Retrieval: 17.05.2024
 """
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, RegisterEventHandler,LogInfo,IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import DeclareLaunchArgument, RegisterEventHandler,LogInfo
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
 from launch.substitutions import (
@@ -20,7 +19,7 @@ from launch.substitutions import (
 
 from pathlib import Path
 import os
-import xacro
+import yaml
 
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -37,52 +36,40 @@ def generate_launch_description():
 
     declared_arguments.append(
         DeclareLaunchArgument(
-            "gui",
-            default_value="false",
-            description="Start RViz2 automatically with this launch file.",
-        )
-    )
-
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "use_sim_time",
-            default_value="false",
-            description="Use sim time if true",
-        )
-    )
-
-    declared_arguments.append(
-        DeclareLaunchArgument(
         name="use_ros2_control",
-        default_value="True",
+        default_value="true",
         description="Use ros2_control if true",
         )
     )
 
     # Initialize Arguments
-    gui = LaunchConfiguration("gui")
-    use_sim_time = LaunchConfiguration("use_sim_time")
     use_ros2_control = LaunchConfiguration("use_ros2_control")
 
     # Get URDF via xacro
+    robot_description_content = Command(
+        [
+            PathJoinSubstitution([FindExecutable(name="xacro")]),
+            " ",
+            PathJoinSubstitution(
+                [FindPackageShare("bob_description"), "urdf", "bob.urdf.xacro"]
+            ),
+            " ",
+            "use_ros2_control:=",
+            use_ros2_control,
+        ]
+    )
 
-    # Process the URDF file
-    pkg_bring_up = os.path.join(Path.cwd(), "src", "bob_bringup")
-    pkg_path = os.path.join(Path.cwd(), "src", "bob_description")
-    xacro_file = os.path.join(pkg_path,'urdf','bob.urdf.xacro')
-    robot_description_config = xacro.process_file(xacro_file)
-    
-    robot_description = {'robot_description': robot_description_config.toxml(), 'use_sim_time': use_sim_time, 'use_ros2_control': use_ros2_control}
+    robot_description = {"robot_description": robot_description_content}
 
     # Get settings file paths
     robot_controllers = os.path.join(
         Path.cwd(), "src", "bob_bringup", "config", "bob_controllers.yaml"
     )
 
-    rviz_config_file = os.path.join(
-        Path.cwd(), "src", "bob_description", "rviz", "diffbot_view.rviz"
-    )
 
+    config_filepath = os.path.join(
+        Path.cwd(), "src", "bob_teleop", "config", "xbox.config.yaml"
+    )
     # Implement the launching Nodes with all parameters and declaring all necessary settings
     # Scale the max and min velocities by the x_scale
     control_node = Node(
@@ -108,21 +95,12 @@ def generate_launch_description():
         ],
     )
 
-    rviz_node = Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        output="log",
-        arguments=["-d", rviz_config_file],
-        condition=IfCondition(gui),
-    )
-
     # Launch Joint broadcaster to read all state interfaces
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
         arguments=[
-            "joint_state_broadcaster",  
+            "joint_state_broadcaster",
             "--controller-manager",
             "/controller_manager",
         ],
@@ -146,19 +124,17 @@ def generate_launch_description():
     )
 
     # Launch drive selection node to be able to switch between the modes
-    drive_selection_node = Node(
-        package="bob_bringup",
-        executable="drive_selection_node",
-        output="screen",
-    )
-
-    # Delay rviz start after `joint_state_broadcaster`
-    delay_rviz_after_joint_state_broadcaster_spawner = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=joint_state_broadcaster_spawner,
-            on_exit=[rviz_node],
-        )
-    )
+    teleop_node = Node(
+                package="teleop_twist_joy",
+                executable="teleop_node",
+                name="teleop_twist_joy_node",
+                parameters=[
+                    config_filepath,
+                ],
+                remappings=[("/cmd_vel", "/diffbot_base_controller/cmd_vel")],
+                output="screen",
+            )
+    
 
     # Delay start of robot_controller after `joint_state_broadcaster`
     delay_for_joint_state_broadcaster_spawner = (
@@ -170,23 +146,12 @@ def generate_launch_description():
         )
     )
 
-    # Launch Lidar Node from launch file
-    lidar = IncludeLaunchDescription(
-                PythonLaunchDescriptionSource([os.path.join(
-                    pkg_bring_up,'launch','rplidar.launch.py'
-                )])
-    )
-
-    # Send message to turn on Xbox controller
-    turn_on_xbox= (
+    # Turn on teleop
+    turn_on_teleop= (
         RegisterEventHandler(
             event_handler=OnProcessExit(
                 target_action=robot_controller_spawner,
-                on_exit=[
-                LogInfo(msg='Turn on Xbox controller'),
-                LogInfo(msg='For Testing press Up-D-PAD button'),
-                LogInfo(msg='For Basic driving press X button')
-                ],
+                on_exit=[teleop_node],
             )
         )
     )
@@ -194,14 +159,11 @@ def generate_launch_description():
 
     nodes = [
         joy_node,
-        drive_selection_node,
         control_node,
         robot_state_pub_node,
         joint_state_broadcaster_spawner,
-        delay_rviz_after_joint_state_broadcaster_spawner,
         delay_for_joint_state_broadcaster_spawner,
-        lidar,
-        turn_on_xbox,
+        turn_on_teleop,
     ]
 
     return LaunchDescription(declared_arguments + nodes)

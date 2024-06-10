@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+    <xacro:property name="acc_x_dim" value="0.02"/>
+    <xacro:property name="acc_y_dim" value="0.015"/>
+    <xacro:property name="acc_z_dim" value="0.001"/>
+
+    <xacro:property name="acc_x_offset" value="0.13"/>
+
+    <xacro:property name="acc_density" value="2710.0"/>
+
+    <xacro:property name="acc_mass" value="${acc_density*acc_x_dim*acc_y_dim*acc_z_dim}"/>
+    
+    <!-- LIDAR LINK -->
+
+	<joint name="acc_joint" type="fixed">
+        <parent link="chassis"/>
+        <child link="imu_frame"/>
+        <origin xyz="${acc_x_offset} 0 ${acc_z_dim*0.5+main_body_z_dim}"/>
+    </joint>
+
+    <link name="imu_frame">
+        <visual>
+            <geometry>
+                <box size="${acc_x_dim} ${acc_y_dim} ${acc_z_dim}"/>
+            </geometry>
+            <material name="blue"/>
+        </visual>
+
+        <collision>
+            <geometry>
+                <box size="${acc_x_dim} ${acc_y_dim} ${acc_z_dim}"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <gazebo reference="imu_frame">
+
+        <material>Gazebo/Blue</material>
+        <gravity>true</gravity>
+
+        <sensor name="mpu6050_imu" type="imu">
+            <pose> 0 0 0 0 0 0 </pose>
+            <always_on>1</always_on>
+            <visualize>true</visualize>
+            <update_rate>100</update_rate>
+
+            <plugin name="imu_controller" filename="libgazebo_ros_imu_sensor.so">
+                <topic_name>imu</topic_name>
+                <frame_name>imu_frame</frame_name>
+                <ros>
+                    <remapping>~/out:=imu_broadcaster/imu</remapping>
+                </ros>
+                <initial_orientation_as_reference>false</initial_orientation_as_reference>
+            </plugin>
+            <always_on>true</always_on>
+            <update_rate>100</update_rate>
+            <visualize>true</visualize>
+            <imu>
+            <angular_velocity>
+                <x>
+                <noise type="gaussian">
+                    <mean>0.0</mean>
+                    <stddev>2e-4</stddev>
+                </noise>
+                </x>
+                <y>
+                <noise type="gaussian">
+                    <mean>0.0</mean>
+                    <stddev>2e-4</stddev>
+                </noise>
+                </y>
+                <z>
+                <noise type="gaussian">
+                    <mean>0.0</mean>
+                    <stddev>2e-4</stddev>
+                </noise>
+                </z>
+            </angular_velocity>
+            <linear_acceleration>
+                <x>
+                <noise type="gaussian">
+                    <mean>0.0</mean>
+                    <stddev>1.7e-2</stddev>
+                </noise>
+                </x>
+                <y>
+                <noise type="gaussian">
+                    <mean>0.0</mean>
+                    <stddev>1.7e-2</stddev>
+                </noise>
+                </y>
+                <z>
+                <noise type="gaussian">
+                    <mean>0.0</mean>
+                    <stddev>1.7e-2</stddev>
+                </noise>
+                </z>
+            </linear_acceleration>
+            <orientation>
+                <x>
+                <noise type="gaussian">
+                    <mean>0.0</mean>
+                    <stddev>2e-3</stddev>
+                    </noise>
+                </x>
+                <y>
+                    <noise type="gaussian">
+                    <mean>0.0</mean>
+                    <stddev>2e-3</stddev>
+                    </noise>
+                </y>
+                <z>
+                    <noise type="gaussian">
+                    <mean>0.0</mean>
+                    <stddev>2e-3</stddev>
+                    </noise>
+                </z>
+                </orientation>
+            </imu>
+        </sensor>
+    </gazebo>
+
+</robot>

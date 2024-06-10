@@ -7,7 +7,7 @@ find_package(urdf REQUIRED)
 
 # install
 install(
-  DIRECTORY urdf ros2_control
+  DIRECTORY urdf ros2_control rviz
   DESTINATION share/${PROJECT_NAME}
 )
 
