@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+    <xacro:property name="radar_front_x_dim" value="0.003"/>
+    <xacro:property name="radar_front_y_dim" value="0.035"/>
+    <xacro:property name="radar_front_z_dim" value="0.03"/>
+
+    <xacro:property name="radar_front_x_offset" value="0.02015"/>
+    <xacro:property name="radar_front_z_offset" value="0.0"/>
+
+    <xacro:property name="radar_front_density" value="5714285.71429"/>
+
+    <xacro:property name="radar_front_mass" value="${radar_front_density*radar_front_x_dim*radar_front_y_dim*radar_front_z_dim}"/>
+    
+    <!-- radar_front LINK -->
+
+	<joint name="radar_front_joint" type="fixed">
+        <parent link="camera_mount"/>
+        <child link="radar_front_frame"/>
+        <origin xyz="${radar_front_x_offset} 0 ${radar_front_z_offset}"/>
+    </joint>
+
+    <link name="radar_front_frame">
+        <visual>
+            <geometry>
+                <box size="${radar_front_x_dim} ${radar_front_y_dim} ${radar_front_z_dim}"/>
+            </geometry>
+            <material name="blue"/>
+        </visual>
+
+        <collision>
+            <geometry>
+                <box size="${radar_front_x_dim} ${radar_front_y_dim} ${radar_front_z_dim}"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <gazebo reference="radar_front_frame">
+        <material>Gazebo/Blue</material>
+
+        <sensor name="radar" type="logical_camera">
+            <visualize>true</visualize>
+            <always_on>true</always_on>
+            <update_rate>10</update_rate>
+        </sensor>
+
+        <plugin name="mode_c_radar" filename="libModeCRadarPlugin.so">
+            <radar_sensor_frameid>radar_front_frame</radar_sensor_frameid>
+            <radar_topic_ros>radar_topic</radar_topic_ros>
+            <position_noise>
+                <noise>
+                    <type>gaussian</type>
+                    <mean>0.0</mean>
+                    <stddev>0.001</stddev>
+                </noise>
+            </position_noise>
+            <known_model_types>
+                <type>husky</type>
+                <type>delta_wing</type>
+            </known_model_types>
+        </plugin>
+    </gazebo>
+
+    
+</robot>

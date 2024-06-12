@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+    <xacro:property name="radar_rear_x_dim" value="0.003"/>
+    <xacro:property name="radar_rear_y_dim" value="0.035"/>
+    <xacro:property name="radar_rear_z_dim" value="0.03"/>
+
+    <xacro:property name="radar_rear_x_offset" value="-0.02015"/>
+    <xacro:property name="radar_rear_z_offset" value="0.0"/>
+
+    <xacro:property name="radar_rear_density" value="5714285.71429"/>
+
+    <xacro:property name="radar_rear_mass" value="${radar_rear_density*radar_rear_x_dim*radar_rear_y_dim*radar_rear_z_dim}"/>
+    
+    <!-- radar_rear LINK -->
+
+	<joint name="radar_rear_joint" type="fixed">
+        <parent link="camera_mount"/>
+        <child link="radar_rear_frame"/>
+        <origin xyz="${radar_rear_x_offset} 0 ${radar_rear_z_offset}"/>
+    </joint>
+
+    <link name="radar_rear_frame">
+        <visual>
+            <geometry>
+                <box size="${radar_rear_x_dim} ${radar_rear_y_dim} ${radar_rear_z_dim}"/>
+            </geometry>
+            <material name="blue"/>
+        </visual>
+
+        <collision>
+            <geometry>
+                <box size="${radar_rear_x_dim} ${radar_rear_y_dim} ${radar_rear_z_dim}"/>
+            </geometry>
+        </collision>
+    </link>
+
+    
+</robot>
