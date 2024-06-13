@@ -23,7 +23,7 @@ def generate_launch_description():
     gazebo_params_file = os.path.join(pkg_path, "config/gazebo_params.yaml")
     twist_mux_params_file = os.path.join(pkg_teleop, "config/twist_mux.yaml")
     ekf_params_file = os.path.join(pkg_navigation, "config/ekf.yaml")
-    world_filename = "obstacle_lidar.world"
+    world_filename = "empty_lidar.world"
     world_path = os.path.join(pkg_path, "worlds", world_filename)
 
     # Launch configuration variables specific to simulation
@@ -92,7 +92,7 @@ def generate_launch_description():
         executable="joy_node",
     )
 
-    config_filepath = os.path.join(pkg_teleop, "config", "xbox.config.yaml")
+    config_filepath = os.path.join(pkg_teleop, "config", "ps2.config.yaml")
 
     # Launch drive selection node to be able to switch between the modes
     teleop_node = Node(
@@ -135,10 +135,10 @@ def generate_launch_description():
     ld.add_action(gazebo)
     ld.add_action(spawn_entity)
     ld.add_action(start_robot_localization_cmd)
-    ld.add_action(joy_node)
-    ld.add_action(teleop_node)
-    ld.add_action(start_twist_mux_cmd)
-    ld.add_action(rviz_node)
+    # ld.add_action(joy_node)
+    # ld.add_action(teleop_node)
+    # ld.add_action(start_twist_mux_cmd)
+    # ld.add_action(rviz_node)
 
 
     # Launch them all!
