@@ -12,12 +12,15 @@ find_package(gazebo_ros REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 
+include_directories(include/gazebo_radar_plugin)
+
 add_executable(ModeCRadarPlugin src/ModeCRadarPlugin.cc)
 ament_target_dependencies(ModeCRadarPlugin rclcpp)
 
 install(TARGETS ${ros_logical_camera_plugin_name}
   DESTINATION lib/${PROJECT_NAME}
 )
+
 
 ament_export_dependencies(rosidl_default_runtime)
 
@@ -86,13 +89,13 @@ target_link_libraries(ModeCRadarPlugin "${cpp_typesupport_target}")
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
-  include ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS}
+  include ${CMAKE_INCLUDE_CURRENT_DIR} ${GAZEBO_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/gazebo_radar_plugin.cpp
-# )
+#add_library(${PROJECT_NAME}
+#  src/${PROJECT_NAME}/gazebo_radar_plugin.cpp
+#)
 link_directories(${GAZEBO_LIBRARY_DIRS})
 
 set(ros_logical_camera_plugin_name ModeCRadarPlugin)
@@ -119,7 +122,7 @@ set(ros_logical_camera_plugin_name ModeCRadarPlugin)
 #add_dependencies(${ros_logical_camera_plugin_name} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${ros_logical_camera_plugin_name} ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+target_link_libraries(${ros_logical_camera_plugin_name} ${CMAKE_LIBRARY_PATH} ${GAZEBO_LIBRARIES})
 
 #############
 ## Install ##
