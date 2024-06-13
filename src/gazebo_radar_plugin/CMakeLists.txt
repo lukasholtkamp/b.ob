@@ -10,6 +10,7 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(gazebo REQUIRED)
 find_package(gazebo_ros REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
 
 add_executable(ModeCRadarPlugin src/ModeCRadarPlugin.cc)
 ament_target_dependencies(ModeCRadarPlugin rclcpp)
@@ -23,6 +24,7 @@ ament_export_dependencies(rosidl_default_runtime)
 set(msg_files
   "msg/ModeCRadar.msg"
   "msg/ModeCRadarSummary.msg"
+  DEPENDENCIES std_msgs 
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -83,9 +85,9 @@ target_link_libraries(ModeCRadarPlugin "${cpp_typesupport_target}")
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
-#include_directories(
-#  include ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS}
-#)
+include_directories(
+  include ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS}
+)
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -99,7 +101,7 @@ set(ros_logical_camera_plugin_name ModeCRadarPlugin)
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context

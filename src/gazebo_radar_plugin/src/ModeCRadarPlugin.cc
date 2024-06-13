@@ -15,7 +15,7 @@
  *
  */
 
-#include "gazebo_radar_plugin/radar_plugin/ModeCRadarPlugin.hh"
+#include "gazebo_radar_plugin/ModeCRadarPlugin.hh"
 
 #include <gazebo/physics/Link.hh>
 #include <gazebo/physics/Model.hh>
