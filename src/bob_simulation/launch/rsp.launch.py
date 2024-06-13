@@ -14,31 +14,46 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
 
     # Launch config variables
-    use_sim_time = LaunchConfiguration('use_sim_time')
-    use_ros2_control = LaunchConfiguration('use_ros2_control')
+    use_sim_time = LaunchConfiguration("use_sim_time")
+    use_ros2_control = LaunchConfiguration("use_ros2_control")
 
     # Process files
-    pkg_path = os.path.join(get_package_share_directory('bob_description'))
-    urdf_model_path = os.path.join(pkg_path, 'urdf/bob.urdf.xacro')
-    robot_description_config = Command(['xacro ', urdf_model_path, ' use_ros2_control:=', use_ros2_control, ' sim_mode:=', use_sim_time])
+    pkg_path = os.path.join(get_package_share_directory("bob_description"))
+    urdf_model_path = os.path.join(pkg_path, "urdf/bob.urdf.xacro")
+    robot_description_config = Command(
+        [
+            "xacro ",
+            urdf_model_path,
+            " use_ros2_control:=",
+            use_ros2_control,
+            " sim_mode:=",
+            use_sim_time,
+        ]
+    )
 
     # Declare the launch arguments
     declare_use_sim_time_cmd = DeclareLaunchArgument(
-        name='use_sim_time',
-        default_value='False',
-        description='Use simulation (Gazebo) time if true')
+        name="use_sim_time",
+        default_value="False",
+        description="Use simulation (Gazebo) time if true",
+    )
 
     declare_use_ros2_control_cmd = DeclareLaunchArgument(
-        name='use_ros2_control',
-        default_value='False',
-        description='Use ros2_control if true')
+        name="use_ros2_control",
+        default_value="True",
+        description="Use ros2_control if true",
+    )
 
     # Start robot state publisher node
-    params = {'robot_description': robot_description_config, 'use_sim_time': use_sim_time}
+    params = {
+        "robot_description": robot_description_config,
+        "use_sim_time": use_sim_time,
+    }
     start_robot_state_publisher_cmd = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        parameters=[params])
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
+        parameters=[params],
+    )
 
     # Create the launch description and populate
     ld = LaunchDescription()

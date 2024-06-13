@@ -9,7 +9,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 
 from launch_ros.actions import Node
-from launch.conditions import IfCondition
+from launch.conditions import IfCondition, UnlessCondition
 
 from pathlib import Path
 
@@ -41,7 +41,7 @@ def generate_launch_description():
 
     declare_use_ros2_control_cmd = DeclareLaunchArgument(
         name="use_ros2_control",
-        default_value="False",
+        default_value="True",
         description="Use ros2_control if true",
     )
 
@@ -58,32 +58,70 @@ def generate_launch_description():
     )
 
     rsp = IncludeLaunchDescription(
-                PythonLaunchDescriptionSource([os.path.join(
-                    pkg_path,'launch','rsp.launch.py'
-                )]), launch_arguments={'use_sim_time': use_sim_time,'use_ros2_control': use_ros2_control,}.items()
+        PythonLaunchDescriptionSource(
+            [os.path.join(pkg_path, "launch", "rsp.launch.py")]
+        ),
+        launch_arguments={
+            "use_sim_time": use_sim_time,
+            "use_ros2_control": use_ros2_control,
+        }.items(),
     )
 
     # Include the Gazebo launch file, provided by the gazebo_ros package
     gazebo = IncludeLaunchDescription(
-                PythonLaunchDescriptionSource([os.path.join(
-                    get_package_share_directory('gazebo_ros'), 'launch', 'gazebo.launch.py')]),launch_arguments={
+        PythonLaunchDescriptionSource(
+            [
+                os.path.join(
+                    get_package_share_directory("gazebo_ros"),
+                    "launch",
+                    "gazebo.launch.py",
+                )
+            ]
+        ),
+        launch_arguments={
             "world": world,
-            "extra_gazebo_args": "--ros-args --params-file " + gazebo_params_file,}.items(),
+            "extra_gazebo_args": "--ros-args --params-file " + gazebo_params_file,
+        }.items(),
     )
 
     # Run the spawner node from the gazebo_ros package. The entity name doesn't really matter if you only have a single robot.
-    spawn_entity = Node(package='gazebo_ros', executable='spawn_entity.py',
-                        arguments=['-topic', 'robot_description',
-                                   '-entity', 'bob'],
-                        output='screen',
-                        remappings=[("~/robot_description", "/robot_description"),],)
-    
+    spawn_entity = Node(
+        package="gazebo_ros",
+        executable="spawn_entity.py",
+        arguments=["-topic", "robot_description", "-entity", "bob"],
+        output="screen",
+    )
+
     # Start robot localization using an Extended Kalman Filter
     start_robot_localization_cmd = Node(
         condition=IfCondition(use_robot_localization),
         package="robot_localization",
         executable="ekf_node",
         parameters=[ekf_params_file],
+    )
+
+    # Launch Joint broadcaster to read all state interfaces
+    joint_state_broadcaster_spawner = Node(
+        condition=IfCondition(use_ros2_control),
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "joint_state_broadcaster",
+            "--controller-manager",
+            "/controller_manager",
+        ],
+    )
+
+    # Launch Controller to convert the command velocities to individual motor speeds
+    robot_controller_spawner = Node(
+        condition=IfCondition(use_ros2_control),
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "diffbot_base_controller",
+            "--controller-manager",
+            "/controller_manager",
+        ],
     )
 
     # Launch joy node to read gamepad commands
@@ -95,31 +133,37 @@ def generate_launch_description():
     config_filepath = os.path.join(pkg_teleop, "config", "ps2.config.yaml")
 
     # Launch drive selection node to be able to switch between the modes
-    teleop_node = Node(
-                package="teleop_twist_joy",
-                executable="teleop_node",
-                name="teleop_twist_joy_node",
-                parameters=[
-                    config_filepath,
-                ],
-                output="screen",
-            )
-    
-    # Start twist mux
-    start_twist_mux_cmd = Node(
-        package="twist_mux",
-        executable="twist_mux",
-        parameters=[twist_mux_params_file, {"use_sim_time": True}],
-        remappings=[("/cmd_vel_out", "/diffbot_base_controller/cmd_vel")],
+    teleop_node_ros2_control = Node(
+        condition=IfCondition(use_ros2_control),
+        package="teleop_twist_joy",
+        executable="teleop_node",
+        name="teleop_twist_joy_node",
+        parameters=[
+            config_filepath,
+            {"publish_stamped_twist": True},
+        ],
+        remappings=[("/cmd_vel", "/diffbot_base_controller/cmd_vel")],
+        output="screen",
     )
-    
+
+    teleop_node_gazebo_control = Node(
+        condition=UnlessCondition(use_ros2_control),
+        package="teleop_twist_joy",
+        executable="teleop_node",
+        name="teleop_twist_joy_node",
+        parameters=[
+            config_filepath,
+            {"publish_stamped_twist": False},
+        ],
+        output="screen",
+    )
+
     rviz_node = Node(
         package="rviz2",
         executable="rviz2",
         name="rviz2",
         output="log",
     )
-
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -134,6 +178,8 @@ def generate_launch_description():
     ld.add_action(rsp)
     ld.add_action(gazebo)
     ld.add_action(spawn_entity)
+    ld.add_action(robot_controller_spawner)
+    ld.add_action(joint_state_broadcaster_spawner)
     ld.add_action(start_robot_localization_cmd)
     # ld.add_action(joy_node)
     # ld.add_action(teleop_node)
