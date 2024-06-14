@@ -74,8 +74,8 @@ struct MPCProblem {
         // Compute residual (distance to goal)
         T x_diff = T(x_goal) - x;
         T y_diff = T(y_goal) - y;
-        residual[0] = goalWeight * cos(yaw)*x_diff + sin(yaw)*y_diff;
-        residual[1] = goalWeight * -sin(yaw)*x_diff + cos(yaw)*y_diff;
+        residual[0] = goalWeight * (x_diff + y_diff);
+        residual[1] = T(0.0);
         // residual[0] = T(0.0);
         // residual[1] = goalWeight * T(sqrt(x_diff * x_diff + y_diff * y_diff));
 
@@ -102,7 +102,7 @@ struct MPCProblem {
         residual[2] = obsWeight * cost;
         
         //residual to obtain target linear velocity
-        residual[3] = speedWeight * T( - v_k - w_k );
+        residual[3] = speedWeight * T( ceres::abs( T(targetV) - v_k));
 
     }
     
