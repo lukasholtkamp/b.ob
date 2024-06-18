@@ -21,10 +21,10 @@ def generate_launch_description():
     pkg_navigation = os.path.join(Path.cwd(), "src", "bob_navigation")
 
     gazebo_params_file = os.path.join(pkg_path, "config/gazebo_params.yaml")
-    twist_mux_params_file = os.path.join(pkg_teleop, "config/twist_mux.yaml")
+    # twist_mux_params_file = os.path.join(pkg_teleop, "config/twist_mux.yaml")
     ekf_params_file = os.path.join(pkg_navigation, "config/ekf.yaml")
-    world_filename = "obstacle_lidar.world"
-    world_path = os.path.join(pkg_path, "worlds", world_filename)
+    world_filename = "empty_lidar.world"
+    world_path = os.path.join(pkg_path, "worlds")
 
     # Launch configuration variables specific to simulation
     use_sim_time = LaunchConfiguration("use_sim_time")
@@ -41,7 +41,7 @@ def generate_launch_description():
 
     declare_use_ros2_control_cmd = DeclareLaunchArgument(
         name="use_ros2_control",
-        default_value="False",
+        default_value="True",
         description="Use ros2_control if true",
     )
 
@@ -56,7 +56,7 @@ def generate_launch_description():
         default_value="True",
         description="Use robot_localization package if true",
     )
-
+    
     rsp = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [os.path.join(pkg_path, "launch", "rsp.launch.py")]
@@ -67,22 +67,23 @@ def generate_launch_description():
         }.items(),
     )
 
-    # # Include the Gazebo launch file, provided by the gazebo_ros package
-    # gazebo_ros2_control = IncludeLaunchDescription(
-    #     PythonLaunchDescriptionSource(
-    #         [
-    #             os.path.join(
-    #                 get_package_share_directory("gazebo_ros"),
-    #                 "launch",
-    #                 "gazebo.launch.py",
-    #             )
-    #         ]
-    #     ),
-    #     launch_arguments={
-    #         "extra_gazebo_args": "--ros-args --params-file " + gazebo_params_file,
-    #     }.items(),
-    #     condition = IfCondition(use_ros2_control)
-    # )
+    # Include the Gazebo launch file, provided by the gazebo_ros package
+    gazebo_ros2_control = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            [
+                os.path.join(
+                    get_package_share_directory("gazebo_ros"),
+                    "launch",
+                    "gazebo.launch.py",
+                )
+            ]
+        ),
+        launch_arguments={
+            "world": os.path.join(world_path, "ros2_control",world_filename),
+            "extra_gazebo_args": "--ros-args --params-file " + gazebo_params_file,
+        }.items(),
+        condition = IfCondition(use_ros2_control)
+    )
 
     # Include the Gazebo launch file, provided by the gazebo_ros package
     gazebo = IncludeLaunchDescription(
@@ -96,10 +97,10 @@ def generate_launch_description():
             ]
         ),
         launch_arguments={
-            # "world": world,
+            "world": os.path.join(world_path, "gazebo_control",world_filename),
             "extra_gazebo_args": "--ros-args --params-file " + gazebo_params_file,
         }.items(),
-        # condition = UnlessCondition(use_ros2_control)
+        condition = UnlessCondition(use_ros2_control)
     )
 
     # Run the spawner node from the gazebo_ros package. The entity name doesn't really matter if you only have a single robot.
@@ -195,7 +196,7 @@ def generate_launch_description():
     # Add any actions
     ld.add_action(rsp)
     ld.add_action(gazebo)
-    # ld.add_action(gazebo_ros2_control)
+    ld.add_action(gazebo_ros2_control)
     ld.add_action(spawn_entity)
     ld.add_action(robot_controller_spawner)
     ld.add_action(joint_state_broadcaster_spawner)
