@@ -19,12 +19,23 @@ set(msg_files
 
 include_directories(include/gazebo_radar_plugin)
 
-install(TARGETS ${ros_logical_camera_plugin_name}
+install(TARGETS 
+  ModeCRadarPlugin
   DESTINATION lib/${PROJECT_NAME}
+)
+
+
+set(msg_files
+  "msg/ModeCRadar.msg"
+  "msg/ModeCRadarSummary.msg"
+  DEPENDENCIES std_msgs 
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
+)
+
+ament_export_dependencies(rosidl_default_runtime)
   DEPENDENCIES std_msgs
 )
 
@@ -166,6 +177,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+ament_package()
 
 #############
 ## Testing ##
