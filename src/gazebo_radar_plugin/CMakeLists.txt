@@ -12,27 +12,27 @@ find_package(gazebo_ros REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 
-include_directories(include/gazebo_radar_plugin)
+set(msg_files
+  "msg/ModeCRadar.msg"
+  "msg/ModeCRadarSummary.msg"
+)
 
-add_executable(ModeCRadarPlugin src/ModeCRadarPlugin.cc)
-ament_target_dependencies(ModeCRadarPlugin rclcpp)
+include_directories(include/gazebo_radar_plugin)
 
 install(TARGETS ${ros_logical_camera_plugin_name}
   DESTINATION lib/${PROJECT_NAME}
 )
 
-
-ament_export_dependencies(rosidl_default_runtime)
-
-set(msg_files
-  "msg/ModeCRadar.msg"
-  "msg/ModeCRadarSummary.msg"
-  DEPENDENCIES std_msgs 
-)
-
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
+  DEPENDENCIES std_msgs
 )
+
+add_executable(ModeCRadarPlugin src/ModeCRadarPlugin.cc)
+ament_target_dependencies(ModeCRadarPlugin rclcpp)
+
+
+ament_export_dependencies(rosidl_default_runtime)
 
 rosidl_get_typesupport_target(cpp_typesupport_target
   ${PROJECT_NAME} rosidl_typesupport_cpp)

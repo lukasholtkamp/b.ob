@@ -1,4 +1,4 @@
-Header header
+std_msgs/Header header
 float32 range  # meters
 float32 bearing  # radians clockwise about Z axis of header frame
 float32 altitude  # Pressure altitude (m)
