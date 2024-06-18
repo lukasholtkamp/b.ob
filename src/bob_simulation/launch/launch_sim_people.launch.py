@@ -238,7 +238,7 @@ def generate_launch_description():
     ld.add_action(joint_state_broadcaster_spawner)
     ld.add_action(start_robot_localization_cmd)
     ld.add_action(joy_node)
-    # ld.add_action(teleop_node_ros2_control)
+    ld.add_action(teleop_node_ros2_control)
     ld.add_action(teleop_node_gazebo_control)
     # ld.add_action(rviz_node)
 

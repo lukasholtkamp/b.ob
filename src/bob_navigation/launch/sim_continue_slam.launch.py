@@ -38,7 +38,7 @@ def generate_launch_description():
     
     sim = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(
-                    pkg_sim,'launch','launch_sim.launch.py'
+                    pkg_sim,'launch','launch_sim_people.launch.py'
                 )]),
     )
 

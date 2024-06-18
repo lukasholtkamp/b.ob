@@ -30,7 +30,7 @@ def generate_launch_description():
     walls_resolution = LaunchConfiguration('walls_resolution')
 
     frame_id_cmd = DeclareLaunchArgument(
-        'frame_id', default_value='odom', description='Reference frame')
+        'frame_id', default_value='map', description='Reference frame')
 
     walls_resolution_cmd = DeclareLaunchArgument(
         'walls_resolution', default_value='0.2', description='Obstacles walls resolution')

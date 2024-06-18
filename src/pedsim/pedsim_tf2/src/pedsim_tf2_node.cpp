@@ -61,7 +61,7 @@ void PedsimTF2::step() {
       for (auto actor : states_->agent_states) {
         TransformStamped agent_tf;
         if (getTFfromAgent(actor, agent_tf)) {
-          agent_tf.header.frame_id = "odom";
+          agent_tf.header.frame_id = "map";
           agent_tf.header.stamp = now();
           agent_tf.child_frame_id = "agent_" + std::to_string(actor.id);
           tf_broadcaster_->sendTransform(agent_tf);

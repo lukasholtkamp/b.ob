@@ -41,7 +41,7 @@ def generate_launch_description():
 
     declare_use_ros2_control_cmd = DeclareLaunchArgument(
         name="use_ros2_control",
-        default_value="True",
+        default_value="False",
         description="Use ros2_control if true",
     )
 
@@ -148,7 +148,7 @@ def generate_launch_description():
         executable="joy_node",
     )
 
-    config_filepath = os.path.join(pkg_teleop, "config", "xbox.config.yaml")
+    config_filepath = os.path.join(pkg_teleop, "config", "ps2.config.yaml")
 
     # Launch drive selection node to be able to switch between the modes
     teleop_node_ros2_control = Node(
