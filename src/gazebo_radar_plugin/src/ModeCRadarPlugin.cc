@@ -19,7 +19,7 @@
 
 #include <gazebo/physics/Link.hh>
 #include <gazebo/physics/Model.hh>
-#include "gazebo/sensors/Noise.hh"
+#include <gazebo/sensors/Noise.hh>
 #include <gazebo/physics/World.hh>
 #include <gazebo/sensors/Sensor.hh>
 #include <gazebo/sensors/SensorManager.hh>
@@ -27,12 +27,16 @@
 #include <algorithm>
 #include <sstream>
 #include <string>
+#include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/string.hpp"
+#include "gazebo_radar_plugin/msg/mode_c_radar_summary.hpp"
+#include "gazebo_radar_plugin/msg/mode_c_radar.hpp"
 
 using namespace gazebo;
 
 static const uint16_t DEFAULT_TRANSPONDER_CODE = 1200;
 
-GZ_REGISTER_MODEL_PLUGIN(ModeCRadarPlugin);
+GZ_REGISTER_MODEL_PLUGIN(ModeCRadarPlugin)
 
 std::string TrimNamespace(const std::string &modelName)
 {
@@ -66,16 +70,16 @@ std::string DetermineModelType(const std::string &modelName)
 uint16_t GetTransponderCode(const std::string &modelName)
 {
   std::string reduced_str;
-  for (int i = 0; i < modelName.length(); i++)
+  for (char c : modelName)
   {
-    if (isdigit(modelName[i]))
+    if (isdigit(c))
     {
-      reduced_str.push_back(modelName[i]);
+      reduced_str.push_back(c);
     }
   }
-  if (reduced_str.length() > 0)
+  if (!reduced_str.empty())
   {
-    return stoi(reduced_str);
+    return std::stoi(reduced_str);
   }
   else
   {
@@ -91,7 +95,6 @@ ModeCRadarPlugin::ModeCRadarPlugin()
 /////////////////////////////////////////////////
 ModeCRadarPlugin::~ModeCRadarPlugin()
 {
-  this->rosnode->shutdown();
 }
 
 /////////////////////////////////////////////////
@@ -101,27 +104,26 @@ void ModeCRadarPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
   this->robotNamespace = "logical_camera";
   if (_sdf->HasElement("robotNamespace"))
   {
-    this->robotNamespace = _sdf->GetElement(
-                                   "robotNamespace")
-                               ->Get<std::string>() +
-                           "/";
+    this->robotNamespace = _sdf->GetElement("robotNamespace")->Get<std::string>() + "/";
   }
 
   this->world = _parent->GetWorld();
 
-  // Make sure the ROS node for Gazebo has already been initialized
-  if (!ros::isInitialized())
+  // Initialize ROS 2 node
+  if (!rclcpp::ok())
   {
-    ROS_FATAL_STREAM("A ROS node for Gazebo has not been initialized,"
-                     << "unable to load plugin. Load the Gazebo system plugin "
-                     << "'libgazebo_ros_api_plugin.so' in the gazebo_ros package)");
+    RCLCPP_FATAL(rclcpp::get_logger("ModeCRadarPlugin"),
+                 "A ROS node for Gazebo has not been initialized, unable to load plugin. Load the Gazebo system plugin "
+                 "'libgazebo_ros_api_plugin.so' in the gazebo_ros package");
     return;
   }
+
+  this->node = rclcpp::Node::make_shared(this->robotNamespace);
 
   this->onlyPublishKnownModels = false;
   if (_sdf->HasElement("known_model_types"))
   {
-    ROS_DEBUG("Only publishing known model types");
+    // RCLCPP_DEBUG(this->node->get_logger(), "Only publishing known model types");
     this->onlyPublishKnownModels = true;
     this->knownModelTypes.clear();
     sdf::ElementPtr knownModelTypesElem = _sdf->GetElement("known_model_types");
@@ -133,24 +135,17 @@ void ModeCRadarPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
     sdf::ElementPtr knownModelTypeElem = knownModelTypesElem->GetElement("type");
     while (knownModelTypeElem)
     {
-      // Parse the model type, which is encoded in model names.
       std::string type = knownModelTypeElem->Get<std::string>();
-
-      ROS_DEBUG_STREAM("New known model type: " << type);
       this->knownModelTypes.push_back(type);
       knownModelTypeElem = knownModelTypeElem->GetNextElement("type");
     }
   }
   else
   {
-    ROS_DEBUG("Publishing all model types");
+    // RCLCPP_DEBUG(this->node->get_logger(), "Publishing all model types");
   }
 
   this->model = _parent;
-  this->node = transport::NodePtr(new transport::Node());
-  this->node->Init(this->model->GetWorld()->Name());
-  this->rosnode = new ros::NodeHandle(this->robotNamespace);
-
   this->FindLogicalCamera();
   if (!this->sensor)
   {
@@ -197,12 +192,13 @@ void ModeCRadarPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
     _sdf->GetElement("vfov")->GetValue()->Get(this->vfov);
   }
 
-  this->imageSub = this->node->Subscribe(this->sensor->Topic(),
-                                         &ModeCRadarPlugin::OnImage, this);
-  gzdbg << "Subscribing to gazebo topic: " << this->sensor->Topic() << "\n";
+  this->imageSub = this->node->create_subscription<gazebo_msgs::msg::LogicalCameraImage>(
+      this->sensor->Topic(), 10, std::bind(&ModeCRadarPlugin::OnImage, this, std::placeholders::_1));
 
-  this->radarPub = this->rosnode->advertise<gazebo_radar_plugin::ModeCRadarSummary>(radarTopic_ros, 1, true);
-  gzdbg << "Publishing to ROS topic: " << radarPub.getTopic() << "\n";
+  // RCLCPP_INFO(this->node->get_logger(), "Subscribing to gazebo topic: %s", this->sensor->Topic().c_str());
+
+  this->radarPub = this->node->create_publisher<gazebo_radar_plugin::msg::ModeCRadarSummary>(radarTopic_ros, 10);
+  // RCLCPP_INFO(this->node->get_logger(), "Publishing to ROS topic: %s", radarTopic_ros.c_str());
 }
 
 void ModeCRadarPlugin::FindLogicalCamera()
@@ -230,24 +226,22 @@ void ModeCRadarPlugin::FindLogicalCamera()
 }
 
 /////////////////////////////////////////////////
-void ModeCRadarPlugin::OnImage(ConstLogicalCameraImagePtr &_msg)
+void ModeCRadarPlugin::OnImage(const gazebo_msgs::msg::LogicalCameraImage::SharedPtr _msg)
 {
-  gazebo_radar_plugin::ModeCRadarSummary radar_msg;
+  gazebo_radar_plugin::msg::ModeCRadarSummary radar_msg;
 
-  // TODO use gazebo time directly instead of ROS time?
-  radar_msg.header.stamp = ros::Time::now();
+  radar_msg.header.stamp = this->node->now();
   radar_msg.header.frame_id = this->radar_sensor_frameid;
 
-  ignition::math::Vector3d cameraPosition = ignition::math::Vector3d(msgs::ConvertIgn(_msg->pose().position()));
-  ignition::math::Quaterniond cameraOrientation = ignition::math::Quaterniond(
-      msgs::ConvertIgn(_msg->pose().orientation()));
+  ignition::math::Vector3d cameraPosition = ignition::math::Vector3d(_msg->pose.position);
+  ignition::math::Quaterniond cameraOrientation = ignition::math::Quaterniond(_msg->pose.orientation);
   ignition::math::Pose3d cameraPose = ignition::math::Pose3d(cameraPosition, cameraOrientation);
 
   std::ostringstream logStream;
   ignition::math::Pose3d modelPose;
-  for (int i = 0; i < _msg->model_size(); ++i)
+  for (int i = 0; i < _msg->model.size(); ++i)
   {
-    std::string modelName = _msg->model(i).name();
+    std::string modelName = _msg->model[i].name;
     std::string modelType = DetermineModelType(modelName);
     auto modelPtr = this->world->ModelByName(modelName);
 
@@ -258,10 +252,8 @@ void ModeCRadarPlugin::OnImage(ConstLogicalCameraImagePtr &_msg)
     else
     {
       logStream << "Publishing model: " << modelName << " of type: " << modelType << std::endl;
-      ignition::math::Vector3d modelPosition = ignition::math::Vector3d(
-          msgs::ConvertIgn(_msg->model(i).pose().position()));
-      ignition::math::Quaterniond modelOrientation = ignition::math::Quaterniond(
-          msgs::ConvertIgn(_msg->model(i).pose().orientation()));
+      ignition::math::Vector3d modelPosition = ignition::math::Vector3d(_msg->model[i].pose.position);
+      ignition::math::Quaterniond modelOrientation = ignition::math::Quaterniond(_msg->model[i].pose.orientation);
       modelPose = ignition::math::Pose3d(modelPosition, modelOrientation);
       uint16_t t_code = GetTransponderCode(modelName);
       this->AddNoise(modelPose);
@@ -280,7 +272,6 @@ void ModeCRadarPlugin::OnImage(ConstLogicalCameraImagePtr &_msg)
         continue;
       }
       logStream << "Publishing model: " << modelName << " of type: " << modelType << std::endl;
-      // Convert the world pose of the model into the camera frame
       modelPose = (nestedModel->WorldPose()) - cameraPose;
       uint16_t t_code = GetTransponderCode(modelName);
       this->AddNoise(modelPose);
@@ -290,19 +281,17 @@ void ModeCRadarPlugin::OnImage(ConstLogicalCameraImagePtr &_msg)
 
   if (!logStream.str().empty())
   {
-    ROS_DEBUG_THROTTLE(1, "%s", logStream.str().c_str());
+    RCLCPP_DEBUG(this->node->get_logger(), "%s", logStream.str().c_str());
   }
-  this->radarPub.publish(radar_msg);
+  this->radarPub->publish(radar_msg);
 }
 
 bool ModeCRadarPlugin::ModelTypeToPublish(const std::string &modelType)
 {
   bool publishModelType = true;
 
-  // Check if there are restrictions on which models to publish
   if (this->onlyPublishKnownModels)
   {
-    // Only publish the model if its type is one of the known types
     auto it = std::find(this->knownModelTypes.begin(), this->knownModelTypes.end(), modelType);
     bool knownModel = it != this->knownModelTypes.end();
     publishModelType = knownModel;
@@ -314,29 +303,24 @@ void ModeCRadarPlugin::AddNoise(ignition::math::Pose3d &pose)
 {
   if (this->noiseModels.find("POSITION_NOISE") != this->noiseModels.end())
   {
-    // Apply additive noise to the model position
-    pose.Pos().X(
-        this->noiseModels["POSITION_NOISE"]->Apply(pose.Pos().X()));
-    pose.Pos().Y(
-        this->noiseModels["POSITION_NOISE"]->Apply(pose.Pos().Y()));
-    pose.Pos().Z(
-        this->noiseModels["POSITION_NOISE"]->Apply(pose.Pos().Z()));
+    pose.Pos().X(this->noiseModels["POSITION_NOISE"]->Apply(pose.Pos().X()));
+    pose.Pos().Y(this->noiseModels["POSITION_NOISE"]->Apply(pose.Pos().Y()));
+    pose.Pos().Z(this->noiseModels["POSITION_NOISE"]->Apply(pose.Pos().Z()));
   }
 }
 
 void ModeCRadarPlugin::AppendRadarContact(
-    gazebo_radar_plugin::ModeCRadarSummary &radar_msg,
-    const ignition::math::Pose3d &cameraPose, const ignition::math::Pose3d &modelPose,
-    const uint16_t code, const std_msgs::Header &header)
+    gazebo_radar_plugin::msg::ModeCRadarSummary &radar_msg,
+    const ignition::math::Pose3d &cameraPose, ignition::math::Pose3d &modelPose,
+    uint16_t code, std_msgs::msg::Header &header)
 {
-  gazebo_radar_plugin::ModeCRadar contact;
+  gazebo_radar_plugin::msg::ModeCRadar contact;
   contact.header = header;
 
   ignition::math::Pose3d temp = modelPose; // GetYaw isn't const??
   contact.range = temp.Pos().Length();
   contact.bearing = atan2(-1 * modelPose.Pos().Y(), modelPose.Pos().X());
   double azimouth = asin(modelPose.Pos().Z() / contact.range);
-  // ModeC Radar reports altitude at destination, not relative
   contact.altitude = cameraPose.Pos().Z() + modelPose.Pos().Z();
   contact.code = code;
   contact.ident = false;

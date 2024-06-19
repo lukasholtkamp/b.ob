@@ -20,9 +20,9 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include <sdf/sdf.hh>
-
 #include "ignition/math/Pose3.hh"
 #include "gazebo/common/Plugin.hh"
 #include "gazebo/common/UpdateInfo.hh"
@@ -33,10 +33,10 @@
 #include "gazebo/transport/Subscriber.hh"
 #include "gazebo/transport/TransportTypes.hh"
 
-// ROS
-#include "gazebo_radar_plugin/ModeCRadar.h"
-#include "gazebo_radar_plugin/ModeCRadarSummary.h"
-#include <ros/ros.h>
+// ROS 2
+#include <rclcpp/rclcpp.hpp>
+#include "gazebo_radar_plugin/msg/mode_c_radar.hpp"
+#include "gazebo_radar_plugin/msg/mode_c_radar_summary.hpp"
 
 namespace gazebo
 {
@@ -100,7 +100,7 @@ namespace gazebo
     /// \brief Callback for when logical camera images are received
     /// \param[in] _msg The logical camera image
   public:
-    void OnImage(ConstLogicalCameraImagePtr &_msg);
+    void OnImage(const gazebo::msgs::LogicalCameraImage &_msg);
 
     /// \brief Determine if the model type is one that should be published
   protected:
@@ -110,32 +110,20 @@ namespace gazebo
   protected:
     void AddNoise(ignition::math::Pose3d &pose);
 
-    // \brief Add a radar contact to a radar contact summary if it's within parameters
+    /// \brief Add a radar contact to a radar contact summary if it's within parameters
   protected:
     void AppendRadarContact(
-        gazebo_radar_plugin::ModeCRadarSummary &radar_msg,
+        gazebo_radar_plugin::msg::ModeCRadarSummary &radar_msg,
         const ignition::math::Pose3d &cameraPose, const ignition::math::Pose3d &modelPose,
-        const uint16_t code, const std_msgs::Header &header);
+        const uint16_t code, const std_msgs::msg::Header &header);
 
-    /// \brief Node for communication with gazebo
+    /// \brief Node for communication with ROS 2
   protected:
-    transport::NodePtr node;
+    rclcpp::Node::SharedPtr rosnode;
 
-    /// \brief Subscription to logical camera image messages from gazebo
+    /// \brief ROS 2 publisher for the radar returns
   protected:
-    transport::SubscriberPtr imageSub;
-
-    /// \brief for setting ROS name space
-  protected:
-    std::string robotNamespace;
-
-    /// \brief ros node handle
-  protected:
-    ros::NodeHandle *rosnode;
-
-    /// \brief ROS publisher for the radar returns
-  protected:
-    ros::Publisher radarPub;
+    rclcpp::Publisher<gazebo_radar_plugin::msg::ModeCRadarSummary>::SharedPtr radarPub;
 
     /// \brief If true, only publish the models if their type is known; otherwise publish all
   protected:
@@ -148,6 +136,19 @@ namespace gazebo
     /// \brief Map of noise IDs to noise models
   protected:
     std::map<std::string, sensors::NoisePtr> noiseModels;
+
+    /// \brief Gazebo transport node for sensor communication
+  protected:
+    transport::NodePtr gzNode;
+
+    /// \brief Subscription to logical camera image messages from Gazebo
+  protected:
+    transport::SubscriberPtr imageSub;
+
+    /// \brief for setting ROS namespace
+  protected:
+    std::string robotNamespace;
   };
 }
-#endif
+
+#endif // _ROS_LOGICAL_CAMERA_PLUGIN_HH_

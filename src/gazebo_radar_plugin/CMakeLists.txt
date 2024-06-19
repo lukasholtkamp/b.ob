@@ -20,7 +20,7 @@ set(msg_files
 include_directories(include/gazebo_radar_plugin)
 
 install(TARGETS 
-  ModeCRadarPlugin
+  #ModeCRadarPlugin
   DESTINATION lib/${PROJECT_NAME}
 )
 
