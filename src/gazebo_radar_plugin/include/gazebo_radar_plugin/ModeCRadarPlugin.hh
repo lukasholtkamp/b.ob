@@ -100,7 +100,7 @@ namespace gazebo
     /// \brief Callback for when logical camera images are received
     /// \param[in] _msg The logical camera image
   public:
-    void OnImage(const gazebo::msgs::LogicalCameraImage &_msg);
+    void OnImage(const gazebo::msgs::LogicalCameraImage _msg);
 
     /// \brief Determine if the model type is one that should be published
   protected:

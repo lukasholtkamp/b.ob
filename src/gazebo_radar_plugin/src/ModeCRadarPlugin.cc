@@ -118,12 +118,12 @@ void ModeCRadarPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
     return;
   }
 
-  this->node = rclcpp::Node::make_shared(this->robotNamespace);
+  this->rosnode = rclcpp::Node::make_shared(this->robotNamespace);
 
   this->onlyPublishKnownModels = false;
   if (_sdf->HasElement("known_model_types"))
   {
-    // RCLCPP_DEBUG(this->node->get_logger(), "Only publishing known model types");
+    // RCLCPP_DEBUG(rclcpp::get_logger(), "Only publishing known model types");
     this->onlyPublishKnownModels = true;
     this->knownModelTypes.clear();
     sdf::ElementPtr knownModelTypesElem = _sdf->GetElement("known_model_types");
@@ -142,7 +142,7 @@ void ModeCRadarPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
   }
   else
   {
-    // RCLCPP_DEBUG(this->node->get_logger(), "Publishing all model types");
+    // RCLCPP_DEBUG(rclcpp::get_logger(), "Publishing all model types");
   }
 
   this->model = _parent;
@@ -192,13 +192,13 @@ void ModeCRadarPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
     _sdf->GetElement("vfov")->GetValue()->Get(this->vfov);
   }
 
-  this->imageSub = this->node->create_subscription<gazebo_msgs::msg::LogicalCameraImage>(
+  this->imageSub = this->gzNode->Subscribe<gazebo::msgs::LogicalCameraImage>(
       this->sensor->Topic(), 10, std::bind(&ModeCRadarPlugin::OnImage, this, std::placeholders::_1));
 
-  // RCLCPP_INFO(this->node->get_logger(), "Subscribing to gazebo topic: %s", this->sensor->Topic().c_str());
+  // RCLCPP_INFO(rclcpp::get_logger(), "Subscribing to gazebo topic: %s", this->sensor->Topic().c_str());
 
-  this->radarPub = this->node->create_publisher<gazebo_radar_plugin::msg::ModeCRadarSummary>(radarTopic_ros, 10);
-  // RCLCPP_INFO(this->node->get_logger(), "Publishing to ROS topic: %s", radarTopic_ros.c_str());
+  this->radarPub = this->gzNode->Publish<gazebo_radar_plugin::msg::ModeCRadarSummary>(radarTopic_ros, bool);
+  // RCLCPP_INFO(rclcpp::get_logger(), "Publishing to ROS topic: %s", radarTopic_ros.c_str());
 }
 
 void ModeCRadarPlugin::FindLogicalCamera()
@@ -226,15 +226,15 @@ void ModeCRadarPlugin::FindLogicalCamera()
 }
 
 /////////////////////////////////////////////////
-void ModeCRadarPlugin::OnImage(const gazebo_msgs::msg::LogicalCameraImage::SharedPtr _msg)
+void ModeCRadarPlugin::OnImage(const gazebo::msgs::LogicalCameraImage _msg)
 {
   gazebo_radar_plugin::msg::ModeCRadarSummary radar_msg;
 
-  radar_msg.header.stamp = this->node->now();
+  radar_msg.header.stamp = this->rosnode->now();
   radar_msg.header.frame_id = this->radar_sensor_frameid;
 
-  ignition::math::Vector3d cameraPosition = ignition::math::Vector3d(_msg->pose.position);
-  ignition::math::Quaterniond cameraOrientation = ignition::math::Quaterniond(_msg->pose.orientation);
+  ignition::math::Vector3d cameraPosition = ignition::math::Vector3d(_msg->pose.Position);
+  ignition::math::Quaterniond cameraOrientation = ignition::math::Quaterniond(_msg->pose.Orientation);
   ignition::math::Pose3d cameraPose = ignition::math::Pose3d(cameraPosition, cameraOrientation);
 
   std::ostringstream logStream;
