@@ -111,7 +111,7 @@ namespace gazebo
     void AddNoise(ignition::math::Pose3d &pose);
 
     /// \brief Add a radar contact to a radar contact summary if it's within parameters
-  protected:
+  public:
     void AppendRadarContact(
         gazebo_radar_plugin::msg::ModeCRadarSummary &radar_msg,
         const ignition::math::Pose3d &cameraPose, const ignition::math::Pose3d &modelPose,
