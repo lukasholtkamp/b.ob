@@ -192,12 +192,12 @@ void ModeCRadarPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
     _sdf->GetElement("vfov")->GetValue()->Get(this->vfov);
   }
 
-  this->imageSub = this->gzNode->Subscribe<gazebo::msgs::LogicalCameraImage>(
-      this->sensor->Topic(), 10, std::bind(&ModeCRadarPlugin::OnImage, this, std::placeholders::_1));
+  this->imageSub = this->gzNode->Subscribe(this->sensor->Topic(),&ModeCRadarPlugin::OnImage,this);
 
   RCLCPP_INFO(this->rosnode->get_logger(), "Subscribing to gazebo topic: %s", this->sensor->Topic().c_str());
 
-  this->radarPub = this->gzNode->Publish<gazebo_radar_plugin::msg::ModeCRadarSummary>(radarTopic_ros, false);
+  this->radarPub = this->rosnode->create_publisher<gazebo_radar_plugin::msg::ModeCRadarSummary>(radarTopic_ros, 10);
+  
   RCLCPP_INFO(this->rosnode->get_logger(), "Publishing to ROS topic: %s", radarTopic_ros.c_str());
 }
 
@@ -233,15 +233,14 @@ void ModeCRadarPlugin::OnImage(const gazebo::msgs::LogicalCameraImage &_msg)
   radar_msg.header.stamp = this->rosnode->now();
   radar_msg.header.frame_id = this->radar_sensor_frameid;
 
-  ignition::math::Vector3d cameraPosition = ignition::math::Vector3d(_msg->pose.position);
-  ignition::math::Quaterniond cameraOrientation = ignition::math::Quaterniond(_msg->pose.orientation);
-  ignition::math::Pose3d cameraPose = ignition::math::Pose3d(cameraPosition, cameraOrientation);
+  ignition::math::Pose3d cameraPose = gazebo::msgs::ConvertIgn(_msg.pose());
 
   std::ostringstream logStream;
   ignition::math::Pose3d modelPose;
-  for (int i = 0; i < _msg->model.size(); ++i)
+
+  for (int i = 0; i < _msg.model_size(); ++i)
   {
-    std::string modelName = _msg->model[i].name;
+    std::string modelName = _msg.model(i).name();
     std::string modelType = DetermineModelType(modelName);
     auto modelPtr = this->world->ModelByName(modelName);
 
@@ -252,9 +251,7 @@ void ModeCRadarPlugin::OnImage(const gazebo::msgs::LogicalCameraImage &_msg)
     else
     {
       logStream << "Publishing model: " << modelName << " of type: " << modelType << std::endl;
-      ignition::math::Vector3d modelPosition = ignition::math::Vector3d(_msg->model[i].pose.position);
-      ignition::math::Quaterniond modelOrientation = ignition::math::Quaterniond(_msg->model[i].pose.orientation);
-      modelPose = ignition::math::Pose3d(modelPosition, modelOrientation);
+      modelPose = gazebo::msgs::ConvertIgn(_msg.model(i).pose());
       uint16_t t_code = GetTransponderCode(modelName);
       this->AddNoise(modelPose);
       this->AppendRadarContact(radar_msg, cameraPose, modelPose, t_code, radar_msg.header);
