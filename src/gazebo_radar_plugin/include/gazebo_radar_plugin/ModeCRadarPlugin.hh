@@ -38,6 +38,9 @@
 #include "gazebo_radar_plugin/msg/mode_c_radar.hpp"
 #include "gazebo_radar_plugin/msg/mode_c_radar_summary.hpp"
 
+#include <functional> // for std::function
+#include <boost/shared_ptr.hpp> // for boost::shared_ptr
+
 namespace gazebo
 {
   /// \brief ROS publisher for the logical camera
@@ -91,7 +94,7 @@ namespace gazebo
     /// \param[in] _parent Pointer to the parent model
     /// \param[in] _sdf Pointer to the SDF element of the plugin.
   public:
-    void Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf);
+    virtual void Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf);
 
     /// \brief Searches the model links for a logical camera sensor
   protected:
@@ -100,6 +103,9 @@ namespace gazebo
     /// \brief Callback for when logical camera images are received
     /// \param[in] _msg The logical camera image
   public:
+    // Helper function to handle the image using lambda
+    void HandleImage(const boost::shared_ptr<const gazebo::msgs::LogicalCameraImage>& _msg);
+
     void OnImage(const gazebo::msgs::LogicalCameraImage &_msg);
 
     /// \brief Determine if the model type is one that should be published
