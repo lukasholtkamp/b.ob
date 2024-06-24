@@ -38,7 +38,7 @@
 #include "gazebo_radar_plugin/msg/mode_c_radar.hpp"
 #include "gazebo_radar_plugin/msg/mode_c_radar_summary.hpp"
 
-#include <functional> // for std::function
+#include <functional>           // for std::function
 #include <boost/shared_ptr.hpp> // for boost::shared_ptr
 
 namespace gazebo
@@ -104,7 +104,7 @@ namespace gazebo
     /// \param[in] _msg The logical camera image
   public:
     // Helper function to handle the image using lambda
-    void HandleImage(const boost::shared_ptr<const gazebo::msgs::LogicalCameraImage>& _msg);
+    void HandleImage(const boost::shared_ptr<const gazebo::msgs::LogicalCameraImage> &_msg);
 
     void OnImage(const gazebo::msgs::LogicalCameraImage &_msg);
 

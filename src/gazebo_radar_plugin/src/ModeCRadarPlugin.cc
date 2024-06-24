@@ -32,7 +32,6 @@
 #include "gazebo_radar_plugin/msg/mode_c_radar_summary.hpp"
 #include "gazebo_radar_plugin/msg/mode_c_radar.hpp"
 
-
 using namespace gazebo;
 
 static const uint16_t DEFAULT_TRANSPONDER_CODE = 1200;
@@ -101,115 +100,113 @@ ModeCRadarPlugin::~ModeCRadarPlugin()
 /////////////////////////////////////////////////
 void ModeCRadarPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
 {
-    // Load parameters
-    this->robotNamespace = "logical_camera";
-    if (_sdf->HasElement("robotNamespace"))
+  // Load parameters
+  this->robotNamespace = "logical_camera";
+  if (_sdf->HasElement("robotNamespace"))
+  {
+    this->robotNamespace = _sdf->GetElement("robotNamespace")->Get<std::string>() + "/";
+  }
+
+  this->world = _parent->GetWorld();
+
+  // Initialize ROS 2 node
+  if (!rclcpp::ok())
+  {
+    RCLCPP_FATAL(this->rosnode->get_logger(),
+                 "A ROS node for Gazebo has not been initialized, unable to load plugin. Load the Gazebo system plugin "
+                 "'libgazebo_ros_api_plugin.so' in the gazebo_ros package");
+    return;
+  }
+
+  this->rosnode = rclcpp::Node::make_shared(this->robotNamespace);
+
+  this->onlyPublishKnownModels = false;
+  if (_sdf->HasElement("known_model_types"))
+  {
+    RCLCPP_DEBUG(this->rosnode->get_logger(), "Only publishing known model types");
+    this->onlyPublishKnownModels = true;
+    this->knownModelTypes.clear();
+    sdf::ElementPtr knownModelTypesElem = _sdf->GetElement("known_model_types");
+    if (!knownModelTypesElem->HasElement("type"))
     {
-        this->robotNamespace = _sdf->GetElement("robotNamespace")->Get<std::string>() + "/";
+      gzerr << "Unable to find <type> elements in the <known_model_types> section\n";
+      return;
     }
-
-    this->world = _parent->GetWorld();
-
-    // Initialize ROS 2 node
-    if (!rclcpp::ok())
+    sdf::ElementPtr knownModelTypeElem = knownModelTypesElem->GetElement("type");
+    while (knownModelTypeElem)
     {
-        RCLCPP_FATAL(this->rosnode->get_logger(),
-                     "A ROS node for Gazebo has not been initialized, unable to load plugin. Load the Gazebo system plugin "
-                     "'libgazebo_ros_api_plugin.so' in the gazebo_ros package");
-        return;
+      std::string type = knownModelTypeElem->Get<std::string>();
+      this->knownModelTypes.push_back(type);
+      knownModelTypeElem = knownModelTypeElem->GetNextElement("type");
     }
+  }
+  else
+  {
+    RCLCPP_DEBUG(this->rosnode->get_logger(), "Publishing all model types");
+  }
 
-    this->rosnode = rclcpp::Node::make_shared(this->robotNamespace);
+  this->model = _parent;
+  this->FindLogicalCamera();
+  if (!this->sensor)
+  {
+    gzerr << "No logical camera found on any link\n";
+    return;
+  }
 
-    this->onlyPublishKnownModels = false;
-    if (_sdf->HasElement("known_model_types"))
-    {
-        RCLCPP_DEBUG(this->rosnode->get_logger(), "Only publishing known model types");
-        this->onlyPublishKnownModels = true;
-        this->knownModelTypes.clear();
-        sdf::ElementPtr knownModelTypesElem = _sdf->GetElement("known_model_types");
-        if (!knownModelTypesElem->HasElement("type"))
-        {
-            gzerr << "Unable to find <type> elements in the <known_model_types> section\n";
-            return;
-        }
-        sdf::ElementPtr knownModelTypeElem = knownModelTypesElem->GetElement("type");
-        while (knownModelTypeElem)
-        {
-            std::string type = knownModelTypeElem->Get<std::string>();
-            this->knownModelTypes.push_back(type);
-            knownModelTypeElem = knownModelTypeElem->GetNextElement("type");
-        }
-    }
-    else
-    {
-        RCLCPP_DEBUG(this->rosnode->get_logger(), "Publishing all model types");
-    }
+  // Handle noise model settings.
+  if (_sdf->HasElement("position_noise"))
+  {
+    this->noiseModels["POSITION_NOISE"] =
+        sensors::NoiseFactory::NewNoiseModel(_sdf->GetElement("position_noise")->GetElement("noise"),
+                                             "logical_camera");
+  }
 
-    this->model = _parent;
-    this->FindLogicalCamera();
-    if (!this->sensor)
-    {
-        gzerr << "No logical camera found on any link\n";
-        return;
-    }
+  this->name = _parent->GetName();
+  std::string radarTopic_ros = this->name + "_radar";
+  if (_sdf->HasElement("radar_topic_ros"))
+  {
+    radarTopic_ros = _sdf->Get<std::string>("radar_topic_ros");
+  }
 
-    // Handle noise model settings.
-    if (_sdf->HasElement("position_noise"))
-    {
-        this->noiseModels["POSITION_NOISE"] =
-            sensors::NoiseFactory::NewNoiseModel(_sdf->GetElement("position_noise")->GetElement("noise"),
-                                                 "logical_camera");
-    }
+  this->radar_sensor_frameid = this->name + "_radar";
+  if (_sdf->HasElement("radar_sensor_frameid"))
+  {
+    _sdf->GetElement("radar_sensor_frameid")->GetValue()->Get(this->radar_sensor_frameid);
+  }
 
-    this->name = _parent->GetName();
-    std::string radarTopic_ros = this->name + "_radar";
-    if (_sdf->HasElement("radar_topic_ros"))
-    {
-        radarTopic_ros = _sdf->Get<std::string>("radar_topic_ros");
-    }
+  this->max_range = 10000;
+  if (_sdf->HasElement("max_range"))
+  {
+    _sdf->GetElement("max_range")->GetValue()->Get(this->max_range);
+  }
 
-    this->radar_sensor_frameid = this->name + "_radar";
-    if (_sdf->HasElement("radar_sensor_frameid"))
-    {
-        _sdf->GetElement("radar_sensor_frameid")->GetValue()->Get(this->radar_sensor_frameid);
-    }
+  this->hfov = 2 * M_PI;
+  if (_sdf->HasElement("hfov"))
+  {
+    _sdf->GetElement("hfov")->GetValue()->Get(this->hfov);
+  }
 
-    this->max_range = 10000;
-    if (_sdf->HasElement("max_range"))
-    {
-        _sdf->GetElement("max_range")->GetValue()->Get(this->max_range);
-    }
+  this->vfov = M_PI;
+  if (_sdf->HasElement("vfov"))
+  {
+    _sdf->GetElement("vfov")->GetValue()->Get(this->vfov);
+  }
 
-    this->hfov = 2 * M_PI;
-    if (_sdf->HasElement("hfov"))
-    {
-        _sdf->GetElement("hfov")->GetValue()->Get(this->hfov);
-    }
+  // Initialize Gazebo transport node
+  this->gzNode = transport::NodePtr(new transport::Node());
+  this->gzNode->Init();
 
-    this->vfov = M_PI;
-    if (_sdf->HasElement("vfov"))
-    {
-        _sdf->GetElement("vfov")->GetValue()->Get(this->vfov);
-    }
+  this->imageSub = this->gzNode->Subscribe(
+      this->sensor->Topic(),
+      &ModeCRadarPlugin::HandleImage, // Bind directly to the member function
+      this);
 
-    // Initialize Gazebo transport node
-    this->gzNode = transport::NodePtr(new transport::Node());
-    this->gzNode->Init();
+  RCLCPP_INFO(this->rosnode->get_logger(), "Subscribing to gazebo topic: %s", this->sensor->Topic().c_str());
 
-    this->imageSub = this->gzNode->Subscribe(
-        this->sensor->Topic(),
-        &ModeCRadarPlugin::HandleImage, // Bind directly to the member function
-        this
-    );
+  this->radarPub = this->rosnode->create_publisher<gazebo_radar_plugin::msg::ModeCRadarSummary>(radarTopic_ros, 10);
 
-    RCLCPP_INFO(this->rosnode->get_logger(), "Subscribing to gazebo topic: %s", this->sensor->Topic().c_str());
-
-    this->radarPub = this->rosnode->create_publisher<gazebo_radar_plugin::msg::ModeCRadarSummary>(radarTopic_ros, 10);
-
-    RCLCPP_INFO(this->rosnode->get_logger(), "Publishing to ROS topic: %s", radarTopic_ros.c_str());
+  RCLCPP_INFO(this->rosnode->get_logger(), "Publishing to ROS topic: %s", radarTopic_ros.c_str());
 }
-
 
 void ModeCRadarPlugin::FindLogicalCamera()
 {
@@ -235,10 +232,10 @@ void ModeCRadarPlugin::FindLogicalCamera()
   }
 }
 
-void ModeCRadarPlugin::HandleImage(const boost::shared_ptr<const gazebo::msgs::LogicalCameraImage>& _msg)
+void ModeCRadarPlugin::HandleImage(const boost::shared_ptr<const gazebo::msgs::LogicalCameraImage> &_msg)
 {
-    // Handle the image message
-    this->OnImage(*_msg); // Dereference the shared_ptr here
+  // Handle the image message
+  this->OnImage(*_msg); // Dereference the shared_ptr here
 }
 
 /////////////////////////////////////////////////
