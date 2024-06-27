@@ -41,7 +41,7 @@ def generate_launch_description():
 
     declare_use_ros2_control_cmd = DeclareLaunchArgument(
         name="use_ros2_control",
-        default_value="True",
+        default_value="False",
         description="Use ros2_control if true",
     )
 
@@ -56,7 +56,7 @@ def generate_launch_description():
         default_value="True",
         description="Use robot_localization package if true",
     )
-    
+
     rsp = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [os.path.join(pkg_path, "launch", "rsp.launch.py")]
@@ -79,10 +79,10 @@ def generate_launch_description():
             ]
         ),
         launch_arguments={
-            "world": os.path.join(world_path, "ros2_control",world_filename),
+            "world": os.path.join(world_path, "ros2_control", world_filename),
             "extra_gazebo_args": "--ros-args --params-file " + gazebo_params_file,
         }.items(),
-        condition = IfCondition(use_ros2_control)
+        condition=IfCondition(use_ros2_control),
     )
 
     # Include the Gazebo launch file, provided by the gazebo_ros package
@@ -97,10 +97,10 @@ def generate_launch_description():
             ]
         ),
         launch_arguments={
-            "world": os.path.join(world_path, "gazebo_control",world_filename),
+            "world": os.path.join(world_path, "gazebo_control", world_filename),
             "extra_gazebo_args": "--ros-args --params-file " + gazebo_params_file,
         }.items(),
-        condition = UnlessCondition(use_ros2_control)
+        condition=UnlessCondition(use_ros2_control),
     )
 
     # Run the spawner node from the gazebo_ros package. The entity name doesn't really matter if you only have a single robot.
