@@ -28,7 +28,7 @@ namespace bob_base
 
     RCLCPP_INFO(logger_, "Initializing...");
 
-    // Read configuration parameters from the hardware information given in bob.ros2_control.xacro
+    // Read configuration parameters from the hardware information given in bob_ros2_control.xacro
     config_.left_wheel_name = info_.hardware_parameters["left_wheel_name"];
     config_.right_wheel_name = info_.hardware_parameters["right_wheel_name"];
     config_.enc_ticks_per_rev = std::stoi(info_.hardware_parameters["enc_ticks_per_rev"]);
@@ -36,8 +36,8 @@ namespace bob_base
     config_.wheel_radius = std::stod(info_.hardware_parameters["wheel_radius"]);
 
     // Set up wheels with names and the encoder ticks per revolution
-    left_wheel_.setup(config_.left_wheel_name, config_.enc_ticks_per_rev,config_.wheel_radius);
-    right_wheel_.setup(config_.right_wheel_name, config_.enc_ticks_per_rev,config_.wheel_radius);
+    left_wheel_.setup(config_.left_wheel_name, config_.enc_ticks_per_rev, config_.wheel_radius);
+    right_wheel_.setup(config_.right_wheel_name, config_.enc_ticks_per_rev, config_.wheel_radius);
 
     RCLCPP_INFO(logger_, "Finished initialization");
 
@@ -153,23 +153,25 @@ namespace bob_base
 
     // Calculate wheel positions and velocities
     double previous_position = left_wheel_.position;
-    left_wheel_.position = left_wheel_.wheel_radius*left_wheel_.calculate_encoder_angle();
+    left_wheel_.position = left_wheel_.wheel_radius * left_wheel_.calculate_encoder_angle();
     left_wheel_.velocity = (left_wheel_.position - previous_position) / delta_seconds;
 
     previous_position = right_wheel_.position;
-    right_wheel_.position = right_wheel_.wheel_radius*right_wheel_.calculate_encoder_angle();
+    right_wheel_.position = right_wheel_.wheel_radius * right_wheel_.calculate_encoder_angle();
     right_wheel_.velocity = (right_wheel_.position - previous_position) / delta_seconds;
 
     // This if statement prevents the problem of the callback function not updating
-    if(abs(right_wheel_.velocity)>0 && abs(left_wheel_.velocity)>0){
+    if (abs(right_wheel_.velocity) > 0 && abs(left_wheel_.velocity) > 0)
+    {
       // Read the rpm of the motors
-      read_rpm_values(&left_wheel_.wheel_rpm,&right_wheel_.wheel_rpm);
+      read_rpm_values(&left_wheel_.wheel_rpm, &right_wheel_.wheel_rpm);
     }
-    else{
-      left_wheel_.wheel_rpm=0.0;
-      right_wheel_.wheel_rpm=0.0;
+    else
+    {
+      left_wheel_.wheel_rpm = 0.0;
+      right_wheel_.wheel_rpm = 0.0;
     }
-    
+
     // Read Alarm state of the wheels
     right_wheel_.alarm_status = gpio_read(pi_sig, RIGHT_ALARM_PIN);
     left_wheel_.alarm_status = gpio_read(pi_sig, LEFT_ALARM_PIN);
