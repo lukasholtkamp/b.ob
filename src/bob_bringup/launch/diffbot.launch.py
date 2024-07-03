@@ -175,10 +175,13 @@ def generate_launch_description():
 
     # Spawn imu_sensor_broadcaser
     start_imu_broadcaster_cmd = Node(
-        # condition=IfCondition(use_ros2_control),
         package="controller_manager",
         executable="spawner",
-        arguments=["imu_broadcaster"],
+        arguments=[
+            "imu_broadcaster",
+            "--controller-manager",
+            "/controller_manager",
+        ],
     )
 
     # Delayed imu_broadcaster_spawner action
@@ -240,7 +243,7 @@ def generate_launch_description():
         joint_state_broadcaster_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
         delay_for_joint_state_broadcaster_spawner,
-        # lidar,
+        lidar,
         turn_on_xbox,
         start_delayed_imu_broadcaster_spawner,
         start_robot_localization_cmd,
