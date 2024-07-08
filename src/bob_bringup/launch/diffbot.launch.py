@@ -82,6 +82,7 @@ def generate_launch_description():
     # Get URDF via xacro
 
     # Process the URDF file
+    pkg_lidar = os.path.join(Path.cwd(), "src", "bob_lidar")
     pkg_bring_up = os.path.join(Path.cwd(), "src", "bob_bringup")
     pkg_path = os.path.join(Path.cwd(), "src", "bob_description")
     pkg_navigation = os.path.join(Path.cwd(), "src", "bob_navigation")
@@ -219,7 +220,7 @@ def generate_launch_description():
     # Launch Lidar Node from launch file
     lidar = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            [os.path.join(pkg_bring_up, "launch", "rplidar.launch.py")]
+            [os.path.join(pkg_lidar, "launch", "rplidar.launch.py")]
         )
     )
 
@@ -243,7 +244,7 @@ def generate_launch_description():
         joint_state_broadcaster_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
         delay_for_joint_state_broadcaster_spawner,
-        # lidar,
+        lidar,
         turn_on_xbox,
         start_delayed_imu_broadcaster_spawner,
         start_robot_localization_cmd,
