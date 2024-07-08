@@ -243,7 +243,7 @@ def generate_launch_description():
         joint_state_broadcaster_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
         delay_for_joint_state_broadcaster_spawner,
-        lidar,
+        # lidar,
         turn_on_xbox,
         start_delayed_imu_broadcaster_spawner,
         start_robot_localization_cmd,
