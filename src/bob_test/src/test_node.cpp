@@ -28,7 +28,7 @@ public:
     {
         // Implementing the Subscriber for odom topic
         odom_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
-            "diffbot_base_controller/odom", 10, std::bind(&TestNode::odom_callback, this, _1));
+            "/odometry/filtered", 10, std::bind(&TestNode::odom_callback, this, _1));
 
         // Implementing the Subscriber for dynamic_joint_states topic
         dynamic_jointstate_subscriber = this->create_subscription<control_msgs::msg::DynamicJointState>(

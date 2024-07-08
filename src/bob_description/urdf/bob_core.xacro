@@ -33,7 +33,7 @@
     <xacro:property name="front_wheel_link_radius" value="${(wheel_link_radius+(main_body_z_dim-front_wheel_mount_z_dim))/2}"/>
     <xacro:property name="front_wheel_link_length" value="0.015"/>
     <xacro:property name="front_wheel_link_x_offset" value="0.075"/>
-    <xacro:property name="front_wheel_link_x_location" value="${main_body_x_dim+front_wheel_mount_x_dim-front_wheel_link_x_offset}"/>
+    <xacro:property name="front_wheel_link_x_location" value="${main_body_x_dim+front_wheel_mount_x_dim-wheel_link_radius-front_wheel_link_x_offset}"/>
 
     <!-- Material Density -->
     <xacro:property name="body_density" value="2710.0"/>
@@ -97,16 +97,18 @@
 
     <!-- BASE LINK -->
 
-    <link name="base_link">
-    </link>
+   <link name="base_footprint"/> 	
 
-    <joint name="base_footprint_joint" type="fixed">
-        <parent link="base_link"/>front_
-        <child link="base_footprint"/>front_
+
+   
+
+    <joint name="base_joint" type="fixed">
+        <parent link="base_footprint"/>front_
+        <child link="base_link"/>front_
         <origin xyz="0 0 0" rpy="0 0 0"/>
     </joint>
 
-    <link name="base_footprint">
+     <link name="base_link">
     </link>
 
     <!-- CHASSIS LINK -->
@@ -343,7 +345,7 @@
     <!-- CASTER WHEEL LINK -->
 
     <joint name="caster_wheel_joint" type="fixed">
-        <parent link="wheel_mount"/>
+        <parent link="base_link"/>
         <child link="caster_wheel"/>
         <origin xyz="${front_wheel_link_x_location} 0 ${(main_body_z_dim-front_wheel_mount_z_dim)-front_wheel_link_radius}"/>
     </joint>
