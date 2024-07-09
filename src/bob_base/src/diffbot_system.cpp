@@ -28,7 +28,7 @@ namespace bob_base
 
     RCLCPP_INFO(logger_, "Initializing...");
 
-    // Read configuration parameters from the hardware information given in bob.ros2_control.xacro
+    // Read configuration parameters from the hardware information given in bob_ros2_control.xacro
     config_.left_wheel_name = info_.hardware_parameters["left_wheel_name"];
     config_.right_wheel_name = info_.hardware_parameters["right_wheel_name"];
     config_.enc_ticks_per_rev = std::stoi(info_.hardware_parameters["enc_ticks_per_rev"]);
@@ -36,8 +36,8 @@ namespace bob_base
     config_.wheel_radius = std::stod(info_.hardware_parameters["wheel_radius"]);
 
     // Set up wheels with names and the encoder ticks per revolution
-    left_wheel_.setup(config_.left_wheel_name, config_.enc_ticks_per_rev,config_.wheel_radius);
-    right_wheel_.setup(config_.right_wheel_name, config_.enc_ticks_per_rev,config_.wheel_radius);
+    left_wheel_.setup(config_.left_wheel_name, config_.enc_ticks_per_rev, config_.wheel_radius);
+    right_wheel_.setup(config_.right_wheel_name, config_.enc_ticks_per_rev, config_.wheel_radius);
 
     RCLCPP_INFO(logger_, "Finished initialization");
 
@@ -97,7 +97,7 @@ namespace bob_base
   std::vector<hardware_interface::StateInterface> DiffDriveBobHardware::export_state_interfaces()
   {
     std::vector<hardware_interface::StateInterface> state_interfaces;
-    // Declare both position and velocity states for both wheels
+    // Declare both position, velocity, rpm and alarm states for both wheels
     state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_VELOCITY, &left_wheel_.velocity));
     state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, hardware_interface::HW_IF_POSITION, &left_wheel_.position));
     state_interfaces.emplace_back(hardware_interface::StateInterface(left_wheel_.name, left_wheel_.rpm_name, &left_wheel_.wheel_rpm));
@@ -153,24 +153,26 @@ namespace bob_base
 
     // Calculate wheel positions and velocities
     double previous_position = left_wheel_.position;
-    left_wheel_.position = left_wheel_.wheel_radius*left_wheel_.calculate_encoder_angle();
+    left_wheel_.position = left_wheel_.wheel_radius * left_wheel_.calculate_encoder_angle();
     left_wheel_.velocity = (left_wheel_.position - previous_position) / delta_seconds;
 
     previous_position = right_wheel_.position;
-    right_wheel_.position = right_wheel_.wheel_radius*right_wheel_.calculate_encoder_angle();
+    right_wheel_.position = right_wheel_.wheel_radius * right_wheel_.calculate_encoder_angle();
     right_wheel_.velocity = (right_wheel_.position - previous_position) / delta_seconds;
 
-    // RCLCPP_INFO(logger_, "Left motor ros velocity: %f", left_wheel_.velocity);
-    // RCLCPP_INFO(logger_, "Right motor ros velocity: %f", right_wheel_.velocity);
+    // This if statement prevents the problem of the callback function not updating
+    if (abs(right_wheel_.velocity) > 0 && abs(left_wheel_.velocity) > 0)
+    {
+      // Read the rpm of the motors
+      read_rpm_values(&left_wheel_.wheel_rpm, &right_wheel_.wheel_rpm);
+    }
+    else
+    {
+      left_wheel_.wheel_rpm = 0.0;
+      right_wheel_.wheel_rpm = 0.0;
+    }
 
-    if(abs(right_wheel_.velocity)>0 && abs(left_wheel_.velocity)>0){
-      read_rpm_values(&left_wheel_.wheel_rpm,&right_wheel_.wheel_rpm);
-    }
-    else{
-      left_wheel_.wheel_rpm=0.0;
-      right_wheel_.wheel_rpm=0.0;
-    }
-    
+    // Read Alarm state of the wheels
     right_wheel_.alarm_status = gpio_read(pi_sig, RIGHT_ALARM_PIN);
     left_wheel_.alarm_status = gpio_read(pi_sig, LEFT_ALARM_PIN);
 
@@ -202,9 +204,6 @@ namespace bob_base
     {
       right_motor_speed = -255;
     }
-
-    // RCLCPP_INFO(logger_, "Left wheel command: %f", left_wheel_.command);
-    // RCLCPP_INFO(logger_, "Left motor speed signal: %f", left_motor_speed);
 
     // Send commands to motor driver
     set_motor_speeds(pi_int, left_motor_speed, right_motor_speed);

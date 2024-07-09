@@ -82,6 +82,7 @@ def generate_launch_description():
     # Get URDF via xacro
 
     # Process the URDF file
+    pkg_lidar = os.path.join(Path.cwd(), "src", "bob_lidar")
     pkg_bring_up = os.path.join(Path.cwd(), "src", "bob_bringup")
     pkg_path = os.path.join(Path.cwd(), "src", "bob_description")
     pkg_navigation = os.path.join(Path.cwd(), "src", "bob_navigation")
@@ -175,10 +176,13 @@ def generate_launch_description():
 
     # Spawn imu_sensor_broadcaser
     start_imu_broadcaster_cmd = Node(
-        # condition=IfCondition(use_ros2_control),
         package="controller_manager",
         executable="spawner",
-        arguments=["imu_broadcaster"],
+        arguments=[
+            "imu_broadcaster",
+            "--controller-manager",
+            "/controller_manager",
+        ],
     )
 
     # Delayed imu_broadcaster_spawner action
@@ -216,7 +220,7 @@ def generate_launch_description():
     # Launch Lidar Node from launch file
     lidar = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            [os.path.join(pkg_bring_up, "launch", "rplidar.launch.py")]
+            [os.path.join(pkg_lidar, "launch", "rplidar.launch.py")]
         )
     )
 

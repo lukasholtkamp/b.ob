@@ -37,7 +37,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
         name="use_ros2_control",
-        default_value="True",
+        default_value="true",
         description="Use ros2_control if true",
         )
     )
@@ -146,8 +146,8 @@ def generate_launch_description():
         )
     )
 
-    # Send message to turn on Xbox controller
-    turn_on_xbox= (
+    # Turn on teleop
+    turn_on_teleop= (
         RegisterEventHandler(
             event_handler=OnProcessExit(
                 target_action=robot_controller_spawner,
@@ -163,7 +163,7 @@ def generate_launch_description():
         robot_state_pub_node,
         joint_state_broadcaster_spawner,
         delay_for_joint_state_broadcaster_spawner,
-        turn_on_xbox,
+        turn_on_teleop,
     ]
 
     return LaunchDescription(declared_arguments + nodes)

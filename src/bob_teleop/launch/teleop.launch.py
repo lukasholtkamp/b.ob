@@ -23,7 +23,7 @@ def generate_launch_description():
     """
     # Get config path of the teleop settings
     config_filepath = os.path.join(
-        Path.cwd(), "src", "bob_teleop", "config", "ps2.config.yaml"
+        Path.cwd(), "src", "bob_teleop", "config", "xbox.config.yaml"
     )
 
     # Launch node
@@ -36,10 +36,8 @@ def generate_launch_description():
                 parameters=[
                     config_filepath,
                 ],
-                remappings=[("/cmd_vel", "/cmd_vel_joy")],
+                remappings=[("/cmd_vel", "/diffbot_base_controller/cmd_vel")],
                 output="screen",
             ),
         ]
     )
-
-# remappings=[("/cmd_vel", "/diffbot_base_controller/cmd_vel")],

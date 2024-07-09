@@ -25,10 +25,12 @@ from launch_ros.actions import Node
 from launch_ros.descriptions import ComposableNode, ParameterFile
 from nav2_common.launch import RewrittenYaml
 
+from pathlib import Path
 
 def generate_launch_description():
     # Get the launch directory
-    bringup_dir = get_package_share_directory('bob_navigation')
+    navigation_dir = os.path.join(Path.cwd(), "src", "bob_navigation")
+    slam_dir = os.path.join(Path.cwd(), "src", "bob_slam")
 
     namespace = LaunchConfiguration('namespace')
     map_yaml_file = LaunchConfiguration('map')
@@ -43,7 +45,7 @@ def generate_launch_description():
 
     lifecycle_nodes = ['map_server', 'amcl']
 
-    map_yaml = os.path.join(bringup_dir,"maps","people_map","people_map.yaml")
+    map_yaml = os.path.join(slam_dir,"map","creative_room.yaml")
 
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
     # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
@@ -82,12 +84,12 @@ def generate_launch_description():
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time',
-        default_value='true',
+        default_value='false',
         description='Use simulation (Gazebo) clock if true')
 
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',
-        default_value=os.path.join(bringup_dir, 'config', 'nav2_params.yaml'),
+        default_value=os.path.join(navigation_dir, 'config', 'nav2_params.yaml'),
         description='Full path to the ROS2 parameters file to use for all launched nodes')
 
     declare_autostart_cmd = DeclareLaunchArgument(

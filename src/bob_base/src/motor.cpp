@@ -70,16 +70,14 @@ void left_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick)
     if(level == 1){
 
         if(_high_tick_r != 0){
-            // find period between last pulse and this pulse
+            // Find period between last pulse and this pulse
             _period_l = tick_diff(_high_tick_l,tick);
 
+            // Calculate frequency based on period in Hz
             double freq = 1000000.0/double(_period_l);
-            double speed = radius*2*M_PI*(freq/ticks_per_rev);
+
+            // Calculate RPM
             left_rpm = (60*freq)/ticks_per_rev;
-
-            (void)speed;
-
-            // std::cout << "Left Wheel RPM Encoder: " << RPM << std::endl;
         }
         _high_tick_l = tick;
     }
@@ -112,16 +110,15 @@ void right_wheel_pulse(int pi, u_int user_gpio, u_int level, uint32_t tick)
     if(level == 1){
 
         if(_high_tick_r != 0){
-            // find period between last pulse and this pulse
+            // Find period between last pulse and this pulse
             _period_r = tick_diff(_high_tick_r,tick);
 
+            // Calculate frequency based on period in Hz
             double freq = 1000000.0/double(_period_r);
-            double speed = radius*2*M_PI*(freq/ticks_per_rev);
+    
+            // Calculate RPM
             right_rpm = (60*freq)/ticks_per_rev;
-
-            (void)speed;
-
-            // std::cout << "Right Wheel RPM Encoder: " << RPM << std::endl;
+            
         }
         _high_tick_r = tick;
     }
