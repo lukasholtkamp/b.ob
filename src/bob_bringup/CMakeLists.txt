@@ -11,6 +11,13 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
 )
 
 find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(control_msgs REQUIRED)
+
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()
@@ -57,8 +64,11 @@ include_directories(include)
 
 ## COMPILE
 add_executable(drive_selection_node src/drive_selection_node.cpp)
+add_executable(controller_node src/controller_node.cpp)
 add_executable(mpu6050_offsets src/mpu6050_lib.cpp src/mpu6050_offsets.cpp)
 add_executable(mpu6050_covariances src/mpu6050_lib.cpp src/mpu6050_covariances.cpp)
+
+
 
 # Install Cpp executables
 install(TARGETS
@@ -71,8 +81,19 @@ ament_target_dependencies(drive_selection_node
 "rclcpp"
 "sensor_msgs")
 
+ament_target_dependencies(controller_node
+"rclcpp"
+"sensor_msgs"
+"geometry_msgs"
+"nav_msgs"
+"tf2"
+"control_msgs"
+)
+
+
 #install
 install(TARGETS drive_selection_node DESTINATION lib/${PROJECT_NAME})
+install(TARGETS controller_node DESTINATION lib/${PROJECT_NAME})
 
 # Link i2c to mpu6050_offsets and mpu6050_covariances targets
 target_link_libraries(mpu6050_offsets i2c)
