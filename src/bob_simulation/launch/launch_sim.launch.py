@@ -23,7 +23,7 @@ def generate_launch_description():
     gazebo_params_file = os.path.join(pkg_path, "config/gazebo_params.yaml")
     # twist_mux_params_file = os.path.join(pkg_teleop, "config/twist_mux.yaml")
     ekf_params_file = os.path.join(pkg_navigation, "config/ekf.yaml")
-    world_filename = "empty_lidar.world"
+    world_filename = "creative_room.world"
     world_path = os.path.join(pkg_path, "worlds")
 
     # Launch configuration variables specific to simulation
@@ -53,7 +53,7 @@ def generate_launch_description():
 
     declare_use_robot_localization_cmd = DeclareLaunchArgument(
         name="use_robot_localization",
-        default_value="True",
+        default_value="False",
         description="Use robot_localization package if true",
     )
 
