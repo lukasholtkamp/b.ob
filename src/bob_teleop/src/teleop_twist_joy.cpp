@@ -17,12 +17,12 @@
 #include <sensor_msgs/msg/joy.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 
-#include "teleop_twist_joy/teleop_twist_joy.hpp"
+#include "bob_teleop/teleop_twist_joy.hpp"
 
 #define ROS_INFO_NAMED RCUTILS_LOG_INFO_NAMED
 #define ROS_INFO_COND_NAMED RCUTILS_LOG_INFO_EXPRESSION_NAMED
 
-namespace teleop_twist_joy
+namespace bob_teleop
 {
 
   /**
@@ -560,4 +560,4 @@ namespace teleop_twist_joy
 
 } // namespace teleop_twist_joy
 
-RCLCPP_COMPONENTS_REGISTER_NODE(teleop_twist_joy::TeleopTwistJoy)
+RCLCPP_COMPONENTS_REGISTER_NODE(bob_teleop::TeleopTwistJoy)

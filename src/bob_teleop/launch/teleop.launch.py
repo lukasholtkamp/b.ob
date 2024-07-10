@@ -30,9 +30,9 @@ def generate_launch_description():
     return launch.LaunchDescription(
         [
             launch_ros.actions.Node(
-                package="teleop_twist_joy",
-                executable="teleop_node",
-                name="teleop_twist_joy_node",
+                package="bob_teleop",
+                executable="bob_teleop_node",
+                name="bob_teleop_node",
                 parameters=[
                     config_filepath,
                 ],

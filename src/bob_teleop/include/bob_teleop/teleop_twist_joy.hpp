@@ -5,15 +5,15 @@
 #define TELEOP_TWIST_JOY__TELEOP_TWIST_JOY_HPP_
 
 #include <rclcpp/rclcpp.hpp>
-#include "teleop_twist_joy/teleop_twist_joy_export.h"
+#include "bob_teleop/bob_teleop_export.h"
 
-namespace teleop_twist_joy
+namespace bob_teleop
 {
 
   /**
    * Class implementing a basic Joy -> Twist translation.
    */
-  class TELEOP_TWIST_JOY_EXPORT TeleopTwistJoy : public rclcpp::Node
+  class BOB_TELEOP_EXPORT TeleopTwistJoy : public rclcpp::Node
   {
   public:
     explicit TeleopTwistJoy(const rclcpp::NodeOptions &options);
@@ -29,6 +29,6 @@ namespace teleop_twist_joy
     OnSetParametersCallbackHandle::SharedPtr callback_handle;
   };
 
-} // namespace teleop_twist_joy
+} // namespace bob_teleop
 
-#endif // TELEOP_TWIST_JOY__TELEOP_TWIST_JOY_HPP_
+#endif // BOB_TELEOP_TELEOP_TWIST_JOY_HPP_

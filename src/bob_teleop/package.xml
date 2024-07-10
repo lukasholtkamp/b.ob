@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>teleop_twist_joy</name>
+  <name>bob_teleop</name>
   <version>2.6.0</version>
   <description>Generic joystick teleop for twist robots.</description>
   
