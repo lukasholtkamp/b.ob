@@ -98,9 +98,9 @@ private:
      */
     void joy_callback(const sensor_msgs::msg::Joy &joy_msg)
     {
-        // Map the joystick input range (-1 to 1) to the setpoint range (-max_angle to max_angle)
-        setpoint = joy_msg.axes[0] * max_angle;
-        RCLCPP_INFO(this->get_logger(), "Setpoint changed to %f", setpoint);
+        // // Map the joystick input range (-1 to 1) to the setpoint range (-max_angle to max_angle)
+        // setpoint = joy_msg.axes[0] * max_angle;
+        // RCLCPP_INFO(this->get_logger(), "Setpoint changed to %f", setpoint);
     }
 
     /**
@@ -142,23 +142,30 @@ private:
             initialpose_orientation = tf2_quaternion;
         }
 
+        std::cout << "setpoint : " << setpoint << std::endl;
+        std::cout << "yaw : " << yaw << std::endl;
+
         error = setpoint - yaw;
+        std::cout << "error : " << error << std::endl;
 
         // PID control calculations
         sum += error * dt;
+        std::cout << "sum : " << sum << std::endl;
 
-        // Implement anti-windup
-        if (sum > max_sum)
-        {
-            sum = max_sum;
-        }
-        else if (sum < min_sum)
-        {
-            sum = min_sum;
-        }
+        // // Implement anti-windup
+        // if (sum > max_sum)
+        // {
+        //     sum = max_sum;
+        // }
+        // else if (sum < min_sum)
+        // {
+        //     sum = min_sum;
+        // }
 
         float derivative = (error - previous_error) / dt;
         float output = Kp * error + Ki * sum + Kd * derivative;
+        std::cout << "output : " << output << "\n\n"
+                  << std::endl;
 
         // Clamp the output
         if (output > max_output)
