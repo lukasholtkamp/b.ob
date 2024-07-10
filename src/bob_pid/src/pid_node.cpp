@@ -37,7 +37,7 @@ public:
         twist_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>("diffbot_base_controller/cmd_vel", 10);
 
         // Initialize the PID controller
-        initialize_pid(1.0, 0.0, 0.0);
+        initialize_pid(0.35, 0.25, 0.1);
     }
 
 private:
