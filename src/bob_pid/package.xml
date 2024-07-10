@@ -1,16 +1,18 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>bob_test</name>
+  <name>bob_pid</name>
   <version>0.0.0</version>
-  <description>Bob test package</description>
+  <description>Bob pid package</description>
+  
+  <license>BSD</license>
+
 
   <maintainer email="jkan67.de@gmail.com">Josh Kannemeyer</maintainer>
   <maintainer email="luca.horstmann@bertrandt.com">Luca Horstmann</maintainer>
   <maintainer email="nooraldeen.yamk@bertrandt.com">Nooraldeen Yamk</maintainer>
-  <license>BSD</license>
 
-  <buildtool_depend>ament_cmake</buildtool_depend>
-
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+  <buildtool_depend>ament_cmake_ros</buildtool_depend>
 
   <build_depend>rclcpp</build_depend>
   <!-- <build_depend>rosconsole</build_depend> -->

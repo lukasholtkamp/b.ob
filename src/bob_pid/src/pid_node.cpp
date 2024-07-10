@@ -19,19 +19,19 @@
 
 using std::placeholders::_1;
 
-class Controller : public rclcpp::Node
+class PID : public rclcpp::Node
 {
 public:
-    Controller()
-        : Node("controller_node"), pid_initialized(false), dt(0.1), last_time(this->now())
+    PID()
+        : Node("pid_node"), pid_initialized(false), dt(0.1), last_time(this->now())
     {
         // Implementing the Subscriber for odom topic
         odom_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
-            "/odometry/filtered", 10, std::bind(&Controller::odom_callback, this, _1));
+            "/odometry/filtered", 10, std::bind(&PID::odom_callback, this, _1));
 
         // Implementing the Subscriber for the Button and Axes request
         gamepad_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
-            "joy", 10, std::bind(&Controller::joy_callback, this, _1));
+            "joy", 10, std::bind(&PID::joy_callback, this, _1));
 
         // Implementing the Publisher for the cmd_vel topic
         twist_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>("diffbot_base_controller/cmd_vel", 10);
@@ -147,7 +147,7 @@ private:
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<Controller>());
+    rclcpp::spin(std::make_shared<PID>());
     rclcpp::shutdown();
     return 0;
 }
