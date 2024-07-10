@@ -9,6 +9,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include <geometry_msgs/msg/twist_stamped.hpp>
+#include <geometry_msgs/msg/twist.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
@@ -34,16 +35,17 @@ public:
             "joy", 10, std::bind(&PID::joy_callback, this, _1));
 
         // Implementing the Publisher for the cmd_vel topic
-        twist_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>("diffbot_base_controller/cmd_vel", 10);
+        twist_publisher = this->create_publisher<geometry_msgs::msg::Twist>("diffbot_base_controller/cmd_vel_unstamped", 10);
 
         // Implementing the Publisher for the initial_pose topic
         initial_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("initial_pose", 10);
 
         // Initialize the PID controller
-        initialize_pid(0.35, 0.25, 0.1, -0.5, 0.5, -10.0, 10.0); // Update with anti-windup and output clamping limits
+        initialize_pid(0.7, 0.0, 0.1, -0.4, 0.4, -2.0, 2.0, false); // Update with anti-windup and output clamping limits
     }
 
 private:
+    bool pid_on;
     float Kp;
     float Ki;
     float Kd;
@@ -56,7 +58,7 @@ private:
     float min_output;
     float max_sum;
     float min_sum;
-    const float max_angle = 3.14159; // Max angle in radians (180 degrees)
+    const float tolerance = 0.01; // Tolerance range for the deadband
 
     bool pid_initialized;
     rclcpp::Time last_time; // To store the time of the last callback
@@ -74,7 +76,7 @@ private:
      * @param min_sum Minimum integral sum value
      * @param max_sum Maximum integral sum value
      */
-    void initialize_pid(float Kp, float Ki, float Kd, float min_output, float max_output, float min_sum, float max_sum)
+    void initialize_pid(float Kp, float Ki, float Kd, float min_output, float max_output, float min_sum, float max_sum, bool pid_on)
     {
         this->Kp = Kp;
         this->Ki = Ki;
@@ -87,6 +89,22 @@ private:
         this->max_output = max_output;
         this->min_sum = min_sum;
         this->max_sum = max_sum;
+        this->pid_on = pid_on;
+    }
+
+    /**
+     * @brief Normalize the angle to be within the range [-π, π].
+     *
+     * @param angle The angle to be normalized.
+     * @return Normalized angle within [-π, π].
+     */
+    float normalize_angle(float angle)
+    {
+        while (angle > M_PI)
+            angle -= 2.0 * M_PI;
+        while (angle < -M_PI)
+            angle += 2.0 * M_PI;
+        return angle;
     }
 
     /**
@@ -98,9 +116,15 @@ private:
      */
     void joy_callback(const sensor_msgs::msg::Joy &joy_msg)
     {
-        // // Map the joystick input range (-1 to 1) to the setpoint range (-max_angle to max_angle)
-        // setpoint = joy_msg.axes[0] * max_angle;
-        // RCLCPP_INFO(this->get_logger(), "Setpoint changed to %f", setpoint);
+        if (joy_msg.axes[0] < -0.05 || joy_msg.axes[0] > 0.05)
+        {
+            pid_on = false;
+            pid_initialized = false;
+        }
+        else
+        {
+            pid_on = true;
+        }
     }
 
     /**
@@ -112,10 +136,13 @@ private:
      */
     void odom_callback(const nav_msgs::msg::Odometry &odom)
     {
-        // Get the current time and calculate dt
-        rclcpp::Time current_time = this->now();
-        dt = (current_time - last_time).seconds();
-        last_time = current_time;
+        if (pid_on)
+        {
+            // Get the current time and calculate dt
+            rclcpp::Time current_time = this->now();
+            dt = (current_time - last_time).seconds();
+            last_time = current_time;
+        }
 
         // Extract quaternion
         auto quaternion = odom.pose.pose.orientation;
@@ -132,61 +159,91 @@ private:
         double roll, pitch, yaw;
         mat.getRPY(roll, pitch, yaw);
 
-        if (!pid_initialized)
+        if (pid_on)
         {
-            setpoint = yaw;
-            pid_initialized = true;
-            RCLCPP_INFO(this->get_logger(), "Setpoint initialized to %f", setpoint);
+            if (!pid_initialized)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                setpoint = yaw;
+                pid_initialized = true;
+                RCLCPP_INFO(this->get_logger(), "Setpoint initialized to %f", setpoint);
 
-            // Store the initial pose orientation and position
-            initialpose_orientation = tf2_quaternion;
+                // Store the initial pose orientation and position
+                initialpose_orientation = tf2_quaternion;
+            }
+
+            // Round setpoint and yaw to 2 decimal places
+            setpoint = round(setpoint * 100.0) / 100.0;
+            yaw = round(yaw * 100.0) / 100.0;
+
+            std::cout << "setpoint : " << setpoint << std::endl;
+            std::cout << "yaw : " << yaw << std::endl;
+
+            // Normalize yaw and setpoint
+            yaw = normalize_angle(yaw);
+            setpoint = normalize_angle(setpoint);
+
+            error = setpoint - yaw;
+            error = normalize_angle(error); // Ensure the shortest path is taken
+
+            // Round error to 1 decimal place
+            error = round(error * 10.0) / 10.0;
+
+            std::cout << "error : " << error << std::endl;
+
+            // Apply deadband to error
+            if (std::abs(error) < tolerance)
+            {
+                error = 0.0;
+            }
+
+            sum += error * dt;
+
+            // Round sum to 1 decimal place
+            sum = round(sum * 10.0) / 10.0;
+
+            std::cout << "sum : " << sum << std::endl;
+
+            // Implement anti-windup
+            if (sum > max_sum)
+            {
+                sum = max_sum;
+            }
+            else if (sum < min_sum)
+            {
+                sum = min_sum;
+            }
+
+            float derivative = (error - previous_error) / dt;
+            float output = Kp * error + Ki * sum + Kd * derivative;
+
+            // Round output to 1 decimal place
+            output = round(output * 10.0) / 10.0;
+
+            std::cout << "output : " << output << "\n\n"
+                      << std::endl;
+
+            // Clamp the output
+            if (output > max_output)
+            {
+                output = max_output;
+            }
+            else if (output < min_output)
+            {
+                output = min_output;
+            }
+
+            previous_error = error;
+
+            // Publish twist message based on PID output
+            geometry_msgs::msg::Twist twist_msg;
+
+            twist_msg.angular.z = output;
+            twist_publisher->publish(twist_msg);
+
+            // Publish the initial pose with fixed x, y position and orientation
+            publish_initial_pose(odom.pose.pose.position.x, odom.pose.pose.position.y, initialpose_orientation);
         }
-
-        std::cout << "setpoint : " << setpoint << std::endl;
-        std::cout << "yaw : " << yaw << std::endl;
-
-        error = setpoint - yaw;
-        std::cout << "error : " << error << std::endl;
-
-        // PID control calculations
-        sum += error * dt;
-        std::cout << "sum : " << sum << std::endl;
-
-        // // Implement anti-windup
-        // if (sum > max_sum)
-        // {
-        //     sum = max_sum;
-        // }
-        // else if (sum < min_sum)
-        // {
-        //     sum = min_sum;
-        // }
-
-        float derivative = (error - previous_error) / dt;
-        float output = Kp * error + Ki * sum + Kd * derivative;
-        std::cout << "output : " << output << "\n\n"
-                  << std::endl;
-
-        // Clamp the output
-        if (output > max_output)
-        {
-            output = max_output;
-        }
-        else if (output < min_output)
-        {
-            output = min_output;
-        }
-
-        previous_error = error;
-
-        // Publish twist message based on PID output
-        geometry_msgs::msg::TwistStamped twist_msg;
-        twist_msg.header.stamp = this->now(); // Set the timestamp to the current time
-        twist_msg.twist.angular.z = output;
-        twist_publisher->publish(twist_msg);
-
-        // Publish the initial pose with fixed x, y position and orientation
-        publish_initial_pose(odom.pose.pose.position.x, odom.pose.pose.position.y, initialpose_orientation);
     }
 
     /**
@@ -198,23 +255,26 @@ private:
      */
     void publish_initial_pose(double x, double y, const tf2::Quaternion &quaternion)
     {
-        geometry_msgs::msg::PoseWithCovarianceStamped pose_msg;
-        pose_msg.header.stamp = this->now(); // Set the timestamp to the current time
-        pose_msg.header.frame_id = "odom";
-        pose_msg.pose.pose.position.x = x;
-        pose_msg.pose.pose.position.y = y;
-        pose_msg.pose.pose.orientation.x = quaternion.x();
-        pose_msg.pose.pose.orientation.y = quaternion.y();
-        pose_msg.pose.pose.orientation.z = quaternion.z();
-        pose_msg.pose.pose.orientation.w = quaternion.w();
-        initial_pose_publisher->publish(pose_msg);
+        if (pid_on)
+        {
+            geometry_msgs::msg::PoseWithCovarianceStamped pose_msg;
+            pose_msg.header.stamp = this->now(); // Set the timestamp to the current time
+            pose_msg.header.frame_id = "odom";
+            pose_msg.pose.pose.position.x = x;
+            pose_msg.pose.pose.position.y = y;
+            pose_msg.pose.pose.orientation.x = quaternion.x();
+            pose_msg.pose.pose.orientation.y = quaternion.y();
+            pose_msg.pose.pose.orientation.z = quaternion.z();
+            pose_msg.pose.pose.orientation.w = quaternion.w();
+            initial_pose_publisher->publish(pose_msg);
+        }
     }
 
     //! Subscriber to read from the odom topic
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber;
 
     //! Publisher to publish to the cmd_vel topic
-    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr twist_publisher;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_publisher;
 
     //! Publisher to publish the initial_pose
     rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initial_pose_publisher;
