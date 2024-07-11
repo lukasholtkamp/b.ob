@@ -61,7 +61,7 @@ private:
     bool pid_initialized;
     rclcpp::Time last_time; // To store the time of the last callback
 
-    tf2::Quaternion initialpose;
+    tf2::Quaternion initialpose_orientation;
 
     /**
      * @brief Initialize the PID controller with the given parameters.
@@ -138,8 +138,8 @@ private:
             pid_initialized = true;
             RCLCPP_INFO(this->get_logger(), "Setpoint initialized to %f", setpoint);
 
-            // Publish the initial setpoint as initial_pose
-            initialpose = tf2_quaternion;
+            // Store the initial pose orientation and position
+            initialpose_orientation = tf2_quaternion;
         }
 
         error = setpoint - yaw;
@@ -178,19 +178,24 @@ private:
         twist_msg.twist.angular.z = output;
         twist_publisher->publish(twist_msg);
 
-        publish_initial_pose(initialpose);
+        // Publish the initial pose with fixed x, y position and orientation
+        publish_initial_pose(odom.pose.pose.position.x, odom.pose.pose.position.y, initialpose_orientation);
     }
 
     /**
      * @brief Publish the setpoint as an initial pose.
      *
-     * @param quaternion The quaternion representing the initial pose.
+     * @param x The x position of the initial pose.
+     * @param y The y position of the initial pose.
+     * @param quaternion The quaternion representing the orientation of the initial pose.
      */
-    void publish_initial_pose(const tf2::Quaternion &quaternion)
+    void publish_initial_pose(double x, double y, const tf2::Quaternion &quaternion)
     {
         geometry_msgs::msg::PoseWithCovarianceStamped pose_msg;
         pose_msg.header.stamp = this->now(); // Set the timestamp to the current time
-        pose_msg.header.frame_id = "base_link";
+        pose_msg.header.frame_id = "odom";
+        pose_msg.pose.pose.position.x = x;
+        pose_msg.pose.pose.position.y = y;
         pose_msg.pose.pose.orientation.x = quaternion.x();
         pose_msg.pose.pose.orientation.y = quaternion.y();
         pose_msg.pose.pose.orientation.z = quaternion.z();
