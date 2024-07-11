@@ -10,7 +10,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
-#include <geometry_msgs/msg/pose_with_covariance.hpp>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <control_msgs/msg/dynamic_joint_state.hpp>
@@ -35,6 +35,9 @@ public:
 
         // Implementing the Publisher for the cmd_vel topic
         twist_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>("diffbot_base_controller/cmd_vel", 10);
+
+        // Implementing the Publisher for the initial_pose topic
+        initial_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("initial_pose", 10);
 
         // Initialize the PID controller
         initialize_pid(0.35, 0.25, 0.1, -0.5, 0.5, -10.0, 10.0); // Update with anti-windup and output clamping limits
@@ -132,6 +135,9 @@ private:
             setpoint = yaw;
             pid_initialized = true;
             RCLCPP_INFO(this->get_logger(), "Setpoint initialized to %f", setpoint);
+
+            // Publish the initial setpoint as initial_pose
+            publish_initial_pose(tf2_quaternion);
         }
 
         error = setpoint - yaw;
@@ -171,11 +177,31 @@ private:
         twist_publisher->publish(twist_msg);
     }
 
+    /**
+     * @brief Publish the setpoint as an initial pose.
+     *
+     * @param quaternion The quaternion representing the initial pose.
+     */
+    void publish_initial_pose(const tf2::Quaternion &quaternion)
+    {
+        geometry_msgs::msg::PoseWithCovarianceStamped pose_msg;
+        pose_msg.header.stamp = this->now(); // Set the timestamp to the current time
+        pose_msg.header.frame_id = "base_link";
+        pose_msg.pose.pose.orientation.x = quaternion.x();
+        pose_msg.pose.pose.orientation.y = quaternion.y();
+        pose_msg.pose.pose.orientation.z = quaternion.z();
+        pose_msg.pose.pose.orientation.w = quaternion.w();
+        initial_pose_publisher->publish(pose_msg);
+    }
+
     //! Subscriber to read from the odom topic
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber;
 
     //! Publisher to publish to the cmd_vel topic
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr twist_publisher;
+
+    //! Publisher to publish the initial_pose
+    rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initial_pose_publisher;
 
     //! Subscriber to read from the joy topic to know which buttons have been pressed
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr gamepad_subscriber;
