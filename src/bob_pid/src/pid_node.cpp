@@ -61,6 +61,8 @@ private:
     bool pid_initialized;
     rclcpp::Time last_time; // To store the time of the last callback
 
+    tf2::Quaternion initialpose;
+
     /**
      * @brief Initialize the PID controller with the given parameters.
      *
@@ -137,7 +139,7 @@ private:
             RCLCPP_INFO(this->get_logger(), "Setpoint initialized to %f", setpoint);
 
             // Publish the initial setpoint as initial_pose
-            publish_initial_pose(tf2_quaternion);
+            initialpose = tf2_quaternion;
         }
 
         error = setpoint - yaw;
@@ -175,6 +177,8 @@ private:
         twist_msg.header.stamp = this->now(); // Set the timestamp to the current time
         twist_msg.twist.angular.z = output;
         twist_publisher->publish(twist_msg);
+
+        publish_initial_pose(initialpose);
     }
 
     /**
