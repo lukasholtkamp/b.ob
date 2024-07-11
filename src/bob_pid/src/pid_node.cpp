@@ -37,7 +37,7 @@ public:
         twist_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>("diffbot_base_controller/cmd_vel", 10);
 
         // Initialize the PID controller
-        initialize_pid(0.35, 0.25, 0.1);
+        initialize_pid(0.35, 0.25, 0.1, -0.5, 0.5, -10.0, 10.0); // Update with anti-windup and output clamping limits
     }
 
 private:
@@ -49,6 +49,11 @@ private:
     float sum;
     float dt;
     float previous_error;
+    float max_output;
+    float min_output;
+    float max_sum;
+    float min_sum;
+    const float max_angle = 3.14159; // Max angle in radians (180 degrees)
 
     bool pid_initialized;
     rclcpp::Time last_time; // To store the time of the last callback
@@ -59,8 +64,12 @@ private:
      * @param Kp Proportional gain
      * @param Ki Integral gain
      * @param Kd Derivative gain
+     * @param min_output Minimum output value
+     * @param max_output Maximum output value
+     * @param min_sum Minimum integral sum value
+     * @param max_sum Maximum integral sum value
      */
-    void initialize_pid(float Kp, float Ki, float Kd)
+    void initialize_pid(float Kp, float Ki, float Kd, float min_output, float max_output, float min_sum, float max_sum)
     {
         this->Kp = Kp;
         this->Ki = Ki;
@@ -69,18 +78,24 @@ private:
         this->setpoint = 0;
         this->sum = 0;
         this->previous_error = 0;
+        this->min_output = min_output;
+        this->max_output = max_output;
+        this->min_sum = min_sum;
+        this->max_sum = max_sum;
     }
 
     /**
      * @brief Callback function for the gamepad_subscriber to handle joystick inputs (Buttons and Axes).
      *
-     * Updates `test_break` if the D-PAD is pressed left, and `next_test` if the D-PAD is pressed right.
+     * Updates the setpoint based on the joystick input.
      *
      * @param joy_msg The message containing joystick data.
      */
     void joy_callback(const sensor_msgs::msg::Joy &joy_msg)
     {
-        // Implement joystick handling logic here
+        // Map the joystick input range (-1 to 1) to the setpoint range (-max_angle to max_angle)
+        setpoint = joy_msg.axes[0] * max_angle;
+        RCLCPP_INFO(this->get_logger(), "Setpoint changed to %f", setpoint);
     }
 
     /**
@@ -123,8 +138,30 @@ private:
 
         // PID control calculations
         sum += error * dt;
+
+        // Implement anti-windup
+        if (sum > max_sum)
+        {
+            sum = max_sum;
+        }
+        else if (sum < min_sum)
+        {
+            sum = min_sum;
+        }
+
         float derivative = (error - previous_error) / dt;
         float output = Kp * error + Ki * sum + Kd * derivative;
+
+        // Clamp the output
+        if (output > max_output)
+        {
+            output = max_output;
+        }
+        else if (output < min_output)
+        {
+            output = min_output;
+        }
+
         previous_error = error;
 
         // Publish twist message based on PID output
