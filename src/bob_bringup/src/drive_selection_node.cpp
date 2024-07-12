@@ -48,10 +48,11 @@ private:
     {
 
         // Check if the Emergency Button is pressed
-        if (((d_state.interface_values[0].values[3]) || (d_state.interface_values[1].values[3])) == 0)
+        if ((d_state.interface_values[0].values[3]) == 0 || (d_state.interface_values[1].values[3]) == 0 && last_mode!="Drive Selection Mode")
         {
             launch_call("Drive Selection Mode", last_mode);
-            print_selection_menu("Drive Selection Mode")
+            last_mode = "Drive Selection Mode";
+            print_selection_menu("Drive Selection Mode");
         }
     }
 

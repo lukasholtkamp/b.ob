@@ -7,7 +7,7 @@ find_package(urdf REQUIRED)
 
 # install
 install(
-  DIRECTORY launch
+  DIRECTORY launch config worlds
   DESTINATION share/${PROJECT_NAME}
 )
 

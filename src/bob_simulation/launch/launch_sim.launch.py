@@ -23,8 +23,8 @@ def generate_launch_description():
     gazebo_params_file = os.path.join(pkg_path, "config/gazebo_params.yaml")
     # twist_mux_params_file = os.path.join(pkg_teleop, "config/twist_mux.yaml")
     ekf_params_file = os.path.join(pkg_navigation, "config/ekf.yaml")
-    world_filename = "creative_room.world"
-    world_path = os.path.join(pkg_path, "worlds")
+    world_filename = "empty_world.world"
+    world_path = os.path.join(pkg_path, "worlds", world_filename)
 
     # Launch configuration variables specific to simulation
     use_sim_time = LaunchConfiguration("use_sim_time")
@@ -41,7 +41,7 @@ def generate_launch_description():
 
     declare_use_ros2_control_cmd = DeclareLaunchArgument(
         name="use_ros2_control",
-        default_value="False",
+        default_value="True",
         description="Use ros2_control if true",
     )
 
@@ -68,24 +68,6 @@ def generate_launch_description():
     )
 
     # Include the Gazebo launch file, provided by the gazebo_ros package
-    gazebo_ros2_control = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [
-                os.path.join(
-                    get_package_share_directory("gazebo_ros"),
-                    "launch",
-                    "gazebo.launch.py",
-                )
-            ]
-        ),
-        launch_arguments={
-            "world": os.path.join(world_path, "ros2_control", world_filename),
-            "extra_gazebo_args": "--ros-args --params-file " + gazebo_params_file,
-        }.items(),
-        condition=IfCondition(use_ros2_control),
-    )
-
-    # Include the Gazebo launch file, provided by the gazebo_ros package
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [
@@ -97,10 +79,9 @@ def generate_launch_description():
             ]
         ),
         launch_arguments={
-            "world": os.path.join(world_path, "gazebo_control", world_filename),
+            "world": world_path,
             "extra_gazebo_args": "--ros-args --params-file " + gazebo_params_file,
         }.items(),
-        condition=UnlessCondition(use_ros2_control),
     )
 
     # Run the spawner node from the gazebo_ros package. The entity name doesn't really matter if you only have a single robot.
@@ -159,9 +140,8 @@ def generate_launch_description():
         name="teleop_twist_joy_node",
         parameters=[
             config_filepath,
-            {"publish_stamped_twist": True},
         ],
-        remappings=[("/cmd_vel", "/diffbot_base_controller/cmd_vel")],
+        remappings=[("/cmd_vel", "/diffbot_base_controller/cmd_vel_unstamped")],
         output="screen",
     )
 
@@ -172,7 +152,6 @@ def generate_launch_description():
         name="teleop_twist_joy_node",
         parameters=[
             config_filepath,
-            {"publish_stamped_twist": False},
         ],
         output="screen",
     )
@@ -196,7 +175,6 @@ def generate_launch_description():
     # Add any actions
     ld.add_action(rsp)
     ld.add_action(gazebo)
-    ld.add_action(gazebo_ros2_control)
     ld.add_action(spawn_entity)
     ld.add_action(robot_controller_spawner)
     ld.add_action(joint_state_broadcaster_spawner)

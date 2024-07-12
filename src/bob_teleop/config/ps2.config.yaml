@@ -15,4 +15,6 @@ teleop_twist_joy_node:
     scale_linear_reverse:
       x: 1.0
 
+    publish_stamped_twist: False
+    
     require_enable_button: False
