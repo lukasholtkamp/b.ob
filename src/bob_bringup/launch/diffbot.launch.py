@@ -126,7 +126,7 @@ def generate_launch_description():
         output="both",
         parameters=[robot_description],
         remappings=[
-            ("/diff_drive_controller/cmd_vel", "/cmd_vel"),
+            ("/diff_drive_controller/cmd_vel_unstamped", "/cmd_vel"),
         ],
     )
 
@@ -229,9 +229,10 @@ def generate_launch_description():
         event_handler=OnProcessExit(
             target_action=robot_controller_spawner,
             on_exit=[
-                LogInfo(msg="Turn on Xbox controller"),
+                LogInfo(msg="Current Driving Mode: Drive Selection Mode"),
                 LogInfo(msg="For Testing press Up-D-PAD button"),
                 LogInfo(msg="For Basic driving press X button"),
+                LogInfo(msg="For Assisted Drive Mode press A button"),
             ],
         )
     )
