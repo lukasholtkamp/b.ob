@@ -154,7 +154,7 @@ private:
     {
         if (last_mode == "Basic Drive Mode")
         {
-            system("killall teleop_node");
+            system("killall bob_teleop_node");
         }
         if (drive_mode_status == "Test Mode")
         {
@@ -162,7 +162,7 @@ private:
         }
         if (drive_mode_status == "Basic Drive Mode")
         {
-            system("ros2 launch teleop_twist_joy teleop.launch.py &");
+            system("ros2 launch bob_teleop teleop.launch.py &");
         }
         if (drive_mode_status == "Shutdown")
         {

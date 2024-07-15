@@ -32,7 +32,6 @@ def generate_launch_description():
             launch_ros.actions.Node(
                 package="bob_teleop",
                 executable="bob_teleop_node",
-                name="bob_teleop_node",
                 parameters=[
                     config_filepath,
                 ],
