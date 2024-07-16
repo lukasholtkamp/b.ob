@@ -184,6 +184,7 @@ private:
         {
             system("killall bob_teleop_node");
             system("killall pid_node");
+            system("killall rplidar_node");
         }
         if (drive_mode_status == "Test Mode")
         {
