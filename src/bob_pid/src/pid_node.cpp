@@ -18,6 +18,8 @@
 #include <control_msgs/msg/interface_value.hpp>
 #include <sensor_msgs/msg/joy.hpp>
 
+#include "std_msgs/msg/float32.hpp"
+
 using std::placeholders::_1;
 
 class PID : public rclcpp::Node
@@ -34,11 +36,17 @@ public:
         gamepad_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
             "joy", 10, std::bind(&PID::joy_callback, this, _1));
 
+        // Implementing the Subscriber for the Button and Axes request
+        setpoint_subscriber = this->create_subscription<std_msgs::msg::Float32>(
+            "setpoint", 10, std::bind(&PID::setpoint_callback, this, _1));
+
         // Implementing the Publisher for the cmd_vel topic
         twist_publisher = this->create_publisher<geometry_msgs::msg::Twist>("diffbot_base_controller/cmd_vel_unstamped", 10);
 
         // Implementing the Publisher for the initial_pose topic
         initial_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("initial_pose", 10);
+
+        pid_cmd_publisher = this->create_publisher<std_msgs::msg::Float32>("pid_cmd_vel", 10);
 
         // Initialize the PID controller
         initialize_pid(0.7, 0.0, 0.1, -0.4, 0.4, -2.0, 2.0, false); // Update with anti-windup and output clamping limits
@@ -114,6 +122,11 @@ private:
      *
      * @param joy_msg The message containing joystick data.
      */
+    void setpoint_callback(const std_msgs::msg::Float32 &setpoint_msg)
+    {
+        setpoint = setpoint_msg.data;
+    }
+
     void joy_callback(const sensor_msgs::msg::Joy &joy_msg)
     {
         if (joy_msg.axes[0] < -0.05 || joy_msg.axes[0] > 0.05)
@@ -136,14 +149,11 @@ private:
      */
     void odom_callback(const nav_msgs::msg::Odometry &odom)
     {
-        if (pid_on)
-        {
-            // Get the current time and calculate dt
-            rclcpp::Time current_time = this->now();
-            dt = (current_time - last_time).seconds();
-            last_time = current_time;
-        }
-
+        // Get the current time and calculate dt
+        rclcpp::Time current_time = this->now();
+        dt = (current_time - last_time).seconds();
+        last_time = current_time;
+       
         // Extract quaternion
         auto quaternion = odom.pose.pose.orientation;
 
@@ -159,91 +169,77 @@ private:
         double roll, pitch, yaw;
         mat.getRPY(roll, pitch, yaw);
 
-        if (pid_on)
+     
+        // Round setpoint and yaw to 2 decimal places
+        setpoint = round(setpoint * 100.0) / 100.0;
+        yaw = round(yaw * 100.0) / 100.0;
+
+        std::cout << "setpoint : " << setpoint << std::endl;
+        std::cout << "yaw : " << yaw << std::endl;
+
+        // Normalize yaw and setpoint
+        yaw = normalize_angle(yaw);
+        setpoint = normalize_angle(setpoint);
+
+        error = setpoint - yaw;
+        error = normalize_angle(error); // Ensure the shortest path is taken
+
+        // Round error to 1 decimal place
+        error = round(error * 10.0) / 10.0;
+
+        std::cout << "error : " << error << std::endl;
+
+        // Apply deadband to error
+        if (std::abs(error) < tolerance)
         {
-            if (!pid_initialized)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                setpoint = yaw;
-                pid_initialized = true;
-                RCLCPP_INFO(this->get_logger(), "Setpoint initialized to %f", setpoint);
-
-                // Store the initial pose orientation and position
-                initialpose_orientation = tf2_quaternion;
-            }
-
-            // Round setpoint and yaw to 2 decimal places
-            setpoint = round(setpoint * 100.0) / 100.0;
-            yaw = round(yaw * 100.0) / 100.0;
-
-            std::cout << "setpoint : " << setpoint << std::endl;
-            std::cout << "yaw : " << yaw << std::endl;
-
-            // Normalize yaw and setpoint
-            yaw = normalize_angle(yaw);
-            setpoint = normalize_angle(setpoint);
-
-            error = setpoint - yaw;
-            error = normalize_angle(error); // Ensure the shortest path is taken
-
-            // Round error to 1 decimal place
-            error = round(error * 10.0) / 10.0;
-
-            std::cout << "error : " << error << std::endl;
-
-            // Apply deadband to error
-            if (std::abs(error) < tolerance)
-            {
-                error = 0.0;
-            }
-
-            sum += error * dt;
-
-            // Round sum to 1 decimal place
-            sum = round(sum * 10.0) / 10.0;
-
-            std::cout << "sum : " << sum << std::endl;
-
-            // Implement anti-windup
-            if (sum > max_sum)
-            {
-                sum = max_sum;
-            }
-            else if (sum < min_sum)
-            {
-                sum = min_sum;
-            }
-
-            float derivative = (error - previous_error) / dt;
-            float output = Kp * error + Ki * sum + Kd * derivative;
-
-            // Round output to 1 decimal place
-            output = round(output * 10.0) / 10.0;
-
-            std::cout << "output : " << output << "\n\n"
-                      << std::endl;
-
-            // Clamp the output
-            if (output > max_output)
-            {
-                output = max_output;
-            }
-            else if (output < min_output)
-            {
-                output = min_output;
-            }
-
-            previous_error = error;
-
-            // Publish twist message based on PID output
-            geometry_msgs::msg::Twist twist_msg;
-
-            twist_msg.angular.z = output;
-            twist_publisher->publish(twist_msg);
-
-            // Publish the initial pose with fixed x, y position and orientation
-            publish_initial_pose(odom.pose.pose.position.x, odom.pose.pose.position.y, initialpose_orientation);
+            error = 0.0;
         }
+
+        sum += error * dt;
+
+        // Round sum to 1 decimal place
+        sum = round(sum * 10.0) / 10.0;
+
+        std::cout << "sum : " << sum << std::endl;
+
+        // Implement anti-windup
+        if (sum > max_sum)
+        {
+            sum = max_sum;
+        }
+        else if (sum < min_sum)
+        {
+            sum = min_sum;
+        }
+
+        float derivative = (error - previous_error) / dt;
+        float output = Kp * error + Ki * sum + Kd * derivative;
+
+        // Round output to 1 decimal place
+        output = round(output * 10.0) / 10.0;
+
+        std::cout << "output : " << output << "\n\n"
+                    << std::endl;
+
+        // Clamp the output
+        if (output > max_output)
+        {
+            output = max_output;
+        }
+        else if (output < min_output)
+        {
+            output = min_output;
+        }
+
+        previous_error = error;
+
+        // Publish twist message based on PID output
+        auto pid_cmd_msg = std_msgs::msg::Float32();
+
+        pid_cmd_msg.data = output;
+
+        pid_cmd_publisher->publish(pid_cmd_msg);
+        
     }
 
     /**
@@ -273,6 +269,8 @@ private:
     //! Subscriber to read from the odom topic
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber;
 
+    rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr setpoint_subscriber;
+
     //! Publisher to publish to the cmd_vel topic
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_publisher;
 
@@ -281,6 +279,9 @@ private:
 
     //! Subscriber to read from the joy topic to know which buttons have been pressed
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr gamepad_subscriber;
+
+    //! Publisher to publish to the drive_mode_status topic after the driving mode button is pressed
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pid_cmd_publisher;
 };
 
 int main(int argc, char *argv[])
@@ -290,3 +291,4 @@ int main(int argc, char *argv[])
     rclcpp::shutdown();
     return 0;
 }
+

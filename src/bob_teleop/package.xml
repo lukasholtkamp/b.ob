@@ -21,6 +21,9 @@
   <depend>rclcpp_components</depend>
   <depend>sensor_msgs</depend>
   <depend>joy_tester</depend>
+  <depend>nav_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>tf2</depend>
 
   <exec_depend>joy</exec_depend>
 

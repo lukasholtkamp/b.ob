@@ -7,15 +7,20 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <iostream>
 
 #include "rcutils/logging_macros.h"
 
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <nav_msgs/msg/odometry.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
 #include <sensor_msgs/msg/joy.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
+#include "std_msgs/msg/float32.hpp"
 
 #include "bob_teleop/teleop_twist_joy.hpp"
 
@@ -44,6 +49,19 @@ namespace bob_teleop
     //! Function for updating the reversing boolean
     void jointstate_callback(const sensor_msgs::msg::JointState &state);
 
+    void odom_callback(const nav_msgs::msg::Odometry &odom);
+
+    void pid_callback(const std_msgs::msg::Float32 &pid_msg);
+
+    //! Subscriber to read from the odom topic
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber;
+
+    //! Subscriber to read from the pid topic
+    rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr pid_subscriber;
+
+    //! Publisher for sending the time stamped command velocity on the /cmd_vel topic
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr setpoint_publisher;
+
     //! Subscriber to listen to joy topic for the speed controlling axes
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub;
     //! Publisher for sending the command velocity on the /cmd_vel topic
@@ -56,6 +74,8 @@ namespace bob_teleop
     //! Clock used for time stamping
     rclcpp::Clock::SharedPtr clock;
 
+    //! Boolean to decide whether PID controller is used or not
+    bool use_pid;
     //! Boolean to decide whether the command velocity is time stmapped or not
     bool publish_stamped_twist;
     //! ID for the frame
@@ -94,6 +114,11 @@ namespace bob_teleop
 
     //! Boolean used for checking if B.ob is reversing
     bool reversing_check;
+
+    double yaw;
+    double yaw_prev;
+    float pid_cmd_vel;
+
   };
 
   /**
@@ -105,6 +130,8 @@ namespace bob_teleop
     pimpl_ = new Impl;
 
     pimpl_->clock = this->get_clock();
+
+    pimpl_->use_pid = this->declare_parameter("use_pid", false);
 
     pimpl_->publish_stamped_twist = this->declare_parameter("publish_stamped_twist", false);
     pimpl_->frame_id = this->declare_parameter("frame", "teleop_twist_joy");
@@ -118,6 +145,9 @@ namespace bob_teleop
     {
       pimpl_->cmd_vel_pub = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
     }
+
+    pimpl_ -> setpoint_publisher = this->create_publisher<std_msgs::msg::Float32>("setpoint", 10);
+
     pimpl_->joy_sub = this->create_subscription<sensor_msgs::msg::Joy>(
         "joy", rclcpp::QoS(10),
         std::bind(&TeleopTwistJoy::Impl::joy_callback, this->pimpl_, std::placeholders::_1));
@@ -125,6 +155,12 @@ namespace bob_teleop
     // subscriber to read wheel movements
     pimpl_ -> jointstate_subscriber = this->create_subscription<sensor_msgs::msg::JointState>(
             "joint_states", 10, std::bind(&TeleopTwistJoy::Impl::jointstate_callback, this->pimpl_, std::placeholders::_1));
+
+    pimpl_ -> odom_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
+            "/odometry/filtered", 10, std::bind(&TeleopTwistJoy::Impl::odom_callback, this->pimpl_, std::placeholders::_1));
+
+    pimpl_ -> pid_subscriber = this->create_subscription<std_msgs::msg::Float32>(
+            "pid_cmd_vel", 10, std::bind(&TeleopTwistJoy::Impl::pid_callback, this->pimpl_, std::placeholders::_1));
 
     pimpl_->require_enable_button = this->declare_parameter("require_enable_button", true);
 
@@ -212,6 +248,11 @@ namespace bob_teleop
     ROS_INFO_COND_NAMED(
         pimpl_->require_enable_button, "TeleopTwistJoy",
         "Teleop enable button %" PRId64 ".", pimpl_->enable_button);
+
+    ROS_INFO_COND_NAMED(
+        pimpl_->use_pid, "TeleopTwistJoy",
+        "PID enabled.");
+
     ROS_INFO_COND_NAMED(
         pimpl_->enable_turbo_button >= 0, "TeleopTwistJoy",
         "Turbo on button %" PRId64 ".", pimpl_->enable_turbo_button);
@@ -276,6 +317,10 @@ namespace bob_teleop
         else if (parameter.get_name() == "inverted_reverse")
         {
           this->pimpl_->inverted_reverse = parameter.get_value<rclcpp::PARAMETER_BOOL>();
+        }
+        else if (parameter.get_name() == "use_pid")
+        {
+          this->pimpl_->use_pid = parameter.get_value<rclcpp::PARAMETER_BOOL>();
         }
         else if (parameter.get_name() == "enable_button")
         {
@@ -467,6 +512,7 @@ namespace bob_teleop
     double reverse;
     double forward;
 
+    double ang_z = 0,
     double lin_x = 0;
 
     // Check if using triggers for driving forward or backward
@@ -499,7 +545,27 @@ namespace bob_teleop
       lin_x = 0;
     }
 
-    double ang_z = get_val(joy_msg, axis_angular_map, scale_angular_map[which_map], "yaw");
+    if(use_pid){
+      std::cout << "hello" << std::endl;
+      if(joy_msg->axes[axis_angular_map.at("yaw")] > 0){
+
+        ang_z = get_val(joy_msg, axis_angular_map, scale_angular_map[which_map], "yaw");
+
+        if(abs(yaw - yaw_prev) <= 0.1)
+        {
+          auto setpoint_msg = std_msgs::msg::Float32();
+          setpoint_msg.data = yaw;
+          setpoint_publisher->publish(setpoint_msg);
+        }
+
+      }
+      else{
+        ang_z = pid_cmd_vel;
+      }
+    }
+    else{
+      ang_z = get_val(joy_msg, axis_angular_map, scale_angular_map[which_map], "yaw");
+    }
 
     cmd_vel_msg->linear.x = lin_x;
     cmd_vel_msg->linear.y = get_val(joy_msg, axis_linear_map, scale_linear_map[which_map], "y");
@@ -556,6 +622,33 @@ namespace bob_teleop
     else{
       reversing_check = false;
     }
+  }
+
+  void TeleopTwistJoy::Impl::odom_callback(const nav_msgs::msg::Odometry &odom)
+  {
+      yaw_prev = yaw;
+      // Extract quaternion
+      auto quaternion = odom.pose.pose.orientation;
+
+      // Convert quaternion to tf2::Quaternion
+      tf2::Quaternion tf2_quaternion(
+          quaternion.x,
+          quaternion.y,
+          quaternion.z,
+          quaternion.w);
+
+      // Convert tf2::Quaternion to Euler angles
+      tf2::Matrix3x3 mat(tf2_quaternion);
+      double roll, pitch;
+      mat.getRPY(roll, pitch, yaw);
+
+  }
+
+  void TeleopTwistJoy::Impl::pid_callback(const std_msgs::msg::Float32 &pid_msg)
+  {
+      
+    pid_cmd_vel = pid_msg.data;
+
   }
 
 } // namespace teleop_twist_joy

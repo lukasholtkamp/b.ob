@@ -16,6 +16,9 @@ find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(tf2 REQUIRED)
 
 ## COMPILE
 add_library(${PROJECT_NAME} SHARED src/teleop_twist_joy.cpp)
@@ -27,6 +30,10 @@ target_link_libraries(${PROJECT_NAME}
   rclcpp::rclcpp
   rclcpp_components::component
   ${sensor_msgs_TARGETS}
+  ${nav_msgs_TARGETS}
+  ${std_msgs_TARGETS}
+  ${tf2_TARGETS}
+
 )
 
 include(GenerateExportHeader)
@@ -38,7 +45,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 set_target_properties(${PROJECT_NAME} PROPERTIES EXPORT_HEADER_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
 rclcpp_components_register_nodes(${PROJECT_NAME}
-  "teleop_twist_joy::TeleopTwistJoy")
+  "bob_teleop::TeleopTwistJoy")
 
 ## COMPILE
 add_executable(${PROJECT_NAME}_node src/teleop_node.cpp)
