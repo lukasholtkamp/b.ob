@@ -70,7 +70,7 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}_export.h
   DESTINATION include/${PROJECT_NAME}/${PROJECT_NAME})
 
-install(DIRECTORY launch config
+install(DIRECTORY config
   DESTINATION share/${PROJECT_NAME})
 
 # Export old-style CMake variables
