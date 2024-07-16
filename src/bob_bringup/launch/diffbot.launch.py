@@ -217,12 +217,6 @@ def generate_launch_description():
         )
     )
 
-    # Launch Lidar Node from launch file
-    lidar = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [os.path.join(pkg_lidar, "launch", "rplidar.launch.py")]
-        )
-    )
 
     # Send message to turn on Xbox controller
     turn_on_xbox = RegisterEventHandler(
@@ -232,6 +226,7 @@ def generate_launch_description():
                 LogInfo(msg="Turn on Xbox controller"),
                 LogInfo(msg="For Testing press Up-D-PAD button"),
                 LogInfo(msg="For Basic driving press X button"),
+                LogInfo(msg="For Assisted Drive Mode press A button"),
             ],
         )
     )
@@ -244,7 +239,6 @@ def generate_launch_description():
         joint_state_broadcaster_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
         delay_for_joint_state_broadcaster_spawner,
-        # lidar,
         turn_on_xbox,
         start_delayed_imu_broadcaster_spawner,
         start_robot_localization_cmd,
