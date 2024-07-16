@@ -6,6 +6,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <thread>
 #include <string>
 #include <iostream>
 
@@ -40,6 +41,15 @@ namespace bob_teleop
   {
     //! Callback function for the joy_sub subscriber to listen to the joy topic
     void joy_callback(const sensor_msgs::msg::Joy::SharedPtr joy);
+
+    //! Callback function for the joy_sub subscriber to listen to the joy topic
+    void jointstate_callback(const sensor_msgs::msg::JointState &state);
+
+    //! Callback function for the odom_subscriber to read from the /odometry/filtered topic
+    void odom_callback(const nav_msgs::msg::Odometry &odom);
+
+    //! Callback function for the pid_cmd_subscriber to read from the pid_cmd_vel topic
+    void pid_callback(const std_msgs::msg::Float32 &pid_msg);
     //! Function to publish calculated velocity to cmd_vel_pub
     void send_cmd_vel_msg(const sensor_msgs::msg::Joy::SharedPtr, const std::string &which_map);
     //! Function for filling out the cmd_vel_msg
@@ -47,11 +57,6 @@ namespace bob_teleop
         const sensor_msgs::msg::Joy::SharedPtr, const std::string &which_map,
         geometry_msgs::msg::Twist *cmd_vel_msg);
     //! Function for updating the reversing boolean
-    void jointstate_callback(const sensor_msgs::msg::JointState &state);
-
-    void odom_callback(const nav_msgs::msg::Odometry &odom);
-
-    void pid_callback(const std_msgs::msg::Float32 &pid_msg);
 
     //! Subscriber to read from the odom topic
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber;
@@ -59,17 +64,20 @@ namespace bob_teleop
     //! Subscriber to read from the pid topic
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr pid_subscriber;
 
-    //! Publisher for sending the time stamped command velocity on the /cmd_vel topic
+    //! Subscriber to read wheel movements and velocities
+    rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr jointstate_subscriber;
+
+    //! Publisher for publishing the new setpoint on the setpoint topic
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr setpoint_publisher;
 
     //! Subscriber to listen to joy topic for the speed controlling axes
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub;
+
     //! Publisher for sending the command velocity on the /cmd_vel topic
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub;
+
     //! Publisher for sending the time stamped command velocity on the /cmd_vel topic
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr cmd_vel_stamped_pub;
-    //! Subscriber to read wheel movements
-    rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr jointstate_subscriber;
 
     //! Clock used for time stamping
     rclcpp::Clock::SharedPtr clock;
@@ -77,6 +85,10 @@ namespace bob_teleop
     //! Boolean to decide whether PID controller is used or not
     bool use_pid;
     //! Boolean to decide whether the command velocity is time stmapped or not
+
+    //! Boolean to decide whether the command velocity is time stmapped or not
+    bool read_value;
+
     bool publish_stamped_twist;
     //! ID for the frame
     std::string frame_id;
@@ -99,7 +111,7 @@ namespace bob_teleop
     //! Scale map to scale the linear limits
     std::map<std::string, std::map<std::string, double>> scale_linear_map;
 
-    // Added scale linear reverse map  
+    // Added scale linear reverse map
     //! Scale map to scale the reverse linear limits
     std::map<std::string, std::map<std::string, double>> scale_linear_reverse_map;
 
@@ -117,8 +129,9 @@ namespace bob_teleop
 
     double yaw;
     double yaw_prev;
-    float pid_cmd_vel;
-
+    float pid_cmd_vel = 0.0;
+    float right_vel = 0.0;
+    float left_vel = 0.0;
   };
 
   /**
@@ -146,21 +159,21 @@ namespace bob_teleop
       pimpl_->cmd_vel_pub = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
     }
 
-    pimpl_ -> setpoint_publisher = this->create_publisher<std_msgs::msg::Float32>("setpoint", 10);
+    pimpl_->setpoint_publisher = this->create_publisher<std_msgs::msg::Float32>("setpoint", 10);
 
     pimpl_->joy_sub = this->create_subscription<sensor_msgs::msg::Joy>(
         "joy", rclcpp::QoS(10),
         std::bind(&TeleopTwistJoy::Impl::joy_callback, this->pimpl_, std::placeholders::_1));
-    
+
     // subscriber to read wheel movements
-    pimpl_ -> jointstate_subscriber = this->create_subscription<sensor_msgs::msg::JointState>(
-            "joint_states", 10, std::bind(&TeleopTwistJoy::Impl::jointstate_callback, this->pimpl_, std::placeholders::_1));
+    pimpl_->jointstate_subscriber = this->create_subscription<sensor_msgs::msg::JointState>(
+        "joint_states", 10, std::bind(&TeleopTwistJoy::Impl::jointstate_callback, this->pimpl_, std::placeholders::_1));
 
-    pimpl_ -> odom_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
-            "/odometry/filtered", 10, std::bind(&TeleopTwistJoy::Impl::odom_callback, this->pimpl_, std::placeholders::_1));
+    pimpl_->odom_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
+        "/odometry/filtered", 10, std::bind(&TeleopTwistJoy::Impl::odom_callback, this->pimpl_, std::placeholders::_1));
 
-    pimpl_ -> pid_subscriber = this->create_subscription<std_msgs::msg::Float32>(
-            "pid_cmd_vel", 10, std::bind(&TeleopTwistJoy::Impl::pid_callback, this->pimpl_, std::placeholders::_1));
+    pimpl_->pid_subscriber = this->create_subscription<std_msgs::msg::Float32>(
+        "pid_cmd_vel", 10, std::bind(&TeleopTwistJoy::Impl::pid_callback, this->pimpl_, std::placeholders::_1));
 
     pimpl_->require_enable_button = this->declare_parameter("require_enable_button", true);
 
@@ -271,7 +284,7 @@ namespace bob_teleop
           pimpl_->scale_linear_map["turbo"][it->first]);
     }
 
-    // For loop to print the reverse axis details 
+    // For loop to print the reverse axis details
     for (std::map<std::string, int64_t>::iterator it = pimpl_->axis_linear_reverse_map.begin();
          it != pimpl_->axis_linear_reverse_map.end(); ++it)
     {
@@ -299,7 +312,7 @@ namespace bob_teleop
     pimpl_->sent_disable_msg = false;
 
     // set reverse boolean to false
-    pimpl_ -> reversing_check = false;
+    pimpl_->reversing_check = false;
 
     auto param_callback =
         [this](std::vector<rclcpp::Parameter> parameters)
@@ -356,7 +369,6 @@ namespace bob_teleop
         {
           this->pimpl_->axis_linear_reverse_map["z"] = parameter.get_value<rclcpp::PARAMETER_INTEGER>();
         }
-
 
         else if (parameter.get_name() == "axis_angular.yaw")
         {
@@ -418,7 +430,6 @@ namespace bob_teleop
           this->pimpl_->scale_linear_reverse_map["normal"]["z"] =
               parameter.get_value<rclcpp::PARAMETER_DOUBLE>();
         }
-
 
         else if (parameter.get_name() == "scale_angular_turbo.yaw")
         {
@@ -512,7 +523,7 @@ namespace bob_teleop
     double reverse;
     double forward;
 
-    double ang_z = 0,
+    double ang_z = 0;
     double lin_x = 0;
 
     // Check if using triggers for driving forward or backward
@@ -541,29 +552,45 @@ namespace bob_teleop
     }
 
     // If driving command is forward but B.ob is still reversing, do not move (to prevent wheelie)
-    if(lin_x > 0 && reversing_check){
+    if (lin_x > 0 && reversing_check)
+    {
       lin_x = 0;
     }
 
-    if(use_pid){
-      std::cout << "hello" << std::endl;
-      if(joy_msg->axes[axis_angular_map.at("yaw")] > 0){
+    if (use_pid)
+    {
 
+      if (abs(joy_msg->axes[axis_angular_map.at("yaw")]) > 0.0099)
+      {
         ang_z = get_val(joy_msg, axis_angular_map, scale_angular_map[which_map], "yaw");
-
-        if(abs(yaw - yaw_prev) <= 0.1)
-        {
-          auto setpoint_msg = std_msgs::msg::Float32();
-          setpoint_msg.data = yaw;
-          setpoint_publisher->publish(setpoint_msg);
-        }
-
+        read_value = true;
       }
-      else{
-        ang_z = pid_cmd_vel;
+      else
+      {
+        // abs(yaw - yaw_prev) <= 0.1
+        if (read_value)
+        {
+          if (left_vel == 0 && right_vel == 0)
+          {
+            auto setpoint_msg = std_msgs::msg::Float32();
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            setpoint_msg.data = yaw;
+            setpoint_publisher->publish(setpoint_msg);
+            read_value = false;
+          }
+          else
+          {
+            ang_z = 0.0;
+          }
+        }
+        else
+        {
+          ang_z = pid_cmd_vel;
+        }
       }
     }
-    else{
+    else
+    {
       ang_z = get_val(joy_msg, axis_angular_map, scale_angular_map[which_map], "yaw");
     }
 
@@ -615,40 +642,43 @@ namespace bob_teleop
 
   void TeleopTwistJoy::Impl::jointstate_callback(const sensor_msgs::msg::JointState &state)
   {
-    // Checks if both wheels are still reversing 
-    if( state.velocity[0] < 0.0 && state.velocity[1] < 0.0){
+
+    left_vel = state.velocity[0];
+    right_vel = state.velocity[1];
+
+    // Checks if both wheels are still reversing
+    if (left_vel < 0.0 && right_vel < 0.0)
+    {
       reversing_check = true;
     }
-    else{
+    else
+    {
       reversing_check = false;
     }
   }
 
   void TeleopTwistJoy::Impl::odom_callback(const nav_msgs::msg::Odometry &odom)
   {
-      yaw_prev = yaw;
-      // Extract quaternion
-      auto quaternion = odom.pose.pose.orientation;
+    yaw_prev = yaw;
+    // Extract quaternion
+    auto quaternion = odom.pose.pose.orientation;
 
-      // Convert quaternion to tf2::Quaternion
-      tf2::Quaternion tf2_quaternion(
-          quaternion.x,
-          quaternion.y,
-          quaternion.z,
-          quaternion.w);
+    // Convert quaternion to tf2::Quaternion
+    tf2::Quaternion tf2_quaternion(
+        quaternion.x,
+        quaternion.y,
+        quaternion.z,
+        quaternion.w);
 
-      // Convert tf2::Quaternion to Euler angles
-      tf2::Matrix3x3 mat(tf2_quaternion);
-      double roll, pitch;
-      mat.getRPY(roll, pitch, yaw);
-
+    // Convert tf2::Quaternion to Euler angles
+    tf2::Matrix3x3 mat(tf2_quaternion);
+    double roll, pitch;
+    mat.getRPY(roll, pitch, yaw);
   }
 
   void TeleopTwistJoy::Impl::pid_callback(const std_msgs::msg::Float32 &pid_msg)
   {
-      
     pid_cmd_vel = pid_msg.data;
-
   }
 
 } // namespace teleop_twist_joy

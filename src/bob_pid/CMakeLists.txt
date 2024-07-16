@@ -12,10 +12,16 @@ find_package(control_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
 
+include_directories(include)
+
 #install
 install(
-  DIRECTORY src
+  DIRECTORY src config include launch
   DESTINATION share/${PROJECT_NAME}
+)
+
+install(DIRECTORY include/
+  DESTINATION include/${PROJECT_NAME}
 )
 
 ## COMPILE

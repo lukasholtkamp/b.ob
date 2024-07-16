@@ -19,5 +19,5 @@ teleop_twist_joy_node:
 
     require_enable_button: False
     
-    use_pid: False
+    use_pid: True
 
