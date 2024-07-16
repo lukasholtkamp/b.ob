@@ -33,7 +33,7 @@ def generate_launch_description():
                 package="bob_teleop",
                 executable="bob_teleop_node",
                 parameters=[
-                    config_filepath,
+                    config_filepath,{"use_pid": True}
                 ],
                 remappings=[("/cmd_vel", "/diffbot_base_controller/cmd_vel_unstamped")],
                 output="screen",

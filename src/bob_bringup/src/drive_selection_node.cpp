@@ -156,13 +156,21 @@ private:
         {
             system("killall bob_teleop_node");
         }
+        if (last_mode == "Assisted Drive Mode")
+        {
+            system("killall bob_teleop_node");
+        }
         if (drive_mode_status == "Test Mode")
         {
             system("ros2 run bob_test test_node &");
         }
         if (drive_mode_status == "Basic Drive Mode")
         {
-            system("ros2 launch bob_teleop teleop.launch.py &");
+            system("ros2 launch bob_bringup basic_driving.launch.py &");
+        }
+        if (drive_mode_status == "Assisted Drive Mode")
+        {
+            system("ros2 launch bob_bringup assisted_driving.launch.py &");
         }
         if (drive_mode_status == "Shutdown")
         {
