@@ -22,8 +22,13 @@ def generate_launch_description():
     return: a Launch Description with all needed arguments and nodes
     """
     # Get config path of the teleop settings
-    config_filepath = os.path.join(
+    controller_config_filepath = os.path.join(
         Path.cwd(), "src", "bob_teleop", "config", "xbox.config.yaml"
+    )
+
+    # Get config path of the teleop settings
+    pid_config_filepath = os.path.join(
+        Path.cwd(), "src", "bob_pid", "config", "pid_params.yaml"
     )
 
     # Launch node
@@ -33,8 +38,16 @@ def generate_launch_description():
                 package="bob_teleop",
                 executable="bob_teleop_node",
                 parameters=[
-                    config_filepath,{"use_pid": True}
+                    controller_config_filepath,{"use_pid": True}
                 ],
+                remappings=[("/cmd_vel", "/diffbot_base_controller/cmd_vel_unstamped")],
+                output="screen",
+            ),
+            launch_ros.actions.Node(
+                package="bob_pid",
+                executable="pid_node",
+                name = "pid_node",
+                parameters=[pid_config_filepath],
                 remappings=[("/cmd_vel", "/diffbot_base_controller/cmd_vel_unstamped")],
                 output="screen",
             ),

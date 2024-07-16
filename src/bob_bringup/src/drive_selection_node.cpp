@@ -159,6 +159,7 @@ private:
         if (last_mode == "Assisted Drive Mode")
         {
             system("killall bob_teleop_node");
+            system("killall pid_node");
         }
         if (drive_mode_status == "Test Mode")
         {

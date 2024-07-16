@@ -16,7 +16,7 @@ include_directories(include)
 
 #install
 install(
-  DIRECTORY src config include launch
+  DIRECTORY src config include
   DESTINATION share/${PROJECT_NAME}
 )
 
