@@ -48,7 +48,7 @@ private:
     {
 
         // Check if the Emergency Button is pressed
-        if ((d_state.interface_values[0].values[3]) == 0 || (d_state.interface_values[1].values[3]) == 0 && last_mode != "Drive Selection Mode")
+        if (((d_state.interface_values[0].values[3]) == 0 || (d_state.interface_values[1].values[3]) == 0) && last_mode != "Drive Selection Mode")
         {
             launch_call("Drive Selection Mode", last_mode);
             last_mode = "Drive Selection Mode";
@@ -174,7 +174,7 @@ private:
      * @brief Function takes in the current mode and last mode and closes nodes and opens the new nodes needed
      *
      */
-  void launch_call(std::string drive_mode_status, std::string last_mode)
+    void launch_call(std::string drive_mode_status, std::string last_mode)
     {
         if (last_mode == "Basic Drive Mode")
         {
