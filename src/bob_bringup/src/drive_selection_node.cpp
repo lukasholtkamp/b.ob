@@ -48,11 +48,13 @@ private:
     {
 
         // Check if the Emergency Button is pressed
-        if (((d_state.interface_values[0].values[3]) == 0 || (d_state.interface_values[1].values[3]) == 0) && last_mode != "Drive Selection Mode")
+        if (((d_state.interface_values[1].values[3]) == 0 || (d_state.interface_values[2].values[3]) == 0))
         {
-            launch_call("Drive Selection Mode", last_mode);
-            last_mode = "Drive Selection Mode";
+            auto drive_mode_status_msg = std_msgs::msg::String();
+            drive_mode_status_msg.data = "Drive Selection Mode";
+            status_publisher->publish(drive_mode_status_msg);
         }
+        
     }
 
     /**
@@ -92,7 +94,7 @@ private:
 
             if (drive_mode_status_msg.data == "Drive Selection Mode")
             {
-                print_selection_menu(last_mode);
+                print_selection_menu();
             }
         }
     }
@@ -118,7 +120,7 @@ private:
         if (buttons[4] == 1)
         {
             // Button Y
-            return ""; // Drive Selection Mode
+            return "Drive Selection Mode";
         }
         if (buttons[3] == 1)
         {
@@ -167,9 +169,8 @@ private:
         }
     }
 
-    void print_selection_menu(std::string mode)
+    void print_selection_menu()
     {
-        std::cout << "Current Driving Mode: " << mode << std::endl;
         std::cout << "For Testing press Up-D-PAD button" << std::endl;
         std::cout << "For Basic driving press X button" << std::endl;
         std::cout << "For Assisted Drive Mode press A button" << std::endl;
@@ -209,7 +210,6 @@ private:
         {
             kill(getppid(), 9);
         }
-        std::cout << last_mode << std::endl;
     }
 
     //! Subscriber to read from the joy topic to know which buttons have been pressed

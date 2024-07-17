@@ -12,8 +12,8 @@ PID::PID()
     this->declare_parameter<float>("Kd", 0.1);
     this->declare_parameter<float>("min_output", -0.4);
     this->declare_parameter<float>("max_output", 0.4);
-    this->declare_parameter<float>("min_sum", -2.0);
-    this->declare_parameter<float>("max_sum", 2.0);
+    this->declare_parameter<float>("min_sum", -1.0);
+    this->declare_parameter<float>("max_sum", 1.0);
 
     this->get_parameter("Kp", Kp);
     this->get_parameter("Ki", Ki);
@@ -128,7 +128,7 @@ void PID::odom_callback(const nav_msgs::msg::Odometry &odom)
     error = normalize_angle(error); // Ensure the shortest path is taken
 
     // Round error to 1 decimal place
-    error = round(error * 10.0) / 10.0;
+    error = round(error * 100.0) / 100.0;
 
     std::cout << "error : " << error << std::endl;
 
@@ -138,10 +138,10 @@ void PID::odom_callback(const nav_msgs::msg::Odometry &odom)
         error = 0.0;
     }
 
-    sum += error * dt;
+    sum += error * dt ;
 
     // Round sum to 1 decimal place
-    sum = round(sum * 10.0) / 10.0;
+    sum = round(sum * 100.0) / 100.0;
 
     std::cout << "sum : " << sum << std::endl;
 
@@ -156,6 +156,9 @@ void PID::odom_callback(const nav_msgs::msg::Odometry &odom)
     }
 
     float derivative = (error - previous_error) / dt;
+
+    std::cout << "derivative : " << derivative << std::endl;
+
     float output = Kp * error + Ki * sum + Kd * derivative;
 
     // Round output to 1 decimal place

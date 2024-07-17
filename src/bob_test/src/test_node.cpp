@@ -114,7 +114,7 @@ private:
             }
 
             // Check if the Emergency Button is pressed
-            if ((d_state.interface_values[0].values[3]) == 0 && (d_state.interface_values[1].values[3]) == 0)
+            if ((d_state.interface_values[1].values[3]) == 0 && (d_state.interface_values[2].values[3]) == 0)
             {
                 system("clear");
                 std::cout << "Alarm Test Completed" << std::endl;
