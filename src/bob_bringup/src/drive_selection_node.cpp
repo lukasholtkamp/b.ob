@@ -52,7 +52,6 @@ private:
         {
             launch_call("Drive Selection Mode", last_mode);
             last_mode = "Drive Selection Mode";
-            print_selection_menu("Drive Selection Mode");
         }
     }
 
@@ -90,6 +89,11 @@ private:
             std::cout << "Driving Mode: " << drive_mode_status_msg.data << std::endl;
             launch_call(drive_mode_status_msg.data, last_mode);
             last_mode = drive_mode_status_msg.data;
+
+            if (drive_mode_status_msg.data == "Drive Selection Mode")
+            {
+                print_selection_menu(last_mode);
+            }
         }
     }
 
@@ -114,7 +118,7 @@ private:
         if (buttons[4] == 1)
         {
             // Button Y
-            return "Drive Selection Mode";
+            return ""; // Drive Selection Mode
         }
         if (buttons[3] == 1)
         {
@@ -182,9 +186,7 @@ private:
         }
         if (last_mode == "Assisted Drive Mode")
         {
-            system("killall bob_teleop_node");
-            system("killall pid_node");
-            system("killall rplidar_node");
+            system("killall bob_teleop_node; killall pid_node; killall rplidar_node");
         }
         if (drive_mode_status == "Test Mode")
         {
@@ -197,6 +199,7 @@ private:
         if (drive_mode_status == "Assisted Drive Mode")
         {
             system("ros2 launch bob_bringup assisted_driving.launch.py &");
+            system("ros2 launch bob_lidar rplidar.launch.py &");
         }
         if (drive_mode_status == "Shutdown")
         {
@@ -206,6 +209,7 @@ private:
         {
             kill(getppid(), 9);
         }
+        std::cout << last_mode << std::endl;
     }
 
     //! Subscriber to read from the joy topic to know which buttons have been pressed
