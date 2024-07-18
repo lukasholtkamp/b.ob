@@ -124,6 +124,17 @@ def generate_launch_description():
         ],
     )
 
+    # Launch IMU broadcaster
+    start_imu_broadcaster_cmd = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "imu_broadcaster",
+            "--controller-manager",
+            "/controller_manager",
+        ],
+    )
+
     # Launch joy node to read gamepad commands
     joy_node = Node(
         package="joy",
@@ -178,6 +189,7 @@ def generate_launch_description():
     ld.add_action(spawn_entity)
     ld.add_action(robot_controller_spawner)
     ld.add_action(joint_state_broadcaster_spawner)
+    ld.add_action(start_imu_broadcaster_cmd)
     ld.add_action(start_robot_localization_cmd)
     ld.add_action(joy_node)
     ld.add_action(teleop_node_ros2_control)
