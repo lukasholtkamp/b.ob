@@ -730,7 +730,7 @@ public:
         int dest_addr_size = (target ? sizeof(sockaddr_storage) : 0);
         int ans = ::sendto(_socket_fd, (const char *)buffer, (int)len, 0, addr, dest_addr_size);
         if (ans != -1) {
-            assert(ans == len);
+            assert((unsigned)ans == len);
             return RESULT_OK;
         } else {
             switch (errno) {

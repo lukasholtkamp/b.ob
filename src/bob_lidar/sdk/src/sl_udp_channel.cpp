@@ -109,7 +109,7 @@ namespace sl {
             _binded_socket->clearRxCache();
         }
 
-        void setStatus(_u32 flag){}
+        void setStatus(_u32 /* flag */){}
         
         int getChannelType() {
             return CHANNEL_TYPE_UDP;

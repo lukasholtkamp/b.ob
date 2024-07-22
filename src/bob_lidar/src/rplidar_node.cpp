@@ -86,6 +86,8 @@ class RPlidarNode : public rclcpp::Node
         this->declare_parameter<std::string>("topic_name",std::string("scan"));
         this->declare_parameter<std::string>("scan_mode",std::string());
         this->declare_parameter<float>("scan_frequency",10);
+        this->declare_parameter<float>("min_angle",0);
+        this->declare_parameter<float>("max_angle",360);
         
         this->get_parameter_or<std::string>("channel_type", channel_type, "serial");
         this->get_parameter_or<std::string>("tcp_ip", tcp_ip, "192.168.0.7"); 
@@ -105,6 +107,8 @@ class RPlidarNode : public rclcpp::Node
             this->get_parameter_or<float>("scan_frequency", scan_frequency, 20.0);
         else
             this->get_parameter_or<float>("scan_frequency", scan_frequency, 10.0);
+        this->get_parameter_or<float>("min_angle",min_angle, 0);
+        this->get_parameter_or<float>("max_angle",max_angle, 360);
     }
 
     bool getRPLIDARDeviceInfo(ILidarDriver * drv)
@@ -278,7 +282,7 @@ class RPlidarNode : public rclcpp::Node
             if (read_value == 0.0)
                 scan_msg->ranges[apply_index] = std::numeric_limits<float>::infinity();
             else
-                if( i*scan_msg->angle_increment < DEG2RAD(10.0f) || i*scan_msg->angle_increment > DEG2RAD(350.0f) )
+                if( i*scan_msg->angle_increment < DEG2RAD(min_angle) || i*scan_msg->angle_increment > DEG2RAD(max_angle) )
                 {
                     scan_msg->ranges[apply_index] =  0.0;
                     scan_msg->intensities[apply_index] = 0.0;    
@@ -583,6 +587,8 @@ public:
     size_t angle_compensate_multiple = 1;//it stand of angle compensate at per 1 degree
     std::string scan_mode;
     float scan_frequency;
+    float min_angle;
+    float max_angle;
     /* State */
     bool is_scanning = false;
 

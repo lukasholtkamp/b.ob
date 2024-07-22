@@ -94,7 +94,7 @@ bool raw_serial::bind(const char * portname, uint32_t baudrate, uint32_t flags)
     return true;
 }
 
-bool raw_serial::open(const char * portname, uint32_t baudrate, uint32_t flags)
+bool raw_serial::open(const char * portname, uint32_t baudrate, uint32_t /* flags */)
 {
     if (isOpened()) close();
     
@@ -278,18 +278,18 @@ int raw_serial::recvdata(unsigned char * data, size_t size)
 }
 
 
-void raw_serial::flush( _u32 flags)
+void raw_serial::flush( _u32 /* flags */)
 {
     tcflush(serial_fd,TCIFLUSH); 
 }
 
-int raw_serial::waitforsent(_u32 timeout, size_t * returned_size)
+int raw_serial::waitforsent(_u32 /* timeout */, size_t * returned_size)
 {
     if (returned_size) *returned_size = required_tx_cnt;
     return 0;
 }
 
-int raw_serial::waitforrecv(_u32 timeout, size_t * returned_size)
+int raw_serial::waitforrecv(_u32 /* timeout */, size_t * returned_size)
 {
     if (!isOpened() ) return -1;
    
@@ -423,8 +423,8 @@ void raw_serial::cancelOperation()
 {
     _operation_aborted = true;
     if (_selfpipe[1] == -1) return;
-
-    (int)::write(_selfpipe[1], "x", 1);
+    int ans = ::write(_selfpipe[1], "x", 1);
+    (void)ans;
 }
 
 _u32 raw_serial::getTermBaudBitmap(_u32 baud)
