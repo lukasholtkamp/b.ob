@@ -6,7 +6,8 @@
 
 MPU6050 device(0x68);
 
-int main() {
+int main()
+{
 	float ax, ay, az, gx, gy, gz; // Variables to store the accel and gyro values
 
 	sleep(1); // Wait for the MPU6050 to stabilize
@@ -28,6 +29,6 @@ int main() {
 	std::cout << "Z: " << az << "\n\n";
 
 	std::cout << "Include the obtained offsets in the respective macros of the mpu6050_lib.h file.\n";
-	
+
 	return 0;
 }

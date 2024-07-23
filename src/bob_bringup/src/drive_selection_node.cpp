@@ -44,17 +44,21 @@ public:
     std::string last_mode = "Drive Selection Mode"; // <-- Implementing the las_mode variable for the drive_mode_status request
 
 private:
+    /**
+     * @brief Callback function called from the dynamic_jointstate_subscriber which checks when the Emergency button is pressed
+     *
+     */
     void dynamic_jointstate_callback(const control_msgs::msg::DynamicJointState &d_state)
     {
 
         // Check if the Emergency Button is pressed
         if (((d_state.interface_values[1].values[3]) == 0 || (d_state.interface_values[2].values[3]) == 0))
         {
+            // Set current mode to Drive Selection Mode if button pressed
             auto drive_mode_status_msg = std_msgs::msg::String();
             drive_mode_status_msg.data = "Drive Selection Mode";
             status_publisher->publish(drive_mode_status_msg);
         }
-        
     }
 
     /**
@@ -169,12 +173,17 @@ private:
         }
     }
 
+    /**
+     * @brief Function that prints out selection menu
+     *
+     */
     void print_selection_menu()
     {
         std::cout << "For Testing press Up-D-PAD button" << std::endl;
         std::cout << "For Basic driving press X button" << std::endl;
         std::cout << "For Assisted Drive Mode press A button" << std::endl;
     }
+
     /**
      * @brief Function takes in the current mode and last mode and closes nodes and opens the new nodes needed
      *

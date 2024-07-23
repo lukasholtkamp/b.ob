@@ -1,23 +1,26 @@
+// Based on: https://github.com/TheNoobInventor/lidarbot/blob/main/lidarbot_base/include/lidarbot_base/DEV_Congfig.h
+// Date of Retrieval: 23.07.2024
+
 #ifndef _DEV_CONFIG_H_
 #define _DEV_CONFIG_H_
 
 #define USE_WIRINGPI_LIB 1
 /***********************************************************************************************************************
-			------------------------------------------------------------------------
-			|\\\																///|
-			|\\\					Hardware interface							///|
-			------------------------------------------------------------------------
+            ------------------------------------------------------------------------
+            |\\\																///|
+            |\\\					Hardware interface							///|
+            ------------------------------------------------------------------------
 ***********************************************************************************************************************/
 #ifdef USE_BCM2835_LIB
-    #include <bcm2835.h>
+#include <bcm2835.h>
 #elif USE_WIRINGPI_LIB
-    #include <wiringPi.h>
-    #include <wiringPiI2C.h>
+#include <wiringPi.h>
+#include <wiringPiI2C.h>
 #elif USE_DEV_LIB
-    #include "sysfs_gpio.h"
-    #include "dev_hardware_i2c.h"
-    // #include "dev_hardware_SPI.h"
-    
+#include "sysfs_gpio.h"
+#include "dev_hardware_i2c.h"
+// #include "dev_hardware_SPI.h"
+
 #endif
 
 #include <stdint.h>
@@ -33,16 +36,15 @@
 
 /**
  * data
-**/
-#define UBYTE   uint8_t
-#define UWORD   uint16_t
+ **/
+#define UBYTE uint8_t
+#define UWORD uint16_t
 #define UDOUBLE uint32_t
 
-
-extern int INT_PIN;//4
+extern int INT_PIN; // 4
 /*------------------------------------------------------------------------------------------------------*/
 uint8_t DEV_ModuleInit(void);
-void    DEV_ModuleExit(void);
+void DEV_ModuleExit(void);
 
 void DEV_I2C_Init(uint8_t Add);
 void I2C_Write_Byte(uint8_t Cmd, uint8_t value);
