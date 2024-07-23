@@ -1,3 +1,6 @@
+// Based on: https://github.com/TheNoobInventor/lidarbot/blob/main/lidarbot_bringup/src/mpu6050_covariances.cpp
+// Date of Retrieval: 23.07.2024
+
 // MPU6050 covariance program
 // Currently only variances are considered for the imu covariance arrays
 
@@ -6,7 +9,8 @@
 MPU6050 device(0x68);
 
 // Function to find mean
-float mean(float array[], int n) {
+float mean(float array[], int n)
+{
     float sum = 0.0f;
 
     for (int i = 0; i < n; i++)
@@ -15,35 +19,37 @@ float mean(float array[], int n) {
 }
 
 // Function to find variance
-float variance(float array[], int n) {
+float variance(float array[], int n)
+{
     float sum = 0.0f;
 
-    float array_mean = mean(array, n); 
+    float array_mean = mean(array, n);
 
     for (int i = 0; i < n; i++)
         sum += (array[i] - array_mean) * (array[i] - array_mean);
     return sum / (n - 1);
 }
 
-int main() {
+int main()
+{
 
     // Initialize variables and arrays
-    float roll, pitch, yaw;                 // Angle values
-    float gx, gy, gz;                       // Gyro values 
-    float ax, ay, az;                       // Accel values 
-    int sample_size = 500;                  // Sample data size to calculate variance on
-    float orient_var[3];                    // Orientation variances
-    float ang_vel_var[3];                   // Angular velocity variances 
-    float lin_accel_var[3];                 // Linear acceleration variances
-    float roll_array[sample_size];          // Array of roll values
-    float pitch_array[sample_size];         // Array of pitch values
-    float yaw_array[sample_size];           // Array of yaw values
-    float ang_vel_x_array[sample_size];     // Array of angular velocity values in x-axis
-    float ang_vel_y_array[sample_size];     // Array of angular velocity values in y-axis
-    float ang_vel_z_array[sample_size];     // Array of angular velocity values in z-axis
-    float lin_accel_x_array[sample_size];   // Array of linear acceleration values in x-axis 
-    float lin_accel_y_array[sample_size];   // Array of linear acceleration values in y-axis
-    float lin_accel_z_array[sample_size];   // Array of linear acceleration values in z-axis
+    float roll, pitch, yaw;               // Angle values
+    float gx, gy, gz;                     // Gyro values
+    float ax, ay, az;                     // Accel values
+    int sample_size = 500;                // Sample data size to calculate variance on
+    float orient_var[3];                  // Orientation variances
+    float ang_vel_var[3];                 // Angular velocity variances
+    float lin_accel_var[3];               // Linear acceleration variances
+    float roll_array[sample_size];        // Array of roll values
+    float pitch_array[sample_size];       // Array of pitch values
+    float yaw_array[sample_size];         // Array of yaw values
+    float ang_vel_x_array[sample_size];   // Array of angular velocity values in x-axis
+    float ang_vel_y_array[sample_size];   // Array of angular velocity values in y-axis
+    float ang_vel_z_array[sample_size];   // Array of angular velocity values in z-axis
+    float lin_accel_x_array[sample_size]; // Array of linear acceleration values in x-axis
+    float lin_accel_y_array[sample_size]; // Array of linear acceleration values in y-axis
+    float lin_accel_z_array[sample_size]; // Array of linear acceleration values in z-axis
 
     sleep(1); // Wait for the MPU6050 to stabilize
 
@@ -55,7 +61,8 @@ int main() {
     // Read and append sensor data to arrays
     int i; // loop variable
 
-    for (i = 0; i < sample_size; i++) {
+    for (i = 0; i < sample_size; i++)
+    {
         // Read roll, pitch and yaw angles
         device.getAngle(0, &roll);
         device.getAngle(1, &pitch);
@@ -96,13 +103,13 @@ int main() {
     lin_accel_var[1] = variance(lin_accel_y_array, sample_size);
     lin_accel_var[2] = variance(lin_accel_z_array, sample_size);
 
-    // Output variance	
+    // Output variance
     std::cout << "static_covariance_orientation: [" << orient_var[0] << ", 0.0, 0.0, "
-            << orient_var[1] << ", 0.0, 0.0, " << orient_var[2] << ", 0.0, 0.0]\n";
-    std::cout << "static_covariance_angular_velocity: [" << ang_vel_var[0] << ", 0.0, 0.0, " 
-            << ang_vel_var[1] << ", 0.0, 0.0, " << ang_vel_var[2] << ", 0.0, 0.0]\n";
-    std::cout << "static_covariance_linear_acceleration: [" << lin_accel_var[0] << ", 0.0, 0.0, " 
-            << lin_accel_var[1] << ", 0.0, 0.0, " << lin_accel_var[2] << ", 0.0, 0.0]\n\n";
+              << orient_var[1] << ", 0.0, 0.0, " << orient_var[2] << ", 0.0, 0.0]\n";
+    std::cout << "static_covariance_angular_velocity: [" << ang_vel_var[0] << ", 0.0, 0.0, "
+              << ang_vel_var[1] << ", 0.0, 0.0, " << ang_vel_var[2] << ", 0.0, 0.0]\n";
+    std::cout << "static_covariance_linear_acceleration: [" << lin_accel_var[0] << ", 0.0, 0.0, "
+              << lin_accel_var[1] << ", 0.0, 0.0, " << lin_accel_var[2] << ", 0.0, 0.0]\n\n";
 
     std::cout << "Paste covariance arrays in the imu_broadcaster ros__parameters section in bob_bringup/config/controllers.yaml.\n";
 

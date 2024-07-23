@@ -1,4 +1,3 @@
-
 """
 Launch file for running the teleoperation node
 
@@ -18,7 +17,7 @@ import launch_ros.actions
 
 def generate_launch_description():
     """
-    This function finds the parameter file and passes them to the teleop Node.
+    This function finds the parameter file and passes them to the teleop Node with the assieted driving functions enabled.
     return: a Launch Description with all needed arguments and nodes
     """
     # Get config path of the teleop settings
@@ -26,7 +25,7 @@ def generate_launch_description():
         Path.cwd(), "src", "bob_teleop", "config", "xbox.config.yaml"
     )
 
-    # Get config path of the teleop settings
+    # Get config path of the PID settings
     pid_config_filepath = os.path.join(
         Path.cwd(), "src", "bob_pid", "config", "pid_params.yaml"
     )
@@ -37,21 +36,17 @@ def generate_launch_description():
             launch_ros.actions.Node(
                 package="bob_teleop",
                 executable="bob_teleop_node",
-                parameters=[
-                    controller_config_filepath,{"use_pid": True}
-                ],
+                parameters=[controller_config_filepath, {"use_pid": True}],
                 remappings=[("/cmd_vel", "/diffbot_base_controller/cmd_vel_unstamped")],
                 output="screen",
             ),
             launch_ros.actions.Node(
                 package="bob_pid",
                 executable="pid_node",
-                name = "pid_node",
+                name="pid_node",
                 parameters=[pid_config_filepath],
                 remappings=[("/cmd_vel", "/diffbot_base_controller/cmd_vel_unstamped")],
-                # output="screen",
+                # output="screen", # Uncomment this to print debugging information
             ),
         ]
     )
-
-    

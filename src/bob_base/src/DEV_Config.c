@@ -1,3 +1,6 @@
+// Based on: https://github.com/TheNoobInventor/lidarbot/blob/main/lidarbot_base/src/DEV_Config.c
+// Date of Retrieval: 17.05.2024
+
 /*****************************************************************************
  * | File      	:   DEV_Config.c
  * | Author      :   Waveshare team

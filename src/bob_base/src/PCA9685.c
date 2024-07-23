@@ -1,3 +1,6 @@
+// Based on: https://github.com/TheNoobInventor/lidarbot/blob/main/lidarbot_base/src/PCA9685.c
+// Date of Retrieval: 17.05.2024
+
 /*****************************************************************************
  * | File        :   PCA9685.c
  * | Author      :   Waveshare team

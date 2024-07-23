@@ -42,7 +42,7 @@ namespace bob_teleop
     //! Callback function for the joy_sub subscriber to listen to the joy topic
     void joy_callback(const sensor_msgs::msg::Joy::SharedPtr joy);
 
-    //! Callback function for the joy_sub subscriber to listen to the joy topic
+    //! Callback function for the jointstate subscriber to listen to the joy states
     void jointstate_callback(const sensor_msgs::msg::JointState &state);
 
     //! Callback function for the odom_subscriber to read from the /odometry/filtered topic
@@ -50,13 +50,14 @@ namespace bob_teleop
 
     //! Callback function for the pid_cmd_subscriber to read from the pid_cmd_vel topic
     void pid_callback(const std_msgs::msg::Float32 &pid_msg);
+
     //! Function to publish calculated velocity to cmd_vel_pub
     void send_cmd_vel_msg(const sensor_msgs::msg::Joy::SharedPtr, const std::string &which_map);
+
     //! Function for filling out the cmd_vel_msg
     void fill_cmd_vel_msg(
         const sensor_msgs::msg::Joy::SharedPtr, const std::string &which_map,
         geometry_msgs::msg::Twist *cmd_vel_msg);
-    //! Function for updating the reversing boolean
 
     //! Subscriber to read from the odom topic
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber;
@@ -84,20 +85,25 @@ namespace bob_teleop
 
     //! Boolean to decide whether PID controller is used or not
     bool use_pid;
-    //! Boolean to decide whether the command velocity is time stmapped or not
 
-    //! Boolean to decide whether the command velocity is time stmapped or not
+    //! Boolean to decide whether change the setpoint for the PID or not
     bool read_value;
 
+    //! Boolean to decide whether the command velocity is time stmapped or not
     bool publish_stamped_twist;
+
     //! ID for the frame
     std::string frame_id;
+
     //! Boolean for whether a enable button needs to be held for the messages to be sent
     bool require_enable_button;
+
     //! Integer of the button used for the enable functionality
     int64_t enable_button;
+
     //! Integer of the button used for a turbo functionality
     int64_t enable_turbo_button;
+
     //! Boolean to inverse the axis directions
     bool inverted_reverse;
 
@@ -127,10 +133,15 @@ namespace bob_teleop
     //! Boolean used for checking if B.ob is reversing
     bool reversing_check;
 
+    //! Current Yaw angle from Bob
     double yaw;
+    //! Previous Yaw angle from Bob
     double yaw_prev;
+    //! PID cmd vel from the PID node
     float pid_cmd_vel = 0.0;
+    //! Right wheel velocity
     float right_vel = 0.0;
+    //! Left wheel velocity
     float left_vel = 0.0;
   };
 
@@ -557,19 +568,22 @@ namespace bob_teleop
       lin_x = 0;
     }
 
+    // If using the PID controller
     if (use_pid)
     {
-
+      // Check that the joy stick is not being moved with a certain tolerance
       if (abs(joy_msg->axes[axis_angular_map.at("yaw")]) > 0.0099)
       {
         ang_z = get_val(joy_msg, axis_angular_map, scale_angular_map[which_map], "yaw");
         read_value = true;
       }
+
       else
       {
-        // abs(yaw - yaw_prev) <= 0.1
+        // Once the joy stick has stopped moving, get the new setpoint
         if (read_value)
         {
+          // Set the setpoint only when the wheels do not move
           if (left_vel == 0 && right_vel == 0)
           {
             auto setpoint_msg = std_msgs::msg::Float32();
@@ -578,11 +592,13 @@ namespace bob_teleop
             setpoint_publisher->publish(setpoint_msg);
             read_value = false;
           }
+          // If the wheels are still moving then send no turn velocity or else it will try go to the old setpoint
           else
           {
             ang_z = 0.0;
           }
         }
+        // If the setpoint has been set, maintain this direction
         else
         {
           ang_z = pid_cmd_vel;
@@ -642,7 +658,7 @@ namespace bob_teleop
 
   void TeleopTwistJoy::Impl::jointstate_callback(const sensor_msgs::msg::JointState &state)
   {
-
+    // Obtain the velocities from the wheels
     left_vel = state.velocity[0];
     right_vel = state.velocity[1];
 
@@ -678,6 +694,7 @@ namespace bob_teleop
 
   void TeleopTwistJoy::Impl::pid_callback(const std_msgs::msg::Float32 &pid_msg)
   {
+    // Obtain the PID cmd vel from the published value
     pid_cmd_vel = pid_msg.data;
   }
 

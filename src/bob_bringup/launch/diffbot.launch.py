@@ -34,21 +34,14 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     """
-    This function finds all need parameter files, robot descriptions and passes them to the necessary Nodes.
+    This function finds all needed parameter files, robot descriptions and passes them to the necessary Nodes.
     See https://github.com/lukasholtkamp/b.ob/wiki/Software-Documentation for detail about which nodes.
     return: a Launch Description with all needed arguments and nodes
     """
     # Declare arguments
     declared_arguments = []
 
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "gui",
-            default_value="false",
-            description="Start RViz2 automatically with this launch file.",
-        )
-    )
-
+    # Use sim time if true
     declared_arguments.append(
         DeclareLaunchArgument(
             "use_sim_time",
@@ -57,6 +50,7 @@ def generate_launch_description():
         )
     )
 
+    # Use ros2_control if true
     declared_arguments.append(
         DeclareLaunchArgument(
             name="use_ros2_control",
@@ -65,30 +59,24 @@ def generate_launch_description():
         )
     )
 
+    # Use robot_localization package if true
     declared_arguments.append(
-            DeclareLaunchArgument(
-        name="use_robot_localization",
-        default_value="True",
-        description="Use robot_localization package if true",
-    )
+        DeclareLaunchArgument(
+            name="use_robot_localization",
+            default_value="True",
+            description="Use robot_localization package if true",
+        )
     )
 
     # Initialize Arguments
-    gui = LaunchConfiguration("gui")
     use_sim_time = LaunchConfiguration("use_sim_time")
     use_ros2_control = LaunchConfiguration("use_ros2_control")
     use_robot_localization = LaunchConfiguration("use_robot_localization")
 
     # Get URDF via xacro
-
-    # Process the URDF file
-    pkg_lidar = os.path.join(Path.cwd(), "src", "bob_lidar")
-    pkg_bring_up = os.path.join(Path.cwd(), "src", "bob_bringup")
     pkg_path = os.path.join(Path.cwd(), "src", "bob_description")
-    pkg_navigation = os.path.join(Path.cwd(), "src", "bob_navigation")
     xacro_file = os.path.join(pkg_path, "urdf", "bob.urdf.xacro")
     robot_description_config = xacro.process_file(xacro_file)
-    ekf_params_file = os.path.join(pkg_navigation, "config/ekf.yaml")
 
     robot_description = {
         "robot_description": robot_description_config.toxml(),
@@ -101,9 +89,9 @@ def generate_launch_description():
         Path.cwd(), "src", "bob_bringup", "config", "bob_controllers.yaml"
     )
 
-    rviz_config_file = os.path.join(
-        Path.cwd(), "src", "bob_description", "rviz", "diffbot_view.rviz"
-    )
+    # Get parameters for EKF node
+    pkg_navigation = os.path.join(Path.cwd(), "src", "bob_navigation")
+    ekf_params_file = os.path.join(pkg_navigation, "config/ekf.yaml")
 
     # Implement the launching Nodes with all parameters and declaring all necessary settings
     # Scale the max and min velocities by the x_scale
@@ -128,15 +116,6 @@ def generate_launch_description():
         remappings=[
             ("/diffbot_base_controller/cmd_vel_unstamped", "/cmd_vel"),
         ],
-    )
-
-    rviz_node = Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        output="log",
-        arguments=["-d", rviz_config_file],
-        condition=IfCondition(gui),
     )
 
     # Launch Joint broadcaster to read all state interfaces
@@ -201,14 +180,6 @@ def generate_launch_description():
         parameters=[ekf_params_file],
     )
 
-    # Delay rviz start after `joint_state_broadcaster`
-    delay_rviz_after_joint_state_broadcaster_spawner = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=joint_state_broadcaster_spawner,
-            on_exit=[rviz_node],
-        )
-    )
-
     # Delay start of robot_controller after `joint_state_broadcaster`
     delay_for_joint_state_broadcaster_spawner = RegisterEventHandler(
         event_handler=OnProcessExit(
@@ -216,7 +187,6 @@ def generate_launch_description():
             on_exit=[robot_controller_spawner],
         )
     )
-
 
     # Send message to turn on Xbox controller
     turn_on_xbox = RegisterEventHandler(
@@ -237,7 +207,6 @@ def generate_launch_description():
         control_node,
         robot_state_pub_node,
         joint_state_broadcaster_spawner,
-        delay_rviz_after_joint_state_broadcaster_spawner,
         delay_for_joint_state_broadcaster_spawner,
         turn_on_xbox,
         start_delayed_imu_broadcaster_spawner,

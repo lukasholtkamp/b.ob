@@ -35,6 +35,7 @@ void set_motor_speeds(int pi, double left_wheel_command, double right_wheel_comm
 //! Function to return the pulse count values
 void read_encoder_values(int *left_encoder_value, int *right_encoder_value);
 
+//! Function to return the RPM values
 void read_rpm_values(double *left_rpm_value, double *right_rpm_value);
 
 extern int left_wheel_pulse_count;
