@@ -49,6 +49,7 @@ find_package(std_srvs REQUIRED)
 # Build
 ################################################################################
 include_directories(
+  include
   ${RPLIDAR_SDK_PATH}/include
   ${RPLIDAR_SDK_PATH}/src
   ${Boost_INCLUDE_DIRS}

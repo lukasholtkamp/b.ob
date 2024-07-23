@@ -34,6 +34,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/time.hpp>
 #include <rclcpp/time_source.hpp>
+#include <rclcpp/parameter.hpp>
+#include <rclcpp/parameter_client.hpp>
 
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <std_srvs/srv/empty.hpp>

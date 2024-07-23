@@ -1,5 +1,5 @@
 rplidar_node:
   ros__parameters:
-    min_angle: 10
-    max_angle: 350
+    min_angle: 90
+    max_angle: 270
 
