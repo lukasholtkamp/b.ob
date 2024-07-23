@@ -28,37 +28,57 @@ public:
     PID();
 
 private:
-    float Kp;
-    float Ki;
-    float Kd;
-    float error;
-    float setpoint;
-    float sum;
-    float dt;
-    float previous_error;
-    float max_output;
-    float min_output;
-    float max_sum;
-    float min_sum;
-    const float tolerance = 0.01;
+    float Kp;                         // Proportional gain
+    float Ki;                         // Integral gain
+    float Kd;                         // Derivative gain
+    float error;                      // Error between the setpoint and the measured point
+    float setpoint;                   // Setpoint
+    float sum;                        // Error sum for the integral part
+    float dt;                         // Time difference used for the integral and derivative parts
+    float previous_error;             // Previous error for the derivative part
+    float max_output;                 // Maximum allowed output
+    float min_output;                 // Minimum allowed output
+    float max_sum;                    // Maximum allowed sum
+    float min_sum;                    // Minimum allowed sum
+    const float tolerance = 0.01;     // Tolerance value for deadband
+    float prev_setpoint;              // Previous setpoint used to check if there is a new one
+    rclcpp::Time last_time;           // Used for calculating dt
 
-    float prev_setpoint;
+    tf2::Quaternion setpoint_pose;    // Used by Rviz to indicate where the setpoint is
 
-    rclcpp::Time last_time;
-
-    tf2::Quaternion initialpose_orientation;
-
+    //! Function to initialize the PID controller with parameters from a YAML file
     void initialize_pid(float Kp, float Ki, float Kd, float min_output, float max_output, float min_sum, float max_sum);
+    
+    //! Function to normalize the measured angle between -π and π
     float normalize_angle(float angle);
+    
+    //! Callback function to read the setpoint value from teleop_twist_joy.cpp
     void setpoint_callback(const std_msgs::msg::Float32 &setpoint_msg);
+    
+    //! Callback function for the gamepad subscriber to handle joystick inputs (buttons and axes)
     void joy_callback(const sensor_msgs::msg::Joy &joy_msg);
+    
+    //! Callback function for calculating the output of the PID controller
     void odom_callback(const nav_msgs::msg::Odometry &odom);
+
+    //! Callback function to publish the setpoint
     void publish_initial_pose(double x, double y, const tf2::Quaternion &quaternion);
 
+    //! Subscriber to read from the odometry/filtered topic to get the orientation
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber;
+    
+    //! Subscriber to read from the setpoint topic to get the new setpoint 
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr setpoint_subscriber;
-    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_publisher;
-    rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initial_pose_publisher;
+
+    //! Subscriber to read from the joy topic to detect which buttons have been pressed
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr gamepad_subscriber;
+    
+    //! Publisher to publish to the diffbot_base_controller/cmd_vel_unstamped topic
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_publisher;
+    
+    //! Publisher to publish to the initial_pose topic
+    rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initial_pose_publisher;
+
+    //! Publisher to publish to the pid_cmd_vel topic to publish the output of the PID controller
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pid_cmd_publisher;
 };

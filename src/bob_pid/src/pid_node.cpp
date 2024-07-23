@@ -1,4 +1,3 @@
-// src/pid_node.cpp
 #include "bob_pid/pid_node.hpp"
 
 using std::placeholders::_1;
@@ -23,30 +22,37 @@ PID::PID()
     this->get_parameter("min_sum", min_sum);
     this->get_parameter("max_sum", max_sum);
 
-    // Implementing the Subscriber for odom topic
+    // Implementing the subscriber for the odometry topic
     odom_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
         "/odometry/filtered", 10, std::bind(&PID::odom_callback, this, _1));
 
-    // Implementing the Subscriber for the Button and Axes request
+    // Implementing the subscriber for gamepad input (buttons and axes)
     gamepad_subscriber = this->create_subscription<sensor_msgs::msg::Joy>(
         "joy", 10, std::bind(&PID::joy_callback, this, _1));
 
-    // Implementing the Subscriber for the Button and Axes request
+    // Implementing the subscriber for the setpoint topic
     setpoint_subscriber = this->create_subscription<std_msgs::msg::Float32>(
         "setpoint", 10, std::bind(&PID::setpoint_callback, this, _1));
 
-    // Implementing the Publisher for the cmd_vel topic
+    // Implementing the publisher for the cmd_vel topic
     twist_publisher = this->create_publisher<geometry_msgs::msg::Twist>("diffbot_base_controller/cmd_vel_unstamped", 10);
 
-    // Implementing the Publisher for the initial_pose topic
+    // Implementing the publisher for the initial_pose topic
     initial_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("initial_pose", 10);
 
+    // Implementing the publisher for the pid_cmd_vel topic
     pid_cmd_publisher = this->create_publisher<std_msgs::msg::Float32>("pid_cmd_vel", 10);
 
     // Initialize the PID controller
     initialize_pid(Kp, Ki, Kd, min_output, max_output, min_sum, max_sum);
+    
+    // Initialize the setpoint_pose
+    tf2::Quaternion setpoint_pose(0, 0, 0, 1);
 }
 
+/**
+ * @brief Function to initialize the PID controller with parameters from a YAML file
+ */
 void PID::initialize_pid(float Kp, float Ki, float Kd, float min_output, float max_output, float min_sum, float max_sum)
 {
     this->Kp = Kp;
@@ -65,6 +71,12 @@ void PID::initialize_pid(float Kp, float Ki, float Kd, float min_output, float m
               << "Kd: " << Kd << std::endl;
 }
 
+/**
+ * @brief Function to normalize the measured angle between -π and π
+ * 
+ * @param angle Angle to normalize
+ * @return Normalized angle
+ */
 float PID::normalize_angle(float angle)
 {
     while (angle > M_PI)
@@ -74,30 +86,34 @@ float PID::normalize_angle(float angle)
     return angle;
 }
 
+/**
+ * @brief Callback function to read the setpoint value from teleop_twist_joy.cpp
+ * 
+ * @param setpoint_msg Message containing the setpoint
+ */
 void PID::setpoint_callback(const std_msgs::msg::Float32 &setpoint_msg)
 {
     prev_setpoint = setpoint;
     setpoint = setpoint_msg.data;
 }
 
+/**
+ * @brief Callback function for the gamepad subscriber to handle joystick inputs (buttons and axes)
+ * 
+ * @param joy_msg Message containing joystick input
+ */
 void PID::joy_callback(const sensor_msgs::msg::Joy &joy_msg)
 {
     // Intentionally left blank as pid_on is not used anymore
 }
 
+/**
+ * @brief Callback function for calculating the output of the PID controller
+ * 
+ * @param odom Message containing odometry data
+ */
 void PID::odom_callback(const nav_msgs::msg::Odometry &odom)
 {
-    if (abs(prev_setpoint - setpoint) > 0)
-    {
-        error = 0.0;
-        sum = 0.0;
-    }
-
-    // Get the current time and calculate dt
-    rclcpp::Time current_time = this->now();
-    dt = (current_time - last_time).seconds();
-    last_time = current_time;
-
     // Extract quaternion
     auto quaternion = odom.pose.pose.orientation;
 
@@ -113,6 +129,18 @@ void PID::odom_callback(const nav_msgs::msg::Odometry &odom)
     double roll, pitch, yaw;
     mat.getRPY(roll, pitch, yaw);
 
+    if (abs(prev_setpoint - setpoint) > 0)
+    {
+        setpoint_pose = tf2_quaternion;
+        error = 0.0;
+        sum = 0.0;
+    }
+
+    // Get the current time and calculate dt
+    rclcpp::Time current_time = this->now();
+    dt = (current_time - last_time).seconds();
+    last_time = current_time;
+
     // Round setpoint and yaw to 2 decimal places
     setpoint = round(setpoint * 100.0) / 100.0;
     yaw = round(yaw * 100.0) / 100.0;
@@ -125,7 +153,7 @@ void PID::odom_callback(const nav_msgs::msg::Odometry &odom)
     setpoint = normalize_angle(setpoint);
 
     error = setpoint - yaw;
-    error = normalize_angle(error); // Ensure the shortest path is taken
+    error = normalize_angle(error);  // Ensure the shortest path is taken
 
     // Round error to 1 decimal place
     error = round(error * 100.0) / 100.0;
@@ -138,7 +166,7 @@ void PID::odom_callback(const nav_msgs::msg::Odometry &odom)
         error = 0.0;
     }
 
-    sum += error * dt ;
+    sum += error * dt;
 
     // Round sum to 1 decimal place
     sum = round(sum * 100.0) / 100.0;
@@ -183,8 +211,17 @@ void PID::odom_callback(const nav_msgs::msg::Odometry &odom)
     auto pid_cmd_msg = std_msgs::msg::Float32();
     pid_cmd_msg.data = output;
     pid_cmd_publisher->publish(pid_cmd_msg);
+
+    publish_initial_pose(odom.pose.pose.position.x, odom.pose.pose.position.y, setpoint_pose);
 }
 
+/**
+ * @brief Callback function to publish the setpoint
+ * 
+ * @param x X position
+ * @param y Y position
+ * @param quaternion Quaternion for orientation
+ */
 void PID::publish_initial_pose(double x, double y, const tf2::Quaternion &quaternion)
 {
     geometry_msgs::msg::PoseWithCovarianceStamped pose_msg;
