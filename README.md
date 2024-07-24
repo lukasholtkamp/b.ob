@@ -1,5 +1,6 @@
-# Welcome to B.OB's Wiki
-B.OB is a differential drive robot which is controlled using ROS2 Humble running on a Raspberry Pi 4. 
+# Welcome to B.OB
+B.OB is a differential drive robot which is controlled using ROS2 Humble running on a Raspberry Pi 4.
+More details can be found in the Wiki.
 
 ## Current status
 B.OB currently has 2 driving modes, Basic and Assisted. 
