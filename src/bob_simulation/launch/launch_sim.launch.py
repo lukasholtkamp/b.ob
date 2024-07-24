@@ -23,7 +23,7 @@ def generate_launch_description():
     gazebo_params_file = os.path.join(pkg_path, "config/gazebo_params.yaml")
     # twist_mux_params_file = os.path.join(pkg_teleop, "config/twist_mux.yaml")
     ekf_params_file = os.path.join(pkg_navigation, "config/ekf.yaml")
-    world_filename = "creative_room.world"
+    world_filename = "scenario_1.world"
     world_path = os.path.join(pkg_path, "worlds", world_filename)
 
     # Launch configuration variables specific to simulation
