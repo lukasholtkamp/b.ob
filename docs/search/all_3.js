@@ -1,9 +1,17 @@
 var searchData=
 [
-  ['enable_5fbutton_21',['enable_button',['../structteleop__twist__joy_1_1TeleopTwistJoy_1_1Impl.html#ade74d1c414a23d79e41281dd3ae9330c',1,'teleop_twist_joy::TeleopTwistJoy::Impl']]],
-  ['enable_5fturbo_5fbutton_22',['enable_turbo_button',['../structteleop__twist__joy_1_1TeleopTwistJoy_1_1Impl.html#a6c4824331d7ba98d4f36a88e37e5bf81',1,'teleop_twist_joy::TeleopTwistJoy::Impl']]],
-  ['enc_5fticks_5fper_5frev_23',['enc_ticks_per_rev',['../structbob__base_1_1DiffDriveBobHardware_1_1Config.html#aef72ea43abef2396902eb30fdf1a0400',1,'bob_base::DiffDriveBobHardware::Config']]],
-  ['encoder_5fticks_24',['encoder_ticks',['../classWheel.html#ae3f8ffd71342ad4b6e0cad3ce61451fb',1,'Wheel']]],
-  ['export_5fcommand_5finterfaces_25',['export_command_interfaces',['../classbob__base_1_1DiffDriveBobHardware.html#a906cc1133fa5cc807810346637209069',1,'bob_base::DiffDriveBobHardware']]],
-  ['export_5fstate_5finterfaces_26',['export_state_interfaces',['../classbob__base_1_1DiffDriveBobHardware.html#a5cb2df953a85c25186bef2fe1f0d97b3',1,'bob_base::DiffDriveBobHardware']]]
+  ['calculate_5fencoder_5fangle_37',['calculate_encoder_angle',['../classWheel.html#af1e9d9c1fe38dcf66055b39b4f65cb07',1,'Wheel']]],
+  ['callback_5fhandle_38',['callback_handle',['../classbob__teleop_1_1TeleopTwistJoy.html#a70c3a8a5a57de2d4006e5d5cd0d63837',1,'bob_teleop::TeleopTwistJoy']]],
+  ['checkmotorctrlsupport_39',['checkMotorCtrlSupport',['../classrp_1_1standalone_1_1rplidar_1_1RPlidarDriver.html#a0b7955d3ff530595f8bb71769b2e08db',1,'rp::standalone::rplidar::RPlidarDriver::checkMotorCtrlSupport()'],['../classsl_1_1ILidarDriver.html#aceecc58638a9017c0e25aa6aa996c3a5',1,'sl::ILidarDriver::checkMotorCtrlSupport()'],['../classsl_1_1SL__LidarDriver.html#aae8cc21dcfa1ef38d305846f4482e503',1,'sl::SL_LidarDriver::checkMotorCtrlSupport()'],['../classsl_1_1SlamtecLidarDriver.html#a880bdc480948a782b14827b792aed26a',1,'sl::SlamtecLidarDriver::checkMotorCtrlSupport()']]],
+  ['clearreadcache_40',['clearReadCache',['../classsl_1_1IChannel.html#ab52e89416f26572916c967483b15735a',1,'sl::IChannel::clearReadCache()'],['../classsl_1_1SerialPortChannel.html#a9c6de2bf5af48dd10c9dd20c8803b69e',1,'sl::SerialPortChannel::clearReadCache()'],['../classsl_1_1TcpChannel.html#a607065f82e517e263fc7a5235ea6a656',1,'sl::TcpChannel::clearReadCache()'],['../classsl_1_1UdpChannel.html#a10bfe1de68596d2ad2df2628ad30b35a',1,'sl::UdpChannel::clearReadCache()']]],
+  ['clock_41',['clock',['../structbob__teleop_1_1TeleopTwistJoy_1_1Impl.html#a2b86b14f8289cac205872a6898d42905',1,'bob_teleop::TeleopTwistJoy::Impl']]],
+  ['close_42',['close',['../classsl_1_1SerialPortChannel.html#a04bfbcfbce32dc1344c8e1e88d9316b6',1,'sl::SerialPortChannel::close()'],['../classsl_1_1UdpChannel.html#abd1bfefc95f6a88b23f52b526d44aed9',1,'sl::UdpChannel::close()'],['../classsl_1_1TcpChannel.html#aca399008697364d182eb64a6e506bb39',1,'sl::TcpChannel::close()'],['../classsl_1_1IChannel.html#ada9aca3e3c8347814b2f3cc724fbfe5e',1,'sl::IChannel::close()']]],
+  ['cmd_5fvel_5fpub_43',['cmd_vel_pub',['../structbob__teleop_1_1TeleopTwistJoy_1_1Impl.html#a826a490def9772dacd7d25edda6099c7',1,'bob_teleop::TeleopTwistJoy::Impl']]],
+  ['cmd_5fvel_5fstamped_5fpub_44',['cmd_vel_stamped_pub',['../structbob__teleop_1_1TeleopTwistJoy_1_1Impl.html#a76eb077d80bd39d40657ba735761add6',1,'bob_teleop::TeleopTwistJoy::Impl']]],
+  ['command_45',['command',['../classWheel.html#a6d483b8c495a56d01e12e28965446b30',1,'Wheel']]],
+  ['config_46',['Config',['../structbob__base_1_1DiffDriveBobHardware_1_1Config.html',1,'bob_base::DiffDriveBobHardware']]],
+  ['config_5f_47',['config_',['../classbob__base_1_1DiffDriveBobHardware.html#ae7260c30922c20c7327a2f773e059c8a',1,'bob_base::DiffDriveBobHardware']]],
+  ['connect_48',['connect',['../classrp_1_1standalone_1_1rplidar_1_1RPlidarDriver.html#ac81dec7eecffa8c86e83bcf970389e3c',1,'rp::standalone::rplidar::RPlidarDriver::connect()'],['../classsl_1_1ILidarDriver.html#a014e064d0a093d97de8c0a0d16cbfcc3',1,'sl::ILidarDriver::connect()'],['../classsl_1_1SL__LidarDriver.html#a53688c9a36ff1eaa35486b2dc51a5c63',1,'sl::SL_LidarDriver::connect()'],['../classsl_1_1SlamtecLidarDriver.html#aa79b7ce3c1d934bc5767d6f184937b37',1,'sl::SlamtecLidarDriver::connect()']]],
+  ['createdriver_49',['CreateDriver',['../classrp_1_1standalone_1_1rplidar_1_1RPlidarDriver.html#a88e24218791381a4da9c70f24773c277',1,'rp::standalone::rplidar::RPlidarDriver']]],
+  ['current_5fstate_50',['current_state',['../classTestNode.html#a5a875d9b55103c103c0547f73b2df910',1,'TestNode']]]
 ];

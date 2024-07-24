@@ -1,11 +1,7 @@
 var searchData=
 [
-  ['rads_5fper_5ftick_56',['rads_per_tick',['../classWheel.html#a3927074ca2710090c13aa3daab30ccca',1,'Wheel']]],
-  ['read_57',['read',['../classbob__base_1_1DiffDriveBobHardware.html#ad61cd0c01edec446b421abea4960ff3e',1,'bob_base::DiffDriveBobHardware']]],
-  ['require_5fenable_5fbutton_58',['require_enable_button',['../structteleop__twist__joy_1_1TeleopTwistJoy_1_1Impl.html#ae4b9c12706948233ca65b7897f4fc11e',1,'teleop_twist_joy::TeleopTwistJoy::Impl']]],
-  ['reversing_5fcheck_59',['reversing_check',['../structteleop__twist__joy_1_1TeleopTwistJoy_1_1Impl.html#aecb3f691d458d2806cf096b5abaaf459',1,'teleop_twist_joy::TeleopTwistJoy::Impl']]],
-  ['right_5fwheel_5f_60',['right_wheel_',['../classbob__base_1_1DiffDriveBobHardware.html#aba61d6def4672192b7ed60b5201d725b',1,'bob_base::DiffDriveBobHardware']]],
-  ['right_5fwheel_5fname_61',['right_wheel_name',['../structbob__base_1_1DiffDriveBobHardware_1_1Config.html#aa9ecfa815ad8ace4cde5eae1b90e533b',1,'bob_base::DiffDriveBobHardware::Config']]],
-  ['rplidar_62',['rplidar',['../namespacerplidar.html',1,'']]],
-  ['rpm_5fname_63',['rpm_name',['../classWheel.html#abd8afff32ab35e7940ecd25b17c2774b',1,'Wheel']]]
+  ['name_120',['name',['../classWheel.html#a0f4615941c74970bf38aac3e6a7d3864',1,'Wheel']]],
+  ['negotiateserialbaudrate_121',['negotiateSerialBaudRate',['../classsl_1_1ILidarDriver.html#a85da9fd603f808e837f7369450642e47',1,'sl::ILidarDriver::negotiateSerialBaudRate()'],['../classsl_1_1SL__LidarDriver.html#a388a5b7429d41e8386d7ce5e686ff062',1,'sl::SL_LidarDriver::negotiateSerialBaudRate()'],['../classsl_1_1SlamtecLidarDriver.html#acada51257ab9d810110637fe2bffd3e7',1,'sl::SlamtecLidarDriver::negotiateSerialBaudRate()']]],
+  ['next_5ftest_122',['next_test',['../classTestNode.html#ab3b85c02d2abcd1b3b2387896308b326',1,'TestNode']]],
+  ['normalize_5fangle_123',['normalize_angle',['../classPID.html#a9f18e0ea2bd7524198884f7d659ee2e7',1,'PID']]]
 ];

@@ -80,12 +80,16 @@ Inheritance diagram for DriveMode:</div>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:accc4af3f62bcf66c0a15a5618620bee4"><td class="memItemLeft" align="right" valign="top"><a id="accc4af3f62bcf66c0a15a5618620bee4"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classDriveMode.html#accc4af3f62bcf66c0a15a5618620bee4">last_mode</a> = &quot;IDLE&quot;</td></tr>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classDriveMode.html#accc4af3f62bcf66c0a15a5618620bee4">last_mode</a> = &quot;Drive Selection Mode&quot;</td></tr>
 <tr class="memdesc:accc4af3f62bcf66c0a15a5618620bee4"><td class="mdescLeft">&#160;</td><td class="mdescRight">String to know when there is a transition in driving mode. <br /></td></tr>
 <tr class="separator:accc4af3f62bcf66c0a15a5618620bee4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
+<tr class="memitem:a364ab936b33d151b0d17498857e6680d"><td class="memItemLeft" align="right" valign="top"><a id="a364ab936b33d151b0d17498857e6680d"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classDriveMode.html#a364ab936b33d151b0d17498857e6680d">dynamic_jointstate_callback</a> (const control_msgs::msg::DynamicJointState &amp;d_state)</td></tr>
+<tr class="memdesc:a364ab936b33d151b0d17498857e6680d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback function called from the dynamic_jointstate_subscriber which checks when the Emergency button is pressed. <br /></td></tr>
+<tr class="separator:a364ab936b33d151b0d17498857e6680d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6faac112cbd7f930dd3762d7dc849059"><td class="memItemLeft" align="right" valign="top"><a id="a6faac112cbd7f930dd3762d7dc849059"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classDriveMode.html#a6faac112cbd7f930dd3762d7dc849059">joy_callback</a> (const sensor_msgs::msg::Joy &amp;joy_msg)</td></tr>
 <tr class="memdesc:a6faac112cbd7f930dd3762d7dc849059"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback function called from the gamepad_subscriber which calls find_button to find which button was pressed and publishes this on the drive_mode_status topic. <br /></td></tr>
@@ -94,9 +98,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classDriveMode.html#a436efccf85a6267fe6248888f1fb230b">status_callback</a> (const std_msgs::msg::String &amp;drive_mode_status_msg)</td></tr>
 <tr class="memdesc:a436efccf85a6267fe6248888f1fb230b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback function called from the status_subscriber which calls launch_call when the driving mode changes and updates the last driving mode. <br /></td></tr>
 <tr class="separator:a436efccf85a6267fe6248888f1fb230b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a02ff845d40a2a223e4cc2ee150891335"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classDriveMode.html#a02ff845d40a2a223e4cc2ee150891335">find_button</a> (std::vector&lt; int &gt; buttons, std::vector&lt; float &gt;axes)</td></tr>
-<tr class="memdesc:a02ff845d40a2a223e4cc2ee150891335"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets and read the button input.  <a href="classDriveMode.html#a02ff845d40a2a223e4cc2ee150891335">More...</a><br /></td></tr>
-<tr class="separator:a02ff845d40a2a223e4cc2ee150891335"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a867f66393989782b3ec8d6adcadc10ab"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classDriveMode.html#a867f66393989782b3ec8d6adcadc10ab">find_button</a> (std::vector&lt; int &gt; buttons, std::vector&lt; float &gt; axes)</td></tr>
+<tr class="memdesc:a867f66393989782b3ec8d6adcadc10ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets and read the button input.  <a href="classDriveMode.html#a867f66393989782b3ec8d6adcadc10ab">More...</a><br /></td></tr>
+<tr class="separator:a867f66393989782b3ec8d6adcadc10ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a41427f7a685791f047a8fbd13e4d01a4"><td class="memItemLeft" align="right" valign="top"><a id="a41427f7a685791f047a8fbd13e4d01a4"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classDriveMode.html#a41427f7a685791f047a8fbd13e4d01a4">print_selection_menu</a> ()</td></tr>
+<tr class="memdesc:a41427f7a685791f047a8fbd13e4d01a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Function that prints out selection menu. <br /></td></tr>
+<tr class="separator:a41427f7a685791f047a8fbd13e4d01a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6893d25945b25b04c3b4aabf614a3319"><td class="memItemLeft" align="right" valign="top"><a id="a6893d25945b25b04c3b4aabf614a3319"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classDriveMode.html#a6893d25945b25b04c3b4aabf614a3319">launch_call</a> (std::string drive_mode_status, std::string <a class="el" href="classDriveMode.html#accc4af3f62bcf66c0a15a5618620bee4">last_mode</a>)</td></tr>
 <tr class="memdesc:a6893d25945b25b04c3b4aabf614a3319"><td class="mdescLeft">&#160;</td><td class="mdescRight">Function takes in the current mode and last mode and closes nodes and opens the new nodes needed. <br /></td></tr>
@@ -116,12 +124,16 @@ rclcpp::Subscription&lt; std_msgs::msg::String &gt;::SharedPtr&#160;</td><td cla
 rclcpp::Publisher&lt; std_msgs::msg::String &gt;::SharedPtr&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classDriveMode.html#a226cefc911016af2065a07bded2cd352">status_publisher</a></td></tr>
 <tr class="memdesc:a226cefc911016af2065a07bded2cd352"><td class="mdescLeft">&#160;</td><td class="mdescRight">Publisher to publish to the drive_mode_status topic after the driving mode button is pressed. <br /></td></tr>
 <tr class="separator:a226cefc911016af2065a07bded2cd352"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a627a6c24c5cf9126d46d13f57a17f3de"><td class="memItemLeft" align="right" valign="top"><a id="a627a6c24c5cf9126d46d13f57a17f3de"></a>
+rclcpp::Subscription&lt; control_msgs::msg::DynamicJointState &gt;::SharedPtr&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classDriveMode.html#a627a6c24c5cf9126d46d13f57a17f3de">dynamic_jointstate_subscriber</a></td></tr>
+<tr class="memdesc:a627a6c24c5cf9126d46d13f57a17f3de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Subscriber to read from the dynamic_joint_states topic. <br /></td></tr>
+<tr class="separator:a627a6c24c5cf9126d46d13f57a17f3de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Class for changing the different driving modes e.g. Manual Driving, Autonomous Driving </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="a02ff845d40a2a223e4cc2ee150891335"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a02ff845d40a2a223e4cc2ee150891335">&#9670;&nbsp;</a></span>find_button()</h2>
+<a id="a867f66393989782b3ec8d6adcadc10ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a867f66393989782b3ec8d6adcadc10ab">&#9670;&nbsp;</a></span>find_button()</h2>
 
 <div class="memitem">
 <div class="memproto">

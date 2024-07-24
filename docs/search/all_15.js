@@ -1,0 +1,11 @@
+var searchData=
+[
+  ['waiter_218',['Waiter',['../classrp_1_1hal_1_1Waiter.html',1,'rp::hal']]],
+  ['waiter_3c_20_5fu32_20_3e_219',['Waiter&lt; _u32 &gt;',['../classrp_1_1hal_1_1Waiter.html',1,'rp::hal']]],
+  ['waitfordata_220',['waitForData',['../classsl_1_1IChannel.html#a60086e7c5a7f24b06b6169318edfb81d',1,'sl::IChannel::waitForData()'],['../classsl_1_1SerialPortChannel.html#a326fd9416e8e171952f86371560f5aaf',1,'sl::SerialPortChannel::waitForData()'],['../classsl_1_1TcpChannel.html#ae8413c93551eda2c94f13ea2722974c0',1,'sl::TcpChannel::waitForData()'],['../classsl_1_1UdpChannel.html#aa5d83b940da2c60ee347b05361cc50e8',1,'sl::UdpChannel::waitForData(size_t size, sl_u32 timeoutInMs, size_t *actualReady)']]],
+  ['waitfordataext_221',['waitForDataExt',['../classsl_1_1UdpChannel.html#ace335cce6c4ddcb44917f6cfbb7ceafc',1,'sl::UdpChannel::waitForDataExt()'],['../classsl_1_1TcpChannel.html#afb3ca286edfb02dc46a21a3e6059f3ec',1,'sl::TcpChannel::waitForDataExt()'],['../classsl_1_1SerialPortChannel.html#a79136bfd14573ecdb918d8587c32764f',1,'sl::SerialPortChannel::waitForDataExt()'],['../classsl_1_1IChannel.html#a54b99d1bf55887e77af4420bf0910e3c',1,'sl::IChannel::waitForDataExt()']]],
+  ['welcome_20to_20b_2eob_222',['Welcome to B.OB',['../md__home_jkan67_b_ob_README.html',1,'']]],
+  ['wheel_223',['Wheel',['../classWheel.html',1,'Wheel'],['../classWheel.html#add50525820eb1d11f07e7c9f2fa2fcde',1,'Wheel::Wheel()']]],
+  ['wheel_5fradius_224',['wheel_radius',['../structbob__base_1_1DiffDriveBobHardware_1_1Config.html#aca1170400f778e6a38e88a5b62105c50',1,'bob_base::DiffDriveBobHardware::Config::wheel_radius()'],['../classWheel.html#a19570693ca50b59f90d2ce6e85328ff3',1,'Wheel::wheel_radius()']]],
+  ['write_225',['write',['../classbob__base_1_1DiffDriveBobHardware.html#a06178087ee04483b0d453af493a76318',1,'bob_base::DiffDriveBobHardware::write()'],['../classsl_1_1IChannel.html#a0e440ecac0644da2948c9478a987ecea',1,'sl::IChannel::write()'],['../classsl_1_1SerialPortChannel.html#a1ade216e6dde5e1ec470aa9ea4f5d21c',1,'sl::SerialPortChannel::write()'],['../classsl_1_1TcpChannel.html#a4d60f81c115437ec43a7770c787e1ecf',1,'sl::TcpChannel::write()'],['../classsl_1_1UdpChannel.html#aac5e881371e5a30714793b65463c06b7',1,'sl::UdpChannel::write()']]]
+];

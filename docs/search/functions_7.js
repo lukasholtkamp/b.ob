@@ -1,8 +1,5 @@
 var searchData=
 [
-  ['odom_5fcallback_114',['odom_callback',['../classTestNode.html#afc375588125ee8a8d2ae8165f1725199',1,'TestNode']]],
-  ['on_5factivate_115',['on_activate',['../classbob__base_1_1DiffDriveBobHardware.html#aa6c404022227d253b4d2b4bf92364ca6',1,'bob_base::DiffDriveBobHardware']]],
-  ['on_5fconfigure_116',['on_configure',['../classbob__base_1_1DiffDriveBobHardware.html#a965a798906d17ed1b36297d0090711f1',1,'bob_base::DiffDriveBobHardware']]],
-  ['on_5fdeactivate_117',['on_deactivate',['../classbob__base_1_1DiffDriveBobHardware.html#a2914d3341750f33308d5547a561c58c8',1,'bob_base::DiffDriveBobHardware']]],
-  ['on_5finit_118',['on_init',['../classbob__base_1_1DiffDriveBobHardware.html#a37d58686ec76406a5fac7b8cf13dacca',1,'bob_base::DiffDriveBobHardware']]]
+  ['jointstate_5fcallback_359',['jointstate_callback',['../structbob__teleop_1_1TeleopTwistJoy_1_1Impl.html#a24c30b120403de1ee322fa5890458962',1,'bob_teleop::TeleopTwistJoy::Impl']]],
+  ['joy_5fcallback_360',['joy_callback',['../classDriveMode.html#a6faac112cbd7f930dd3762d7dc849059',1,'DriveMode::joy_callback()'],['../classPID.html#a0dd9b858bc93694949255544f5753dce',1,'PID::joy_callback()'],['../structbob__teleop_1_1TeleopTwistJoy_1_1Impl.html#abd693eb43ddc3f6ed417d03ae0e76718',1,'bob_teleop::TeleopTwistJoy::Impl::joy_callback()'],['../classTestNode.html#ae16f424845c2b69f2ab3a2f28fa67412',1,'TestNode::joy_callback()']]]
 ];

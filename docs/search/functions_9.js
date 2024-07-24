@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['send_5fcmd_5fvel_5fmsg_120',['send_cmd_vel_msg',['../structteleop__twist__joy_1_1TeleopTwistJoy_1_1Impl.html#a082c1d02f58e2eb781ce880dfba91aa7',1,'teleop_twist_joy::TeleopTwistJoy::Impl']]],
-  ['setup_121',['setup',['../classWheel.html#aaddd31843ab4f8a67ef31f25b0c6cf63',1,'Wheel']]],
-  ['status_5fcallback_122',['status_callback',['../classDriveMode.html#a436efccf85a6267fe6248888f1fb230b',1,'DriveMode']]]
+  ['negotiateserialbaudrate_362',['negotiateSerialBaudRate',['../classsl_1_1ILidarDriver.html#a85da9fd603f808e837f7369450642e47',1,'sl::ILidarDriver::negotiateSerialBaudRate()'],['../classsl_1_1SL__LidarDriver.html#a388a5b7429d41e8386d7ce5e686ff062',1,'sl::SL_LidarDriver::negotiateSerialBaudRate()'],['../classsl_1_1SlamtecLidarDriver.html#acada51257ab9d810110637fe2bffd3e7',1,'sl::SlamtecLidarDriver::negotiateSerialBaudRate()']]],
+  ['normalize_5fangle_363',['normalize_angle',['../classPID.html#a9f18e0ea2bd7524198884f7d659ee2e7',1,'PID']]]
 ];

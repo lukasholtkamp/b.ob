@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['teleoptwistjoy_96',['TeleopTwistJoy',['../classteleop__twist__joy_1_1TeleopTwistJoy.html',1,'teleop_twist_joy']]],
-  ['testnode_97',['TestNode',['../classTestNode.html',1,'']]]
+  ['config_259',['Config',['../structbob__base_1_1DiffDriveBobHardware_1_1Config.html',1,'bob_base::DiffDriveBobHardware']]]
 ];

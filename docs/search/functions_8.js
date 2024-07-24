@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['read_119',['read',['../classbob__base_1_1DiffDriveBobHardware.html#ad61cd0c01edec446b421abea4960ff3e',1,'bob_base::DiffDriveBobHardware']]]
+  ['launch_5fcall_361',['launch_call',['../classDriveMode.html#a6893d25945b25b04c3b4aabf614a3319',1,'DriveMode']]]
 ];
