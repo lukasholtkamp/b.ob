@@ -7,12 +7,13 @@ Date of Retrieval: 23.07.2024
 """
 
 import os
+from pathlib import Path
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, LogInfo
-from launch.conditions import UnlessCondition
+from launch.conditions import UnlessCondition, IfCondition
 from launch.substitutions import LaunchConfiguration, PythonExpression
-
+from launch.event_handlers import OnProcessExit
 from launch_ros.actions import Node
 
 from ament_index_python.packages import get_package_share_directory
@@ -26,12 +27,24 @@ def generate_launch_description():
     return: a Launch Description with all needed arguments and the node
     """
 
+    gui = LaunchConfiguration("gui")
     use_sim_time = LaunchConfiguration("use_sim_time")
     slam_params_file = LaunchConfiguration("slam_params_file")
+
     default_params_file = os.path.join(
         get_package_share_directory("bob_slam"),
         "config",
         "mapper_params_online_async.yaml",
+    )
+
+    rviz_config_file = os.path.join(
+        Path.cwd(), "src", "bob_slam", "rviz", "slam_config.rviz"
+    )
+
+    declare_gui = DeclareLaunchArgument(
+        "gui",
+        default_value="true",
+        description="Start RViz2 automatically with this launch file.",
     )
 
     declare_use_sim_time_argument = DeclareLaunchArgument(
@@ -82,11 +95,21 @@ def generate_launch_description():
         output="screen",
     )
 
+    rviz_node = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        arguments=["-d", rviz_config_file],
+        condition=IfCondition(gui),
+    )
+
     ld = LaunchDescription()
 
     ld.add_action(declare_use_sim_time_argument)
     ld.add_action(declare_params_file_cmd)
+    ld.add_action(declare_gui)
     ld.add_action(log_param_change)
     ld.add_action(start_async_slam_toolbox_node)
+    ld.add_action(rviz_node)
 
     return ld
