@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(teleop_twist_joy)
+project(bob_teleop)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -16,6 +16,9 @@ find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(tf2 REQUIRED)
 
 ## COMPILE
 add_library(${PROJECT_NAME} SHARED src/teleop_twist_joy.cpp)
@@ -27,6 +30,10 @@ target_link_libraries(${PROJECT_NAME}
   rclcpp::rclcpp
   rclcpp_components::component
   ${sensor_msgs_TARGETS}
+  ${nav_msgs_TARGETS}
+  ${std_msgs_TARGETS}
+  ${tf2_TARGETS}
+
 )
 
 include(GenerateExportHeader)
@@ -38,13 +45,13 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 set_target_properties(${PROJECT_NAME} PROPERTIES EXPORT_HEADER_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
 rclcpp_components_register_nodes(${PROJECT_NAME}
-  "teleop_twist_joy::TeleopTwistJoy")
+  "bob_teleop::TeleopTwistJoy")
 
 ## COMPILE
 add_executable(${PROJECT_NAME}_node src/teleop_node.cpp)
 target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME})
 set_target_properties(${PROJECT_NAME}_node
-  PROPERTIES OUTPUT_NAME teleop_node PREFIX "")
+  PROPERTIES OUTPUT_NAME bob_teleop_node PREFIX "")
 
 # install
 install(TARGETS ${PROJECT_NAME}
@@ -63,7 +70,7 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}_export.h
   DESTINATION include/${PROJECT_NAME}/${PROJECT_NAME})
 
-install(DIRECTORY launch config
+install(DIRECTORY config
   DESTINATION share/${PROJECT_NAME})
 
 # Export old-style CMake variables

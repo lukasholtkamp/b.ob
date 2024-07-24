@@ -14,7 +14,7 @@ find_package(control_msgs REQUIRED)
 
 #install
 install(
-  DIRECTORY launch src
+  DIRECTORY src
   DESTINATION share/${PROJECT_NAME}
 )
 

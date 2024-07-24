@@ -12,7 +12,7 @@ class Wheel
 public:
   //! Name that can be found in the URDF description of B.ob
   std::string name = "";
-  //! Counter to track 
+  //! Counter to track
   int encoder_ticks = 0;
   //! Target velocity of wheel
   double command = 0.0;
@@ -37,7 +37,7 @@ public:
   Wheel(const std::string &wheel_name, int ticks_per_rev, double wheel_r);
 
   //! Function to assign variables
-  void setup(const std::string &wheel_name, int ticks_per_rev,double wheel_r);
+  void setup(const std::string &wheel_name, int ticks_per_rev, double wheel_r);
 
   //! Function to calculate the encoder angle in radians
   double calculate_encoder_angle();
