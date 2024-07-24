@@ -1,4 +1,3 @@
-
 """
 Launch file for running the teleoperation node
 
@@ -32,9 +31,7 @@ def generate_launch_description():
             launch_ros.actions.Node(
                 package="bob_teleop",
                 executable="bob_teleop_node",
-                parameters=[
-                    config_filepath,{"use_pid": False}
-                ],
+                parameters=[config_filepath, {"use_pid": False}],
                 remappings=[("/cmd_vel", "/diffbot_base_controller/cmd_vel_unstamped")],
                 output="screen",
             ),

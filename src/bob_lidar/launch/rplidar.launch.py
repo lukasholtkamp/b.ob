@@ -15,6 +15,8 @@ from launch.actions import LogInfo
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
+from pathlib import Path
+
 
 def generate_launch_description():
     """
@@ -31,8 +33,18 @@ def generate_launch_description():
     angle_compensate = LaunchConfiguration("angle_compensate", default="true")
     scan_mode = LaunchConfiguration("scan_mode", default="Standard")
 
+    # Get config path of the PID settings
+    pid_config_filepath = os.path.join(
+        Path.cwd(), "src", "bob_lidar", "config", "lidar.yaml"
+    )
+
     return LaunchDescription(
         [
+            DeclareLaunchArgument(
+                "bob_lidar_params",
+                default_value=pid_config_filepath,
+                description="Full path to the ROS2 parameters file to use for the filtering lidar node",
+            ),
             DeclareLaunchArgument(
                 "channel_type",
                 default_value=channel_type,
@@ -73,6 +85,7 @@ def generate_launch_description():
                 executable="rplidar_node",
                 name="rplidar_node",
                 parameters=[
+                    pid_config_filepath,
                     {
                         "channel_type": channel_type,
                         "serial_port": serial_port,
@@ -81,7 +94,7 @@ def generate_launch_description():
                         "inverted": inverted,
                         "angle_compensate": angle_compensate,
                         "scan_mode": scan_mode,
-                    }
+                    },
                 ],
                 output="screen",
             ),

@@ -38,8 +38,6 @@
 #include "sl_lidar.h"
 #include "math.h"
 
-#include "rplidar_node.hpp"
-
 
 #include <signal.h>
 
@@ -88,8 +86,8 @@ private:
         this->declare_parameter<std::string>("topic_name", std::string("scan"));
         this->declare_parameter<std::string>("scan_mode", std::string());
         this->declare_parameter<float>("scan_frequency", 10);
-        this->declare_parameter<float>("min_angle", 90);
-        this->declare_parameter<float>("max_angle", 180);
+        this->declare_parameter<float>("min_angle", 0);
+        this->declare_parameter<float>("max_angle", 360);
 
         this->get_parameter_or<std::string>("channel_type", channel_type, "serial");
         this->get_parameter_or<std::string>("tcp_ip", tcp_ip, "192.168.0.7");
@@ -109,8 +107,8 @@ private:
             this->get_parameter_or<float>("scan_frequency", scan_frequency, 20.0);
         else
             this->get_parameter_or<float>("scan_frequency", scan_frequency, 10.0);
-        this->get_parameter_or<float>("min_angle", min_angle, 90);
-        this->get_parameter_or<float>("max_angle", max_angle, 180);
+        this->get_parameter("min_angle", min_angle);
+        this->get_parameter("max_angle", max_angle);
     }
 
     bool getRPLIDARDeviceInfo(ILidarDriver *drv)
