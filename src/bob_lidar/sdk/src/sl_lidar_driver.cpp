@@ -67,12 +67,12 @@ typedef decltype(nullptr) nullptr_t;
 #endif /* C++11.  */
 
 namespace sl {
-    static void printDeprecationWarn(const char* fn, const char* replacement)
+    static inline void printDeprecationWarn(const char* fn, const char* replacement)
     {
         fprintf(stderr, "*WARN* YOU ARE USING DEPRECATED API: %s, PLEASE MOVE TO %s\n", fn, replacement);
     }
 
-    static void convert(const sl_lidar_response_measurement_node_t& from, sl_lidar_response_measurement_node_hq_t& to)
+    static inline void convert(const sl_lidar_response_measurement_node_t& from, sl_lidar_response_measurement_node_hq_t& to) 
     {
         to.angle_z_q14 = (((from.angle_q6_checkbit) >> SL_LIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) << 8) / 90;  //transfer to q14 Z-angle
         to.dist_mm_q2 = from.distance_q2;
@@ -80,7 +80,7 @@ namespace sl {
         to.quality = (from.sync_quality >> SL_LIDAR_RESP_MEASUREMENT_QUALITY_SHIFT) << SL_LIDAR_RESP_MEASUREMENT_QUALITY_SHIFT;  //remove the last two bits and then make quality from 0-63 to 0-255
     }
 
-    static void convert(const sl_lidar_response_measurement_node_hq_t& from, sl_lidar_response_measurement_node_t& to)
+    static inline void convert(const sl_lidar_response_measurement_node_hq_t& from, sl_lidar_response_measurement_node_t& to)
     {
         to.sync_quality = (from.flag & SL_LIDAR_RESP_MEASUREMENT_SYNCBIT) | ((from.quality >> SL_LIDAR_RESP_MEASUREMENT_QUALITY_SHIFT) << SL_LIDAR_RESP_MEASUREMENT_QUALITY_SHIFT);
         to.angle_q6_checkbit = 1 | (((from.angle_z_q14 * 90) >> 8) << SL_LIDAR_RESP_MEASUREMENT_ANGLE_SHIFT);
@@ -199,7 +199,7 @@ namespace sl {
             _data_queue.clear();
         }
 
-        void pushNode(_u64 timestamp_uS, const T* node)
+        void pushNode(_u64 /* timestamp_uS */, const T* node)
         {
             rp::hal::AutoLocker l(_locker);
             _data_queue.push_back(*node);
@@ -508,7 +508,7 @@ namespace sl {
             return _isConnected;
         }
 
-        sl_result reset(sl_u32 timeoutInMs = DEFAULT_TIMEOUT)
+        sl_result reset([[maybe_unused]] sl_u32 timeoutInMs = DEFAULT_TIMEOUT)
         {
             rp::hal::AutoLocker l(_op_locker);
             // send reset message 
@@ -583,7 +583,7 @@ namespace sl {
     
         }
 
-        sl_result startScan(bool force, bool useTypicalScan, sl_u32 options = 0, LidarScanMode* outUsedScanMode = nullptr)
+        sl_result startScan(bool force, bool useTypicalScan, [[maybe_unused]] sl_u32 options = 0, LidarScanMode* outUsedScanMode = nullptr)
         {
             rp::hal::AutoLocker l(_op_locker);
             if (!isConnected()) return SL_RESULT_OPERATION_NOT_SUPPORT;
@@ -760,7 +760,7 @@ namespace sl {
 
         }
 
-        sl_result stop(sl_u32 timeout = DEFAULT_TIMEOUT)
+        sl_result stop([[maybe_unused]] sl_u32 timeout = DEFAULT_TIMEOUT)
         {
             rp::hal::AutoLocker l(_op_locker);
 
@@ -877,7 +877,7 @@ namespace sl {
 
         }
 
-        sl_result getFrequency(const LidarScanMode& scanMode, const sl_lidar_response_measurement_node_hq_t* nodes, size_t count, float& frequency)
+        sl_result getFrequency(const LidarScanMode& scanMode, const sl_lidar_response_measurement_node_hq_t* /* nodes */, size_t count, float& frequency)
         {
             float sample_duration = scanMode.us_per_sample;
             frequency = 1000000.0f / (count * sample_duration);
@@ -1020,7 +1020,7 @@ namespace sl {
             return SL_RESULT_OK;
         }
 
-        sl_result getMotorInfo(LidarMotorInfo &motorInfo, sl_u32 timeoutInMs)
+        sl_result getMotorInfo(LidarMotorInfo &motorInfo, sl_u32 /* timeoutInMs */)
         {
             Result<nullptr_t> ans = SL_RESULT_OK;
             rp::hal::AutoLocker l(_op_locker);
@@ -1196,7 +1196,7 @@ namespace sl {
         }
 
 
-        u_result getScanModeCount(sl_u16& modeCount, sl_u32 timeoutInMs = DEFAULT_TIMEOUT)
+        u_result getScanModeCount(sl_u16& modeCount, [[maybe_unused]] sl_u32 timeoutInMs = DEFAULT_TIMEOUT)
         {
             u_result ans;
             std::vector<_u8> answer;

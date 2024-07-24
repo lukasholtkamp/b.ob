@@ -9,13 +9,19 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(control_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 
 
+include_directories(include)
 
 #install
 install(
-  DIRECTORY src
+  DIRECTORY src config include
   DESTINATION share/${PROJECT_NAME}
+)
+
+install(DIRECTORY include/
+  DESTINATION include/${PROJECT_NAME}
 )
 
 ## COMPILE
@@ -27,6 +33,7 @@ ament_target_dependencies(pid_node
 "nav_msgs"
 "tf2"
 "control_msgs"
+"std_msgs"
 )
 
 #install

@@ -13,9 +13,9 @@
 
 using std::placeholders::_1;
 
-std::string find_button(std::vector<int> buttons , std::vector<float>axes);         // <-- Implement find_button function
-void launch_call(std::string mode, std::string last_mode); // <-- Implement launch_call function
-void print_selection_menu(std::string mode); // <-- Print Menu
+std::string find_button(std::vector<int> buttons, std::vector<float> axes); // <-- Implement find_button function
+void launch_call(std::string mode, std::string last_mode);                  // <-- Implement launch_call function
+void print_selection_menu(std::string mode);                                // <-- Print Menu
 
 /*! Class for changing the different driving modes e.g. Manual Driving, Autonomous Driving*/
 class DriveMode : public rclcpp::Node
@@ -44,15 +44,20 @@ public:
     std::string last_mode = "Drive Selection Mode"; // <-- Implementing the las_mode variable for the drive_mode_status request
 
 private:
+    /**
+     * @brief Callback function called from the dynamic_jointstate_subscriber which checks when the Emergency button is pressed
+     *
+     */
     void dynamic_jointstate_callback(const control_msgs::msg::DynamicJointState &d_state)
     {
 
         // Check if the Emergency Button is pressed
-        if ((d_state.interface_values[0].values[3]) == 0 || (d_state.interface_values[1].values[3]) == 0 && last_mode!="Drive Selection Mode")
+        if (((d_state.interface_values[1].values[3]) == 0 || (d_state.interface_values[2].values[3]) == 0))
         {
-            launch_call("Drive Selection Mode", last_mode);
-            last_mode = "Drive Selection Mode";
-            print_selection_menu("Drive Selection Mode");
+            // Set current mode to Drive Selection Mode if button pressed
+            auto drive_mode_status_msg = std_msgs::msg::String();
+            drive_mode_status_msg.data = "Drive Selection Mode";
+            status_publisher->publish(drive_mode_status_msg);
         }
     }
 
@@ -88,9 +93,13 @@ private:
         if (last_mode != drive_mode_status_msg.data)
         {
             std::cout << "Driving Mode: " << drive_mode_status_msg.data << std::endl;
-
             launch_call(drive_mode_status_msg.data, last_mode);
             last_mode = drive_mode_status_msg.data;
+
+            if (drive_mode_status_msg.data == "Drive Selection Mode")
+            {
+                print_selection_menu();
+            }
         }
     }
 
@@ -164,13 +173,17 @@ private:
         }
     }
 
-    void print_selection_menu(std::string mode)
+    /**
+     * @brief Function that prints out selection menu
+     *
+     */
+    void print_selection_menu()
     {
-        std::cout << "Current Driving Mode: " << mode << std::endl;
         std::cout << "For Testing press Up-D-PAD button" << std::endl;
-        std::cout << "For Basic driving press X button"  << std::endl;
-        std::cout << "For Assisted Drive Mode press A button"  << std::endl;
+        std::cout << "For Basic driving press X button" << std::endl;
+        std::cout << "For Assisted Drive Mode press A button" << std::endl;
     }
+
     /**
      * @brief Function takes in the current mode and last mode and closes nodes and opens the new nodes needed
      *
@@ -179,7 +192,11 @@ private:
     {
         if (last_mode == "Basic Drive Mode")
         {
-            system("killall teleop_node");
+            system("killall bob_teleop_node");
+        }
+        if (last_mode == "Assisted Drive Mode")
+        {
+            system("killall bob_teleop_node; killall pid_node; killall rplidar_node");
         }
         if (drive_mode_status == "Test Mode")
         {
@@ -187,7 +204,12 @@ private:
         }
         if (drive_mode_status == "Basic Drive Mode")
         {
-            system("ros2 launch teleop_twist_joy teleop.launch.py &");
+            system("ros2 launch bob_bringup basic_driving.launch.py &");
+        }
+        if (drive_mode_status == "Assisted Drive Mode")
+        {
+            system("ros2 launch bob_bringup assisted_driving.launch.py &");
+            system("ros2 launch bob_lidar rplidar.launch.py &");
         }
         if (drive_mode_status == "Shutdown")
         {

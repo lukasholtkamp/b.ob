@@ -106,7 +106,7 @@ namespace sl {
 
         void clearReadCache() {}
 
-        void setStatus(_u32 flag){}
+        void setStatus([[maybe_unused]] _u32 flag){}
 
         int getChannelType() {
             return CHANNEL_TYPE_TCP;

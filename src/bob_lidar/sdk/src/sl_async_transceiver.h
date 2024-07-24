@@ -87,7 +87,7 @@ public:
 	IAsyncProtocolCodec() {}
 	virtual ~IAsyncProtocolCodec()  {}
 
-	virtual void   onChannelError(u_result errCode) {}
+	virtual void   onChannelError([[maybe_unused]] u_result errCode) {}
 
 	virtual void   onDecodeReset() {}
 	virtual void   onDecodeData(const void* buffer, size_t size) = 0;

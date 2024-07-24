@@ -4,7 +4,7 @@ project(bob_slam)
 find_package(ament_cmake REQUIRED)
 
 install(
-  DIRECTORY config launch rviz map
+  DIRECTORY config launch rviz
   DESTINATION share/${PROJECT_NAME}
 )
 

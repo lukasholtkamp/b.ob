@@ -77,7 +77,7 @@
 
   <gazebo>
     <plugin name='gazebo_ros2_control' filename='libgazebo_ros2_control.so'>
-      <parameters>$(find bob_simulation)/config/bob_controllers.yaml</parameters>
+      <parameters>$(find bob_bringup)/config/bob_controllers.yaml</parameters>
       <parameters>$(find bob_bringup)/config/gazebo_ros2_ctl_use_sim.yaml</parameters>
     </plugin>
   </gazebo>

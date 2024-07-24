@@ -39,7 +39,7 @@ public:
             "joy", 10, std::bind(&TestNode::joy_callback, this, _1));
 
         // Implementing the Publisher for the cmd_vel topic
-        twist_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>("diffbot_base_controller/cmd_vel", 10);
+        twist_publisher = this->create_publisher<geometry_msgs::msg::TwistStamped>("diffbot_base_controller/cmd_vel_unstamped", 10);
     }
 
 private:
@@ -114,7 +114,7 @@ private:
             }
 
             // Check if the Emergency Button is pressed
-            if (((d_state.interface_values[0].values[3]) && (d_state.interface_values[1].values[3])) == 0)
+            if ((d_state.interface_values[1].values[3]) == 0 && (d_state.interface_values[2].values[3]) == 0)
             {
                 system("clear");
                 std::cout << "Alarm Test Completed" << std::endl;
@@ -125,7 +125,7 @@ private:
             }
 
             // Check if the Emergency Button is released and finish the test
-            if (((d_state.interface_values[0].values[3]) && (d_state.interface_values[1].values[3])) == 1 && tests_finished)
+            if ((d_state.interface_values[0].values[3]) == 1 && (d_state.interface_values[1].values[3]) == 1 && tests_finished)
             {
 
                 std::cout << "Test Finished" << std::endl;

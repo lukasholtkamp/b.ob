@@ -11,6 +11,11 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
 )
 
 find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(control_msgs REQUIRED)
 
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
@@ -62,6 +67,8 @@ add_executable(drive_selection_node src/drive_selection_node.cpp)
 add_executable(mpu6050_offsets src/mpu6050_lib.cpp src/mpu6050_offsets.cpp)
 add_executable(mpu6050_covariances src/mpu6050_lib.cpp src/mpu6050_covariances.cpp)
 
+
+
 # Install Cpp executables
 install(TARGETS
   mpu6050_offsets
@@ -72,8 +79,11 @@ install(TARGETS
 ament_target_dependencies(drive_selection_node
 "rclcpp"
 "sensor_msgs"
-"control_msgs"
-)
+"geometry_msgs"
+"nav_msgs"
+"tf2"
+"control_msgs")
+
 
 #install
 install(TARGETS drive_selection_node DESTINATION lib/${PROJECT_NAME})

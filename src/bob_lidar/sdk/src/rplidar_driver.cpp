@@ -64,7 +64,7 @@ namespace rp { namespace standalone{ namespace rplidar {
         delete drv;
     }
 
-    u_result RPlidarDriver::connect(const char *path, _u32 portOrBaud, _u32 flag)
+    u_result RPlidarDriver::connect(const char *path, _u32 portOrBaud, _u32 /* flag */)
     {
         switch (_channelType)
         {
@@ -98,7 +98,7 @@ namespace rp { namespace standalone{ namespace rplidar {
         return (_lidarDrv)->isConnected();
     }
      
-    u_result RPlidarDriver::reset(_u32 timeout)
+    u_result RPlidarDriver::reset(_u32 /* timeout */)
     {
         return (_lidarDrv)->reset();
     }
@@ -177,7 +177,7 @@ namespace rp { namespace standalone{ namespace rplidar {
         return (_lidarDrv)->ascendScanData(nodebuffer, count);
     }
     
-    u_result RPlidarDriver::getScanDataWithInterval(rplidar_response_measurement_node_t * nodebuffer, size_t & count)
+    u_result RPlidarDriver::getScanDataWithInterval(rplidar_response_measurement_node_t * /* nodebuffer */, size_t & /* count */)
     {
         return RESULT_OPERATION_NOT_SUPPORT;
     }

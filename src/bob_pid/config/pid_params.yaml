@@ -1,0 +1,10 @@
+pid_node:
+  ros__parameters:
+    Kp: 0.3
+    Ki: 0.005
+    Kd: 0.03
+    min_output: -0.4
+    max_output: 0.4
+    min_sum: -1.0
+    max_sum: 1.0
+    
