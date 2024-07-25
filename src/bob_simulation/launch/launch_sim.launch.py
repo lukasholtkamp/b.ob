@@ -1,3 +1,11 @@
+"""
+Launch file which calls all necessary nodes for running B.ob.
+
+Based on: https://github.com/joshnewans/articubot_one/blob/humble/launch/launch_sim.launch.py
+Date of Retrieval: 25.07.2024
+
+"""
+
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -20,7 +28,6 @@ def generate_launch_description():
     pkg_navigation = os.path.join(Path.cwd(), "src", "bob_navigation")
 
     gazebo_params_file = os.path.join(pkg_path, "config/gazebo_params.yaml")
-    # twist_mux_params_file = os.path.join(pkg_teleop, "config/twist_mux.yaml")
     ekf_params_file = os.path.join(pkg_navigation, "config/ekf.yaml")
     world_filename = "empty_world.world"
     world_path = os.path.join(pkg_path, "worlds", world_filename)

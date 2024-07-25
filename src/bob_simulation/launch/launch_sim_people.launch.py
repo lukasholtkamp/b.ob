@@ -1,3 +1,11 @@
+"""
+Launch file which calls all necessary nodes for running B.ob.
+
+Based on: https://github.com/stephenadhi/pedsim_ros/blob/humble/pedsim_gazebo_plugin/launch/gazebo_tb3_house_demo_launch.py
+Date of Retrieval: 25.07.2024
+
+"""
+
 import os
 
 from ament_index_python.packages import get_package_share_directory
