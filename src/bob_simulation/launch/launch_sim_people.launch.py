@@ -40,7 +40,6 @@ def generate_launch_description():
     default_pedsim_config_path = os.path.join(pedsim_dir, "config", "params.yaml")
 
     # Launch configuration variables specific to simulation
-    gui = LaunchConfiguration("gui")
     use_sim_time = LaunchConfiguration("use_sim_time")
     use_ros2_control = LaunchConfiguration("use_ros2_control")
     world = LaunchConfiguration("world")
@@ -50,11 +49,6 @@ def generate_launch_description():
     pedsim_config_file = LaunchConfiguration("pedsim_config_file")
 
     # Declare the launch arguments
-    declare_gui = DeclareLaunchArgument(
-        "gui",
-        default_value="false",
-        description="Start RViz2 automatically with this launch file.",
-    )
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         name="use_sim_time",
         default_value="True",
@@ -75,7 +69,7 @@ def generate_launch_description():
 
     declare_use_robot_localization_cmd = DeclareLaunchArgument(
         name="use_robot_localization",
-        default_value="False",
+        default_value="True",
         description="Use robot_localization package if true",
     )
 
@@ -134,7 +128,7 @@ def generate_launch_description():
         condition=IfCondition(use_robot_localization),
         package="robot_localization",
         executable="ekf_node",
-        parameters=[ekf_params_file],
+        parameters=[ekf_params_file, {"use_sim_time": True}],
     )
 
     # Launch Joint broadcaster to read all state interfaces
@@ -192,14 +186,6 @@ def generate_launch_description():
         output="screen",
     )
 
-    rviz_node = Node(
-        condition=IfCondition(gui),
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        output="log",
-    )
-
     # Start pedsim simulator
     pedsim_launch_cmd = TimerAction(
         period=10.0,  # wait for simulator until launching pedsim
@@ -234,7 +220,6 @@ def generate_launch_description():
     ld.add_action(declare_use_robot_localization_cmd)
     ld.add_action(declare_pedsim_scene_file_cmd)
     ld.add_action(declare_pedsim_config_file_cmd)
-    ld.add_action(declare_gui)
 
     # Add any actions
     ld.add_action(rsp)
@@ -246,7 +231,6 @@ def generate_launch_description():
     ld.add_action(joy_node)
     ld.add_action(teleop_node_ros2_control)
     ld.add_action(teleop_node_gazebo_control)
-    ld.add_action(rviz_node)
 
     ld.add_action(agent_spawner_cmd)
     ld.add_action(pedsim_launch_cmd)
