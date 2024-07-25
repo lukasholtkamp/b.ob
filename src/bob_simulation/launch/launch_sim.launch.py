@@ -1,3 +1,11 @@
+"""
+Launch file which calls all necessary nodes for running B.ob.
+
+Based on: https://github.com/joshnewans/articubot_one/blob/humble/launch/launch_sim.launch.py
+Date of Retrieval: 25.07.2024
+
+"""
+
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -17,22 +25,27 @@ from pathlib import Path
 def generate_launch_description():
 
     pkg_path = os.path.join(Path.cwd(), "src", "bob_simulation")
-    pkg_teleop = os.path.join(Path.cwd(), "src", "bob_teleop")
     pkg_navigation = os.path.join(Path.cwd(), "src", "bob_navigation")
 
     gazebo_params_file = os.path.join(pkg_path, "config/gazebo_params.yaml")
-    # twist_mux_params_file = os.path.join(pkg_teleop, "config/twist_mux.yaml")
     ekf_params_file = os.path.join(pkg_navigation, "config/ekf.yaml")
-    world_filename = "scenario_1.world"
+    world_filename = "empty_world.world"
     world_path = os.path.join(pkg_path, "worlds", world_filename)
 
     # Launch configuration variables specific to simulation
+    gui = LaunchConfiguration("gui")
     use_sim_time = LaunchConfiguration("use_sim_time")
     use_ros2_control = LaunchConfiguration("use_ros2_control")
     world = LaunchConfiguration("world")
     use_robot_localization = LaunchConfiguration("use_robot_localization")
 
     # Declare the launch arguments
+    declare_gui = DeclareLaunchArgument(
+        "gui",
+        default_value="false",
+        description="Start RViz2 automatically with this launch file.",
+    )
+
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         name="use_sim_time",
         default_value="True",
@@ -124,31 +137,21 @@ def generate_launch_description():
         ],
     )
 
-    # Launch IMU broadcaster
-    start_imu_broadcaster_cmd = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=[
-            "imu_broadcaster",
-            "--controller-manager",
-            "/controller_manager",
-        ],
-    )
-
     # Launch joy node to read gamepad commands
     joy_node = Node(
         package="joy",
         executable="joy_node",
     )
 
-    config_filepath = os.path.join(pkg_teleop, "config", "ps2.config.yaml")
+    config_filepath = os.path.join(
+        Path.cwd(), "src", "bob_teleop", "config", "ps3.config.yaml"
+    )
 
     # Launch drive selection node to be able to switch between the modes
     teleop_node_ros2_control = Node(
         condition=IfCondition(use_ros2_control),
-        package="teleop_twist_joy",
-        executable="teleop_node",
-        name="teleop_twist_joy_node",
+        package="bob_teleop",
+        executable="bob_teleop_node",
         parameters=[
             config_filepath,
         ],
@@ -158,21 +161,21 @@ def generate_launch_description():
 
     teleop_node_gazebo_control = Node(
         condition=UnlessCondition(use_ros2_control),
-        package="teleop_twist_joy",
-        executable="teleop_node",
-        name="teleop_twist_joy_node",
+        package="bob_teleop",
+        executable="bob_teleop_node",
         parameters=[
             config_filepath,
         ],
         output="screen",
     )
 
-    # rviz_node = Node(
-    #     package="rviz2",
-    #     executable="rviz2",
-    #     name="rviz2",
-    #     output="log",
-    # )
+    rviz_node = Node(
+        condition=IfCondition(gui),
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        output="log",
+    )
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -182,6 +185,7 @@ def generate_launch_description():
     ld.add_action(declare_use_ros2_control_cmd)
     ld.add_action(declare_world_cmd)
     ld.add_action(declare_use_robot_localization_cmd)
+    ld.add_action(declare_gui)
 
     # Add any actions
     ld.add_action(rsp)
@@ -189,12 +193,11 @@ def generate_launch_description():
     ld.add_action(spawn_entity)
     ld.add_action(robot_controller_spawner)
     ld.add_action(joint_state_broadcaster_spawner)
-    ld.add_action(start_imu_broadcaster_cmd)
     ld.add_action(start_robot_localization_cmd)
     ld.add_action(joy_node)
     ld.add_action(teleop_node_ros2_control)
     ld.add_action(teleop_node_gazebo_control)
-    # ld.add_action(rviz_node)
+    ld.add_action(rviz_node)
 
     # Launch them all!
     return ld
