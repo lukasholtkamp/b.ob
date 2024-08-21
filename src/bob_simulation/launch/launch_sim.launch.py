@@ -29,7 +29,7 @@ def generate_launch_description():
 
     gazebo_params_file = os.path.join(pkg_path, "config/gazebo_params.yaml")
     ekf_params_file = os.path.join(pkg_navigation, "config/ekf.yaml")
-    world_filename = "empty_world.world"
+    world_filename = "creative_room.world"
     world_path = os.path.join(pkg_path, "worlds", world_filename)
 
     # Launch configuration variables specific to simulation
@@ -42,7 +42,7 @@ def generate_launch_description():
     # Declare the launch arguments
     declare_gui = DeclareLaunchArgument(
         "gui",
-        default_value="false",
+        default_value="False",
         description="Start RViz2 automatically with this launch file.",
     )
 
@@ -54,7 +54,7 @@ def generate_launch_description():
 
     declare_use_ros2_control_cmd = DeclareLaunchArgument(
         name="use_ros2_control",
-        default_value="True",
+        default_value="False",
         description="Use ros2_control if true",
     )
 
@@ -185,7 +185,7 @@ def generate_launch_description():
     ld.add_action(declare_use_ros2_control_cmd)
     ld.add_action(declare_world_cmd)
     ld.add_action(declare_use_robot_localization_cmd)
-    ld.add_action(declare_gui)
+    # ld.add_action(declare_gui)
 
     # Add any actions
     ld.add_action(rsp)
@@ -197,7 +197,7 @@ def generate_launch_description():
     ld.add_action(joy_node)
     ld.add_action(teleop_node_ros2_control)
     ld.add_action(teleop_node_gazebo_control)
-    ld.add_action(rviz_node)
+    # ld.add_action(rviz_node)
 
     # Launch them all!
     return ld
