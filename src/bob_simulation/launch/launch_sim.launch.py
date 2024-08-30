@@ -1,35 +1,20 @@
-"""
-Launch file which calls all necessary nodes for running B.ob.
-
-Based on: https://github.com/joshnewans/articubot_one/blob/humble/launch/launch_sim.launch.py
-Date of Retrieval: 25.07.2024
-
-"""
-
 import os
-
 from ament_index_python.packages import get_package_share_directory
-
-
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
-
 from launch_ros.actions import Node
 from launch.conditions import IfCondition, UnlessCondition
-
 from pathlib import Path
 
-
 def generate_launch_description():
-
     pkg_path = os.path.join(Path.cwd(), "src", "bob_simulation")
     pkg_navigation = os.path.join(Path.cwd(), "src", "bob_navigation")
 
     gazebo_params_file = os.path.join(pkg_path, "config/gazebo_params.yaml")
     ekf_params_file = os.path.join(pkg_navigation, "config/ekf.yaml")
-    world_filename = "creative_room.world"
+    world_filename = "inf.world"
     world_path = os.path.join(pkg_path, "worlds", world_filename)
 
     # Launch configuration variables specific to simulation
@@ -66,7 +51,7 @@ def generate_launch_description():
 
     declare_use_robot_localization_cmd = DeclareLaunchArgument(
         name="use_robot_localization",
-        default_value="True",
+        default_value="False",
         description="Use robot_localization package if true",
     )
 
@@ -97,11 +82,18 @@ def generate_launch_description():
         }.items(),
     )
 
-    # Run the spawner node from the gazebo_ros package. The entity name doesn't really matter if you only have a single robot.
+    # Run the spawner node from the gazebo_ros package with initial pose parameters
     spawn_entity = Node(
         package="gazebo_ros",
         executable="spawn_entity.py",
-        arguments=["-topic", "robot_description", "-entity", "bob"],
+        arguments=[
+            "-topic", "robot_description",
+            "-entity", "bob",
+            "-x", "4.0",  # x position
+            "-y", "1.0",  # y position
+            "-z", "0.0",  # z position
+            "-Y", "0.0"   # yaw orientation
+        ],
         output="screen",
     )
 
