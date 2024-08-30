@@ -47,10 +47,13 @@ class NMPCController(Node):
         self.ol_path_pub = self.create_publisher(Path, '/ol_path', 10)
 
         self.obs_sub = self.create_subscription(Obstacles,'/obstacles',self.obs_callback,10)
+        self.global_path_sub = self.create_subscription(Path,'/plan',self.path_callback,10)
 
         self.max_obs = 5
         self.obs_list = np.zeros((self.max_obs,3))
         self.current_state = []
+
+        self.global_path = []
 
         self.initialized = False
         self.u0 = np.array([0.5, 2])
@@ -106,27 +109,27 @@ class NMPCController(Node):
         if not self.initialized:
             self.setup_mpc(self.current_state, self.current_state)
             self.publish_reference_path()  # Publish the reference path once initialized
-        else:
-            x_pred, x_pred_a, usol, usol_a, w, s = self.run_open_loop_mpc(
-                self.x0, self.s0, self.x_st_0, self.x_st_0_a,
-                self.u_st_0, self.u_st_0_a, self.w_st_0, self.s_st_0, self.pisolver,np.transpose(self.obs_list).reshape((1,-1))
-            )
-            if self.s0 < 58:
-                self.publish_control(usol[0])
-                self.publish_reference_path()
-                self.publish_ol_path(x_pred)
-                self.x0 = self.current_state
-                self.w0 = w[0]
-                self.s0 += self.dt * self.w0
+        # else:
+        #     x_pred, x_pred_a, usol, usol_a, w, s = self.run_open_loop_mpc(
+        #         self.x0, self.s0, self.x_st_0, self.x_st_0_a,
+        #         self.u_st_0, self.u_st_0_a, self.w_st_0, self.s_st_0, self.pisolver,np.transpose(self.obs_list).reshape((1,-1))
+        #     )
+        #     if self.s0 < 58:
+        #         self.publish_control(usol[0])
+        #         self.publish_reference_path()
+        #         self.publish_ol_path(x_pred)
+        #         self.x0 = self.current_state
+        #         self.w0 = w[0]
+        #         self.s0 += self.dt * self.w0
 
-                self.u_st_0 = np.vstack((usol[1:], usol[-1]))
-                self.u_st_0_a = np.vstack((usol_a[1:], usol_a[-1]))
-                self.x_st_0 = np.vstack((x_pred[1:], x_pred[-1]))
-                self.x_st_0_a = np.vstack((x_pred_a[1:], x_pred_a[-1]))
-                self.w_st_0 = np.vstack((w[1:], w[-1]))
-                self.s_st_0 = np.vstack((s[1:], s[-1]))
-            else:
-                self.stop_robot()
+        #         self.u_st_0 = np.vstack((usol[1:], usol[-1]))
+        #         self.u_st_0_a = np.vstack((usol_a[1:], usol_a[-1]))
+        #         self.x_st_0 = np.vstack((x_pred[1:], x_pred[-1]))
+        #         self.x_st_0_a = np.vstack((x_pred_a[1:], x_pred_a[-1]))
+        #         self.w_st_0 = np.vstack((w[1:], w[-1]))
+        #         self.s_st_0 = np.vstack((s[1:], s[-1]))
+        #     else:
+        #         self.stop_robot()
 
 
     def obs_callback(self, msg):
@@ -154,6 +157,13 @@ class NMPCController(Node):
 
         self.obs_list = obs_sorted[:self.max_obs,:]
 
+
+    def path_callback(self, msg):
+
+        if len(self.global_path)==0:
+            self.global_path = msg.poses
+
+        print(msg.poses)
 
     def stop_robot(self):
         twist_msg = Twist()

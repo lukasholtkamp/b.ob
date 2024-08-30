@@ -3,6 +3,7 @@ import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry, Path
 from geometry_msgs.msg import Twist, PoseStamped
+from obstacle_detector.msg import Obstacles
 import numpy as np
 from casadi import *
 import time 
@@ -44,6 +45,12 @@ class NMPCController(Node):
         self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
         self.ref_path_pub = self.create_publisher(Path, '/ref_path', 10)
         self.ol_path_pub = self.create_publisher(Path, '/ol_path', 10)
+
+        self.obs_sub = self.create_subscription(Obstacles,'/obstacles',self.obs_callback,10)
+
+        self.max_obs = 5
+        self.obs_list = np.zeros((self.max_obs,3))
+        self.current_state = []
 
         self.initialized = False
         self.u0 = np.array([0.5, 2])
@@ -87,7 +94,7 @@ class NMPCController(Node):
         quat = msg.pose.pose.orientation
         _, _, theta = self.quaternion_to_euler(quat.x, quat.y, quat.z, quat.w)
 
-        current_state = np.array([x, y, theta])
+        self.current_state = np.array([x, y, theta])
 
         if self.start==0:
             self.start = time.perf_counter()
@@ -97,25 +104,56 @@ class NMPCController(Node):
             self.start = self.end
 
         if not self.initialized:
-            self.setup_mpc(current_state, current_state)
+            self.setup_mpc(self.current_state, self.current_state)
             self.publish_reference_path()  # Publish the reference path once initialized
         else:
             x_pred, x_pred_a, usol, usol_a, w, s = self.run_open_loop_mpc(
                 self.x0, self.s0, self.x_st_0, self.x_st_0_a,
-                self.u_st_0, self.u_st_0_a, self.w_st_0, self.s_st_0, self.pisolver
+                self.u_st_0, self.u_st_0_a, self.w_st_0, self.s_st_0, self.pisolver,np.transpose(self.obs_list).reshape((1,-1))
             )
-            self.publish_control(usol[0])
-            self.publish_ol_path(x_pred)
-            self.x0 = current_state
-            self.w0 = w[0]
-            self.s0 += self.dt * self.w0
+            if self.s0 < 58:
+                self.publish_control(usol[0])
+                self.publish_reference_path()
+                self.publish_ol_path(x_pred)
+                self.x0 = self.current_state
+                self.w0 = w[0]
+                self.s0 += self.dt * self.w0
 
-            self.u_st_0 = np.vstack((usol[1:], usol[-1]))
-            self.u_st_0_a = np.vstack((usol_a[1:], usol_a[-1]))
-            self.x_st_0 = np.vstack((x_pred[1:], x_pred[-1]))
-            self.x_st_0_a = np.vstack((x_pred_a[1:], x_pred_a[-1]))
-            self.w_st_0 = np.vstack((w[1:], w[-1]))
-            self.s_st_0 = np.vstack((s[1:], s[-1]))
+                self.u_st_0 = np.vstack((usol[1:], usol[-1]))
+                self.u_st_0_a = np.vstack((usol_a[1:], usol_a[-1]))
+                self.x_st_0 = np.vstack((x_pred[1:], x_pred[-1]))
+                self.x_st_0_a = np.vstack((x_pred_a[1:], x_pred_a[-1]))
+                self.w_st_0 = np.vstack((w[1:], w[-1]))
+                self.s_st_0 = np.vstack((s[1:], s[-1]))
+            else:
+                self.stop_robot()
+
+
+    def obs_callback(self, msg):
+
+        # Initialize an array to store obstacle information
+        obs = np.zeros((len(msg.circles), 3))
+
+        # Extract the x, y, radius for each circle and store it in the obs array
+        for i in range(len(msg.circles)):
+            obs[i] = [msg.circles[i].center.x, msg.circles[i].center.y, msg.circles[i].radius]
+
+            
+        # Calculate the difference between the obstacle positions and the current position
+        diff = obs[:, :2] - np.tile(self.current_state[:2], (obs[:, :2].shape[0], 1))
+        
+        # Calculate the Euclidean distance
+        distances = np.linalg.norm(diff, axis=1)
+        
+        # Sort the obs array according to the distances
+        sorted_indices = np.argsort(distances)
+        obs_sorted = obs[sorted_indices]
+
+        if obs_sorted.shape[0] < self.max_obs:
+            obs_sorted = np.vstack((obs_sorted,np.zeros((self.max_obs-obs_sorted.shape[0],3))))
+
+        self.obs_list = obs_sorted[:self.max_obs,:]
+
 
     def stop_robot(self):
         twist_msg = Twist()
@@ -173,9 +211,12 @@ class NMPCController(Node):
         twist_msg.angular.z = control_input[1]
         self.cmd_vel_pub.publish(twist_msg)
 
-    def run_open_loop_mpc(self, x0, s0, x_st_0, x_st_0_a, u_st_0, u_st_0_a, w_st_0, s_st_0, solver):
+    def run_open_loop_mpc(self, x0, s0, x_st_0, x_st_0_a, u_st_0, u_st_0_a, w_st_0, s_st_0, solver,obs):
+
         args_p = np.append(x0, s0)
-        args_p = vertcat(*args_p)
+
+        args_p = vertcat(*args_p,*obs)
+        
         args_x0 = np.concatenate([
             x_st_0.T.reshape(-1),
             x_st_0_a.T.reshape(-1),
@@ -226,30 +267,41 @@ class NMPCController(Node):
         eta = vertcat(etat1, etat2, 0)
         return eta
 
-    def obstacle(self, x, r=1.2):
-        h = fmax(r**2 - x[0] ** 2 - x[1] ** 2, 0)
+    def obstacle(self, x, obs):
+        h = fmax(obs[2]**2 - (x[0]-obs[0]) ** 2 - (x[1]-obs[1]) ** 2, 0)
         return h
 
-    def obstacle_cost(self, x_ob, x_ob_a, mu=10):
-        h_ob = self.obstacle(x_ob)
-        h_ob_a = self.obstacle(x_ob_a)
-        V_obs = 0.5 * mu * h_ob**2 + 0.5 * mu * h_ob_a**2
+    def obstacle_cost(self, x_ob, x_ob_a, obs_list, mu=10):
+
+        V_obs = 0
+
+        for i in range(self.max_obs):
+
+            h_ob = self.obstacle(x_ob,obs_list[i,:])
+            h_ob_a = self.obstacle(x_ob_a,obs_list[i,:])
+
+            cost = if_else(obs_list[i,2]>0,0.5 * mu * h_ob**2 + 0.5 * mu * h_ob_a**2,0)
+
+            V_obs += cost
+
         return V_obs
 
     def bilin(self, M, x):
         return mtimes(mtimes(x.T, M), x)
 
-    def objective_cost(self, X, U, W, S_a, X_a, U_a):
+    def objective_cost(self, X, U, W, S_a, X_a, U_a,obs_list):
         J = 0.0
         for i in range(self.N):
             dx = X[:, i] - X_a[:, i]
             du = U[:, i] - U_a[:, i]
             dx_a = X_a[:, i] - self.reference_traj(S_a[i])
             du_a = U_a[:, i] - self.umax
-            J += self.bilin(self.Q, dx) + self.bilin(self.R, du) + self.bilin(self.T, (1 - W[i])) + self.bilin(self.K, dx_a) + self.bilin(self.S, du_a) + self.obstacle_cost(X[:2, i], X_a[:2, i])
+            obs_cost = self.obstacle_cost(X[:2, i], X_a[:2, i],obs_list)
+            J += self.bilin(self.Q, dx) + self.bilin(self.R, du) + self.bilin(self.T, (1 - W[i])) + self.bilin(self.K, dx_a) + self.bilin(self.S, du_a) + obs_cost
         deta_Na = X_a[:, self.N] - self.reference_traj(S_a[self.N])
         deta_N = X[:, self.N] - X_a[:, self.N]
-        J += self.bilin(self.Q, deta_N) + self.bilin(self.K, deta_Na) + self.obstacle_cost(X[:2, self.N], X_a[:2, self.N])
+        obs_cost = self.obstacle_cost(X[:2, self.N], X_a[:2, self.N],obs_list)
+        J += self.bilin(self.Q, deta_N) + self.bilin(self.K, deta_Na) + obs_cost
 
         return J
 
@@ -294,10 +346,11 @@ class NMPCController(Node):
         S_a = SX.sym("S_a", self.N + 1, 1)  # Decision variable for ref traj
         W = SX.sym("W", 1, self.N)  # Decision variable
         P_a = SX.sym("P_a", self.nx + 1)  # Initial state parameter
+        obs_list = SX.sym("obs",self.max_obs,3)
 
         self.system = Function("sys", [X, U], [self.mobile_robot_ode(X, U)])
 
-        J = self.objective_cost(X, U, W, S_a, X_a, U_a)
+        J = self.objective_cost(X, U, W, S_a, X_a, U_a,obs_list)
         g = self.equality_constraints(X, U, S_a, W, P_a,X_a)
         G = vertcat(*g)
 
@@ -312,7 +365,7 @@ class NMPCController(Node):
 
         lbg_vcsd = vertcat(*lbg)
         ubg_vcsd = vertcat(*ubg)
-
+        
         Opt_Vars = vertcat(
             reshape(X, -1, 1),
             reshape(X_a, -1, 1),
@@ -329,10 +382,11 @@ class NMPCController(Node):
             "ipopt.acceptable_tol": 1e-6,
             "ipopt.acceptable_obj_change_tol": 1e-6,
         }
+
         vnlp_prob = {
             "f": J,
             "x": Opt_Vars,
-            "p": vertcat(P_a),
+            "p": vertcat(P_a,reshape(obs_list,-1,1)),
             "g": G_vcsd,
         }
         pisolver = nlpsol("vsolver", "ipopt", vnlp_prob, opts_setting)
