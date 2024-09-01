@@ -13,7 +13,6 @@ class NMPCController(Node):
 
     def __init__(self):
         super().__init__('nmpc_controller')
-
         # NMPC Parameters
         self.Ts = 1  # Sampling time
         self.lmda = 0.05
@@ -48,12 +47,14 @@ class NMPCController(Node):
 
         self.obs_sub = self.create_subscription(Obstacles, '/obstacles', self.obs_callback, 10)
         self.global_path_sub = self.create_subscription(Path, '/plan', self.path_callback, 10)
+        self.goal_pose_sub = self.create_subscription(PoseStamped, '/goal_pose', self.goal_pose_callback, 10)
 
         self.max_obs = 5
         self.obs_list = np.zeros((self.max_obs, 3))
-        self.current_state = []
+        self.current_state = np.zeros((1, 3))
 
         self.global_path = []
+        self.segment_length = 10
 
         self.initialized = False
         self.u0 = np.array([0.5, 2])
@@ -61,8 +62,10 @@ class NMPCController(Node):
         self.w0 = 1
         self.s0 = 0
 
+        self.new_goal_received = False  # Flag to track new goal pose
+
     def path_callback(self, msg):
-        if len(self.global_path) == 0:
+        if self.new_goal_received:
             # Initialize an empty list to hold the (x, y, theta) tuples
             path_points = []
 
@@ -91,6 +94,13 @@ class NMPCController(Node):
             # Fit the global path with straight lines and parabolas
             self.fit_path_segments()
 
+            # Reset the flag after processing the new path
+            self.new_goal_received = False
+
+    def goal_pose_callback(self, msg):
+        # Set the flag to indicate a new goal has been received
+        self.new_goal_received = True
+
     def fit_segment(self, x_seg, y_seg, start_point=None):
         if start_point is not None:
             x_seg = np.insert(x_seg, 0, start_point[0])
@@ -115,23 +125,21 @@ class NMPCController(Node):
         return f_x, f_y
 
     def divide_into_segments(self):
-        segment_length = 20  # Adjust as needed
         segments = []
-        for i in range(0, len(self.global_path) - segment_length + 1, segment_length):
-            segments.append(self.global_path[i:i + segment_length])
+        for i in range(0, len(self.global_path) - self.segment_length + 1, self.segment_length):
+            segments.append(self.global_path[i:i + self.segment_length])
         return segments
 
     def fit_path_segments(self):
-        segment_length = 20
         x = self.global_path[:, 0]
         y = self.global_path[:, 1]
 
         segments = []
         prev_end = None
 
-        for i in range(0, len(x) - segment_length + 1, segment_length):
-            x_seg = x[i:i + segment_length]
-            y_seg = y[i:i + segment_length]
+        for i in range(0, len(x) - self.segment_length + 1, self.segment_length):
+            x_seg = x[i:i + self.segment_length]
+            y_seg = y[i:i + self.segment_length]
 
             if prev_end is not None:
                 x_seg = np.insert(x_seg, 0, prev_end[0])
@@ -180,15 +188,14 @@ class NMPCController(Node):
 
     def reference_traj(self, s):
 
-        scaled_s = s * (len(self.global_path)/self.ub_s)
+        scaled_s = s * (len(self.global_path)/self.ub_s) * 1.1
 
-        segment_length = 20
         num_segments = len(self.fitted_segments)
         threshold = 0.5  # Threshold for large changes
 
         # Determine the current segment index and the normalized segment position
-        segment_index = floor(scaled_s / segment_length)
-        segment_s = fmod(scaled_s, segment_length) / segment_length
+        segment_index = floor(scaled_s / self.segment_length)
+        segment_s = fmod(scaled_s, self.segment_length) / self.segment_length
 
         # Ensure the segment_index is within bounds
         segment_index = fmin(segment_index, num_segments - 1)
@@ -309,8 +316,8 @@ class NMPCController(Node):
             try:
                 diff = obs[:, :2] - np.tile(self.current_state[:2], (obs[:, :2].shape[0], 1))
             except:
-                print("waiting for obstacle detection")
-
+                self.get_logger().info("Waiting for obstacle detection")  # Debugging line
+        
         # Calculate the Euclidean distance
         distances = np.linalg.norm(diff, axis=1)
         
