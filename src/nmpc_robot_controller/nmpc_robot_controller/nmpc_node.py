@@ -285,7 +285,7 @@ class NMPCController(Node):
                 self.x0, self.s0, self.x_st_0, self.x_st_0_a,
                 self.u_st_0, self.u_st_0_a, self.w_st_0, self.s_st_0, self.pisolver, np.transpose(self.obs_list).reshape((1, -1))
             )
-            if self.s0 < self.ub_s - 0.5:  # Avoid overshooting the maximum s
+            if self.s0 < self.ub_s:  # Avoid overshooting the maximum s
                 self.publish_control(usol[0])
                 self.publish_reference_path()
                 self.publish_ol_path(x_pred)
