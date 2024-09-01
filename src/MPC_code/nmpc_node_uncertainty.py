@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from nav_msgs.msg import Odometry, Path
-from geometry_msgs.msg import Twist, PoseStamped
+from nav_msgs.msg import Path
+from geometry_msgs.msg import Twist, PoseStamped, PoseWithCovarianceStamped
+from sensor_msgs.msg import LaserScan  # Import the LaserScan message type
 from obstacle_detector.msg import Obstacles
 import numpy as np
 from casadi import *
-import time 
 from tf_transformations import euler_from_quaternion
+import time
 
 class NMPCController(Node):
 
     def __init__(self):
         super().__init__('nmpc_controller')
         # NMPC Parameters
-        self.Ts = 1  # Sampling time
+        self.Ts = 1  # Sampling time (adjust as needed)
         self.lmda = 0.05
         self.N = 6  # Prediction horizon
         self.nx = 3  # State dimension (x, y, theta)
@@ -41,13 +42,13 @@ class NMPCController(Node):
 
         # Other initializations
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
-        self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
         self.ref_path_pub = self.create_publisher(Path, '/ref_path', 10)
         self.ol_path_pub = self.create_publisher(Path, '/ol_path', 10)
 
         self.obs_sub = self.create_subscription(Obstacles, '/obstacles', self.obs_callback, 10)
         self.global_path_sub = self.create_subscription(Path, '/plan', self.path_callback, 10)
         self.goal_pose_sub = self.create_subscription(PoseStamped, '/goal_pose', self.goal_pose_callback, 10)
+        self.amcl_pose_sub = self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self.amcl_pose_callback, 10)
 
         self.max_obs = 5
         self.obs_list = np.zeros((self.max_obs, 3))
@@ -55,6 +56,8 @@ class NMPCController(Node):
 
         self.global_path = []
         self.segment_length = 10
+
+        self.uncertainty = 3
 
         self.initialized = False
         self.u0 = np.array([0.5, 2])
@@ -64,41 +67,84 @@ class NMPCController(Node):
 
         self.new_goal_received = False  # Flag to track new goal pose
 
+        # Create a timer for the MPC loop
+        self.timer = self.create_timer(0.000001, self.mpc_loop)
+
+        # Additional initialization for LiDAR scan
+        self.lidar_min_range = float('inf')  # Set to infinity initially
+        self.min_red = 1.0  # Initialize min_red
+
+        # Subscribe to the LiDAR scan topic
+        self.lidar_sub = self.create_subscription(LaserScan, '/scan', self.lidar_callback, 10)
+
+
+    def amcl_pose_callback(self, msg):
+        x = msg.pose.pose.position.x
+        y = msg.pose.pose.position.y
+        quat = msg.pose.pose.orientation
+        _, _, theta = euler_from_quaternion([quat.x, quat.y, quat.z, quat.w])
+
+        self.current_state = np.array([x, y, theta])
+
+        # Extract the 3x3 covariance matrix for position (x, y) and orientation (theta)
+        covariance_matrix = np.array(msg.pose.covariance).reshape(6, 6)
+        position_covariance = covariance_matrix[0:2, 0:2]  # Covariance for x, y
+        orientation_covariance = covariance_matrix[5, 5]  # Covariance for theta
+
+        # Method 3: Frobenius norm of the covariance matrix
+        frob_norm_covariance = np.linalg.norm(position_covariance) + np.sqrt(orientation_covariance)
+
+        self.uncertainty = min(frob_norm_covariance,3)
+
+
+    def mpc_loop(self):
+        if self.start == 0:
+            self.start = self.get_clock().now().nanoseconds / 1e9
+        else:
+            self.end = self.get_clock().now().nanoseconds / 1e9
+            self.dt = self.end - self.start
+            self.start = self.end
+
+        if not self.initialized and hasattr(self, 'fitted_segments'):
+            self.setup_mpc(self.current_state, self.current_state)
+            self.publish_reference_path()  # Publish the reference path once initialized
+        elif self.initialized:
+            x_pred, x_pred_a, usol, usol_a, w, s = self.run_open_loop_mpc(
+                self.x0, self.s0, self.x_st_0, self.x_st_0_a,
+                self.u_st_0, self.u_st_0_a, self.w_st_0, self.s_st_0, self.pisolver, np.transpose(self.obs_list).reshape((1, -1))
+            )
+            if self.s0 < self.ub_s :  # Avoid overshooting the maximum s
+                self.publish_control(usol[0])
+                self.publish_reference_path()
+                self.publish_ol_path(x_pred)
+                self.x0 = self.current_state
+                self.w0 = w[0]
+                self.s0 += self.dt * self.w0
+
+                self.u_st_0 = np.vstack((usol[1:], usol[-1]))
+                self.u_st_0_a = np.vstack((usol_a[1:], usol_a[-1]))
+                self.x_st_0 = np.vstack((x_pred[1:], x_pred[-1]))
+                self.x_st_0_a = np.vstack((x_pred_a[1:], x_pred_a[-1]))
+                self.w_st_0 = np.vstack((w[1:], w[-1]))
+                self.s_st_0 = np.vstack((s[1:], s[-1]))
+            else:
+                self.stop_robot()
+
     def path_callback(self, msg):
         if self.new_goal_received:
-            # Initialize an empty list to hold the (x, y, theta) tuples
             path_points = []
-
-            # Iterate through each pose in the path
             for pose in msg.poses:
-                # Extract the x and y coordinates
                 x = pose.pose.position.x
                 y = pose.pose.position.y
-
-                # Extract the orientation quaternion
-                orientation_q = pose.pose.orientation
-                quaternion = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
-
-                # Convert quaternion to euler (roll, pitch, yaw)
+                quaternion = [pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w]
                 _, _, theta = euler_from_quaternion(quaternion)
-
-                # Append the (x, y, theta) as a tuple to the list
                 path_points.append((x, y, theta))
-
-            # Convert the list of tuples to a NumPy array
             self.global_path = np.array(path_points)
-
-            # Update self.ub_s to be the total number of points in the global_path
             self.ub_s = len(self.global_path) / 12
-
-            # Fit the global path with straight lines and parabolas
             self.fit_path_segments()
-
-            # Reset the flag after processing the new path
             self.new_goal_received = False
 
     def goal_pose_callback(self, msg):
-        # Set the flag to indicate a new goal has been received
         self.new_goal_received = True
 
     def fit_segment(self, x_seg, y_seg, start_point=None):
@@ -262,46 +308,6 @@ class NMPCController(Node):
 
         return roll, pitch, yaw
 
-    def odom_callback(self, msg):
-        x = msg.pose.pose.position.x
-        y = msg.pose.pose.position.y
-        quat = msg.pose.pose.orientation
-        _, _, theta = self.quaternion_to_euler(quat.x, quat.y, quat.z, quat.w)
-
-        self.current_state = np.array([x, y, theta])
-
-        if self.start == 0:
-            self.start = time.perf_counter()
-        else:
-            self.end = time.perf_counter()
-            self.dt = self.end - self.start
-            self.start = self.end
-
-        if not self.initialized and hasattr(self, 'fitted_segments'):
-            self.setup_mpc(self.current_state, self.current_state)
-            self.publish_reference_path()  # Publish the reference path once initialized
-        elif self.initialized:
-            x_pred, x_pred_a, usol, usol_a, w, s = self.run_open_loop_mpc(
-                self.x0, self.s0, self.x_st_0, self.x_st_0_a,
-                self.u_st_0, self.u_st_0_a, self.w_st_0, self.s_st_0, self.pisolver, np.transpose(self.obs_list).reshape((1, -1))
-            )
-            if self.s0 < self.ub_s - 0.5:  # Avoid overshooting the maximum s
-                self.publish_control(usol[0])
-                self.publish_reference_path()
-                self.publish_ol_path(x_pred)
-                self.x0 = self.current_state
-                self.w0 = w[0]
-                self.s0 += self.dt * self.w0
-
-                self.u_st_0 = np.vstack((usol[1:], usol[-1]))
-                self.u_st_0_a = np.vstack((usol_a[1:], usol_a[-1]))
-                self.x_st_0 = np.vstack((x_pred[1:], x_pred[-1]))
-                self.x_st_0_a = np.vstack((x_pred_a[1:], x_pred_a[-1]))
-                self.w_st_0 = np.vstack((w[1:], w[-1]))
-                self.s_st_0 = np.vstack((s[1:], s[-1]))
-            else:
-                self.stop_robot()
-
     def obs_callback(self, msg):
         # Initialize an array to store obstacle information
         obs = np.zeros((len(msg.circles), 3))
@@ -309,7 +315,7 @@ class NMPCController(Node):
         # Extract the x, y, radius for each circle and store it in the obs array
         for i in range(len(msg.circles)):
             obs[i] = [msg.circles[i].center.x, msg.circles[i].center.y, msg.circles[i].radius]
-
+    
         try:
             diff = obs[:, :2] - np.tile(self.current_state[:2], (obs[:, :2].shape[0], 1))
             # Calculate the Euclidean distance
@@ -378,9 +384,31 @@ class NMPCController(Node):
 
         self.ref_path_pub.publish(ref_path)
 
+    def lidar_callback(self, msg):
+        # Extract the minimum range from the LiDAR scan data
+        self.lidar_min_range = min(msg.ranges)
+
+        # Get the range limits from the message
+        range_min = msg.range_min
+        range_max = msg.range_max
+
+        # Normalize the min_range between 0 and 1 based on the LiDAR range limits
+        normalized_range = (self.lidar_min_range - range_min) / (range_max - range_min)
+
+        # Adjust min_red based on the normalized range
+        # When the minimum range is small (close to obstacles), min_red should decrease.
+        m = 0.5
+        self.min_red = m + (1-m) * normalized_range  # 0.1 when close, 1.0 when far
+
+    def asymptotic_function(self, x):
+        k = 10  # Controls the steepness
+        c = 1.65  # Midpoint of transition
+        y = self.min_red + (1 - self.min_red) / (1 + np.exp(-k * (x - c)))
+        return y
+
     def publish_control(self, control_input):
         twist_msg = Twist()
-        twist_msg.linear.x = control_input[0]
+        twist_msg.linear.x = control_input[0] * self.asymptotic_function(self.uncertainty)
         twist_msg.angular.z = control_input[1]
         self.cmd_vel_pub.publish(twist_msg)
 
