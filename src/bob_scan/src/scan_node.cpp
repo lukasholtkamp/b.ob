@@ -78,7 +78,7 @@ private:
             return;
         }
 
-        file << "Theta/dgree,Ranges/m\n";
+        file << "Theta,Ranges\n";
 
         int num_ranges = scan_msg->ranges.size();
         float angle_increment = scan_msg->angle_increment;

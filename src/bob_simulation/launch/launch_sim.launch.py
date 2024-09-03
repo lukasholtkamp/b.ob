@@ -8,13 +8,14 @@ from launch_ros.actions import Node
 from launch.conditions import IfCondition, UnlessCondition
 from pathlib import Path
 
+
 def generate_launch_description():
     pkg_path = os.path.join(Path.cwd(), "src", "bob_simulation")
     pkg_navigation = os.path.join(Path.cwd(), "src", "bob_navigation")
 
     gazebo_params_file = os.path.join(pkg_path, "config/gazebo_params.yaml")
     ekf_params_file = os.path.join(pkg_navigation, "config/ekf.yaml")
-    world_filename = "creative_room.world"
+    world_filename = "scenario_2.world"
     world_path = os.path.join(pkg_path, "worlds", world_filename)
 
     # Launch configuration variables specific to simulation
@@ -39,7 +40,7 @@ def generate_launch_description():
 
     declare_use_ros2_control_cmd = DeclareLaunchArgument(
         name="use_ros2_control",
-        default_value="False",
+        default_value="True",
         description="Use ros2_control if true",
     )
 
@@ -87,12 +88,18 @@ def generate_launch_description():
         package="gazebo_ros",
         executable="spawn_entity.py",
         arguments=[
-            "-topic", "robot_description",
-            "-entity", "bob",
-            "-x", "0.0",  # x position
-            "-y", "0.0",  # y position
-            "-z", "0.0",  # z position
-            "-Y", "0.0"   # yaw orientation
+            "-topic",
+            "robot_description",
+            "-entity",
+            "bob",
+            "-x",
+            "0.0",  # x position
+            "-y",
+            "0.0",  # y position
+            "-z",
+            "0.0",  # z position
+            "-Y",
+            "0.0",  # yaw orientation
         ],
         output="screen",
     )
