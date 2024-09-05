@@ -52,8 +52,8 @@ class Detection(Node):
             cluster_angles = valid_angles[cluster_mask]
             cluster_ranges = valid_ranges[cluster_mask]
 
-            # Filter clusters based on size (e.g., between 4 and 20 points)
-            if 2 < len(cluster_ranges) < 18:
+            # Filter clusters based on size (e.g., between 4 and 26 points)
+            if 2 < len(cluster_ranges) < 26:
                 # Find the original indices for these points in the original scan
                 for angle, range_value in zip(cluster_angles, cluster_ranges):
                     # Find the closest original angle to store the filtered value
