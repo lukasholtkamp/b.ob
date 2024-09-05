@@ -71,6 +71,11 @@ class Detection(Node):
                 # Find the mean of the cluster for marker positioning
                 mean_x = np.mean(cluster_ranges * np.cos(cluster_angles))
                 mean_y = np.mean(cluster_ranges * np.sin(cluster_angles))
+                stddev_x = np.std(cluster_ranges * np.cos(cluster_angles))
+                stddev_y = np.std(cluster_ranges * np.sin(cluster_angles))
+
+                print(stddev_x)
+                print(stddev_y, "\n")
 
                 # Find the original indices for these points in the original scan
                 for angle, range_value in zip(cluster_angles, cluster_ranges):
@@ -78,42 +83,49 @@ class Detection(Node):
                     original_index = np.argmin(np.abs(angles - angle))
                     filtered_ranges[original_index] = range_value  # Set filtered range
 
-                # Create a marker for this cluster
-                marker = Marker()
-                marker.header.frame_id = (
-                    "lidar_frame"  # The frame in which the data is published
-                )
-                marker.type = Marker.CYLINDER  # Circle marker
-                marker.action = Marker.ADD
-                marker.id = self.marker_id
-                self.marker_id += 1
+                if not (stddev_x > 0.15 or stddev_y > 0.20):
+                    # Create a marker for this cluster
+                    marker = Marker()
+                    marker.header.frame_id = (
+                        "lidar_frame"  # The frame in which the data is published
+                    )
+                    marker.type = Marker.CYLINDER  # Circle marker
+                    marker.action = Marker.ADD
+                    marker.id = self.marker_id
+                    self.marker_id += 1
 
-                # Set marker position (convert polar coordinates back to Cartesian)
-                marker.pose.position.x = mean_x
-                print("x", marker.pose.position.x)
-                marker.pose.position.y = mean_y
-                print("y", marker.pose.position.y, "\n")
-                marker.pose.position.z = 0.0  # Flat on the ground (z = 0)
+                    # Set marker position (convert polar coordinates back to Cartesian)
+                    marker.pose.position.x = mean_x
+                    marker.pose.position.y = mean_y
+                    marker.pose.position.z = 0.0  # Flat on the ground (z = 0)
 
-                # Orientation (keep the marker upright)
-                marker.pose.orientation.x = 0.0
-                marker.pose.orientation.y = 0.0
-                marker.pose.orientation.z = 0.0
-                marker.pose.orientation.w = 1.0
+                    # Orientation (keep the marker upright)
+                    marker.pose.orientation.x = 0.0
+                    marker.pose.orientation.y = 0.0
+                    marker.pose.orientation.z = 0.0
+                    marker.pose.orientation.w = 1.0
 
-                # Set marker scale (diameter of the circle)
-                marker.scale.x = 0.4  # Diameter along X
-                marker.scale.y = 0.4  # Diameter along Y
-                marker.scale.z = 0.1  # Height of the cylinder (thin circle)
+                    # Set marker scale (diameter of the circle based on standard deviation)
+                    marker.scale.x = float(
+                        4 * max(stddev_x, stddev_y)
+                    )  # Diameter along X
+                    marker.scale.y = float(
+                        4 * max(stddev_x, stddev_y)
+                    )  # Diameter along Y
+                    marker.scale.z = 0.1  # Height of the cylinder (thin circle)
 
-                # Set marker color
-                marker.color.r = 0.0
-                marker.color.g = 1.0  # Green
-                marker.color.b = 0.0
-                marker.color.a = 1.0  # Fully opaque
+                    # Set marker color
+                    marker.color.r = 0.0
+                    marker.color.g = 1.0  # Green
+                    marker.color.b = 0.0
+                    marker.color.a = 1.0  # Fully opaque
 
-                # Add this marker to the marker array
-                marker_array.markers.append(marker)
+                    # Add this marker to the marker array
+                    marker_array.markers.append(marker)
+
+            # Update the marker array: clear old markers
+            for marker in marker_array.markers:
+                marker.lifetime = rclpy.time.Duration(seconds=0.2).to_msg()
 
         # Publish the filtered scan
         self.publish_filtered_scan(scan_msg, filtered_ranges)
