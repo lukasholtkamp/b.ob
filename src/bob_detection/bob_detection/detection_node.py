@@ -3,6 +3,9 @@ from sklearn.cluster import DBSCAN
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
+from visualization_msgs.msg import Marker, MarkerArray
+from geometry_msgs.msg import Point
+import math
 
 
 class Detection(Node):
@@ -19,6 +22,14 @@ class Detection(Node):
         self.filtered_scan_publisher = self.create_publisher(
             LaserScan, "filtered_scan", 10
         )
+
+        # Publisher for the marker array (to visualize clusters as circles)
+        self.marker_publisher = self.create_publisher(
+            MarkerArray, "cluster_markers", 10
+        )
+
+        # Keep track of the marker IDs
+        self.marker_id = 0
 
     def scan_callback(self, scan_msg: LaserScan):
         # Extract ranges and angles (theta) from the LaserScan message
@@ -41,6 +52,9 @@ class Detection(Node):
         # Initialize filtered ranges array with zeros (same size as original)
         filtered_ranges = np.zeros(num_ranges)
 
+        # Prepare marker array to store circles for clusters
+        marker_array = MarkerArray()
+
         # Process each cluster (excluding noise points with label -1)
         unique_labels = set(labels)
         for cluster_label in unique_labels:
@@ -52,16 +66,60 @@ class Detection(Node):
             cluster_angles = valid_angles[cluster_mask]
             cluster_ranges = valid_ranges[cluster_mask]
 
-            # Filter clusters based on size (e.g., between 4 and 26 points)
+            # Filter clusters based on size (e.g., between 2 and 26 points)
             if 2 < len(cluster_ranges) < 26:
+                # Find the mean of the cluster for marker positioning
+                mean_x = np.mean(cluster_ranges * np.cos(cluster_angles))
+                mean_y = np.mean(cluster_ranges * np.sin(cluster_angles))
+
                 # Find the original indices for these points in the original scan
                 for angle, range_value in zip(cluster_angles, cluster_ranges):
                     # Find the closest original angle to store the filtered value
                     original_index = np.argmin(np.abs(angles - angle))
                     filtered_ranges[original_index] = range_value  # Set filtered range
 
+                # Create a marker for this cluster
+                marker = Marker()
+                marker.header.frame_id = (
+                    "lidar_frame"  # The frame in which the data is published
+                )
+                marker.type = Marker.CYLINDER  # Circle marker
+                marker.action = Marker.ADD
+                marker.id = self.marker_id
+                self.marker_id += 1
+
+                # Set marker position (convert polar coordinates back to Cartesian)
+                marker.pose.position.x = mean_x
+                print("x", marker.pose.position.x)
+                marker.pose.position.y = mean_y
+                print("y", marker.pose.position.y, "\n")
+                marker.pose.position.z = 0.0  # Flat on the ground (z = 0)
+
+                # Orientation (keep the marker upright)
+                marker.pose.orientation.x = 0.0
+                marker.pose.orientation.y = 0.0
+                marker.pose.orientation.z = 0.0
+                marker.pose.orientation.w = 1.0
+
+                # Set marker scale (diameter of the circle)
+                marker.scale.x = 0.4  # Diameter along X
+                marker.scale.y = 0.4  # Diameter along Y
+                marker.scale.z = 0.1  # Height of the cylinder (thin circle)
+
+                # Set marker color
+                marker.color.r = 0.0
+                marker.color.g = 1.0  # Green
+                marker.color.b = 0.0
+                marker.color.a = 1.0  # Fully opaque
+
+                # Add this marker to the marker array
+                marker_array.markers.append(marker)
+
         # Publish the filtered scan
         self.publish_filtered_scan(scan_msg, filtered_ranges)
+
+        # Publish the marker array
+        self.marker_publisher.publish(marker_array)
 
     def publish_filtered_scan(self, original_scan_msg, filtered_ranges):
         # Create a new LaserScan message with filtered ranges
