@@ -39,6 +39,9 @@ class Detection(Node):
         # Keep track of the marker IDs
         self.marker_id = 0
 
+        # Store previous obstacle positions in odom frame (to detect motion)
+        self.previous_positions = {}
+
     def scan_callback(self, scan_msg: LaserScan):
         # Extract ranges and angles (theta) from the LaserScan message
         original_ranges = np.array(scan_msg.ranges)
@@ -77,6 +80,7 @@ class Detection(Node):
 
         # Process each cluster (excluding noise points with label -1)
         unique_labels = set(labels)
+        current_positions = {}  # To store the current positions of obstacles
         for cluster_label in unique_labels:
             if cluster_label == -1:
                 continue  # Skip noise points
@@ -112,12 +116,25 @@ class Detection(Node):
                     self.get_logger().info(
                         f"Obstacle in odom frame: x={transformed_x}, y={transformed_y}"
                     )
+
+                    # Store the current position
+                    current_positions[cluster_label] = (transformed_x, transformed_y)
                 except tf2_ros.TransformException as e:
                     self.get_logger().warn(f"Failed to transform point: {e}")
                     continue
 
+                # Check for movement (if obstacle moved compared to the previous frame)
+                dynamic_obstacle = False
+                if cluster_label in self.previous_positions:
+                    prev_x, prev_y = self.previous_positions[cluster_label]
+                    dist_moved = math.sqrt(
+                        (transformed_x - prev_x) ** 2 + (transformed_y - prev_y) ** 2
+                    )
+                    if dist_moved > 0.05:  # Threshold for detecting movement
+                        dynamic_obstacle = True
                 if not (stddev_x > 0.15 or stddev_y > 0.19):
                     # Create a marker for this cluster
+                    # Now that we know if it's dynamic, set marker color accordingly
                     marker = Marker()
                     marker.header.frame_id = (
                         "lidar_frame"  # The frame in which the data is published
@@ -148,10 +165,16 @@ class Detection(Node):
                     marker.scale.z = 0.1  # Height of the cylinder (thin circle)
 
                     # Set marker color
-                    marker.color.r = 0.0
-                    marker.color.g = 1.0  # Green
-                    marker.color.b = 0.0
-                    marker.color.a = 1.0  # Fully opaque
+                    if dynamic_obstacle:
+                        marker.color.r = 1.0  # Red for dynamic obstacles
+                        marker.color.g = 0.0
+                        marker.color.b = 0.0
+                        marker.color.a = 1.0  # Fully opaque
+                    else:
+                        marker.color.r = 0.0  # Green for static obstacles
+                        marker.color.g = 1.0
+                        marker.color.b = 0.0
+                        marker.color.a = 1.0  # Fully opaque
 
                     # Add this marker to the marker array
                     marker_array.markers.append(marker)
@@ -165,6 +188,9 @@ class Detection(Node):
 
         # Publish the marker array
         self.marker_publisher.publish(marker_array)
+
+        # Store the current positions as previous for the next cycle
+        self.previous_positions = current_positions
 
     def publish_filtered_scan(self, original_scan_msg, filtered_ranges):
         # Create a new LaserScan message with filtered ranges
