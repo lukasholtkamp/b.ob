@@ -66,16 +66,16 @@ class Detection(Node):
             cluster_angles = valid_angles[cluster_mask]
             cluster_ranges = valid_ranges[cluster_mask]
 
-            # Filter clusters based on size (e.g., between 2 and 26 points)
-            if 2 < len(cluster_ranges) < 26:
+            # Filter clusters based on size (e.g., between 2 and 40 points)
+            if 2 < len(cluster_ranges) < 40:
                 # Find the mean of the cluster for marker positioning
                 mean_x = np.mean(cluster_ranges * np.cos(cluster_angles))
                 mean_y = np.mean(cluster_ranges * np.sin(cluster_angles))
                 stddev_x = np.std(cluster_ranges * np.cos(cluster_angles))
                 stddev_y = np.std(cluster_ranges * np.sin(cluster_angles))
 
-                print(stddev_x)
-                print(stddev_y, "\n")
+                # print(stddev_x)
+                # print(stddev_y, "\n")
 
                 # Find the original indices for these points in the original scan
                 for angle, range_value in zip(cluster_angles, cluster_ranges):
@@ -83,7 +83,7 @@ class Detection(Node):
                     original_index = np.argmin(np.abs(angles - angle))
                     filtered_ranges[original_index] = range_value  # Set filtered range
 
-                if not (stddev_x > 0.15 or stddev_y > 0.20):
+                if not (stddev_x > 0.15 or stddev_y > 0.19):
                     # Create a marker for this cluster
                     marker = Marker()
                     marker.header.frame_id = (
