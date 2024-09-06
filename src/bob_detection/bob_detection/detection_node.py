@@ -6,6 +6,10 @@ from sensor_msgs.msg import LaserScan
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point
 import math
+import tf2_ros
+import tf_transformations
+import tf2_geometry_msgs  # This import enables the transformation of PoseStamped
+from geometry_msgs.msg import TransformStamped, PoseStamped
 
 
 class Detection(Node):
@@ -27,6 +31,10 @@ class Detection(Node):
         self.marker_publisher = self.create_publisher(
             MarkerArray, "cluster_markers", 10
         )
+
+        # TF Buffer and listener
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         # Keep track of the marker IDs
         self.marker_id = 0
@@ -55,6 +63,18 @@ class Detection(Node):
         # Prepare marker array to store circles for clusters
         marker_array = MarkerArray()
 
+        # Get the transformation from lidar_frame to odom frame
+        try:
+            transform = self.tf_buffer.lookup_transform(
+                "odom", "lidar_frame", rclpy.time.Time()
+            )
+        except tf2_ros.LookupException as e:
+            self.get_logger().warn("Transform not available: {}".format(e))
+            return
+        except tf2_ros.ExtrapolationException as e:
+            self.get_logger().warn("Transform not available: {}".format(e))
+            return
+
         # Process each cluster (excluding noise points with label -1)
         unique_labels = set(labels)
         for cluster_label in unique_labels:
@@ -74,14 +94,27 @@ class Detection(Node):
                 stddev_x = np.std(cluster_ranges * np.cos(cluster_angles))
                 stddev_y = np.std(cluster_ranges * np.sin(cluster_angles))
 
-                # print(stddev_x)
-                # print(stddev_y, "\n")
+                # Convert mean position from lidar_frame to odom frame
+                point_in_lidar = PoseStamped()
+                point_in_lidar.header.frame_id = "lidar_frame"
+                point_in_lidar.pose.position.x = mean_x
+                point_in_lidar.pose.position.y = mean_y
+                point_in_lidar.pose.position.z = 0.0
+                point_in_lidar.pose.orientation.w = 1.0
 
-                # Find the original indices for these points in the original scan
-                for angle, range_value in zip(cluster_angles, cluster_ranges):
-                    # Find the closest original angle to store the filtered value
-                    original_index = np.argmin(np.abs(angles - angle))
-                    filtered_ranges[original_index] = range_value  # Set filtered range
+                # Transform to odom frame
+                try:
+                    point_in_odom = self.tf_buffer.transform(
+                        point_in_lidar, "odom", timeout=rclpy.time.Duration(seconds=0.1)
+                    )
+                    transformed_x = point_in_odom.pose.position.x
+                    transformed_y = point_in_odom.pose.position.y
+                    self.get_logger().info(
+                        f"Obstacle in odom frame: x={transformed_x}, y={transformed_y}"
+                    )
+                except tf2_ros.TransformException as e:
+                    self.get_logger().warn(f"Failed to transform point: {e}")
+                    continue
 
                 if not (stddev_x > 0.15 or stddev_y > 0.19):
                     # Create a marker for this cluster
