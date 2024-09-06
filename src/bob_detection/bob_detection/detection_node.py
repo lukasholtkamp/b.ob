@@ -39,8 +39,8 @@ class Detection(Node):
         # Keep track of the marker IDs
         self.marker_id = 0
 
-        # Store previous obstacle positions in odom frame (to detect motion)
-        self.previous_positions = {}
+        # Store previous obstacle means in odom frame (to detect motion)
+        self.previous_means = {}
 
     def scan_callback(self, scan_msg: LaserScan):
         # Extract ranges and angles (theta) from the LaserScan message
@@ -80,7 +80,7 @@ class Detection(Node):
 
         # Process each cluster (excluding noise points with label -1)
         unique_labels = set(labels)
-        current_positions = {}  # To store the current positions of obstacles
+        current_means = {}  # To store the current mean positions of obstacles
         for cluster_label in unique_labels:
             if cluster_label == -1:
                 continue  # Skip noise points
@@ -113,20 +113,27 @@ class Detection(Node):
                     )
                     transformed_x = point_in_odom.pose.position.x
                     transformed_y = point_in_odom.pose.position.y
+
+                    # Limit to 3 decimal places for accuracy
+                    transformed_x = round(transformed_x, 3)
+                    transformed_y = round(transformed_y, 3)
+
+                    # Log the transformed position
                     self.get_logger().info(
                         f"Obstacle in odom frame: x={transformed_x}, y={transformed_y}"
                     )
 
-                    # Store the current position
-                    current_positions[cluster_label] = (transformed_x, transformed_y)
+                    # Store the current mean position
+                    current_means[cluster_label] = (transformed_x, transformed_y)
                 except tf2_ros.TransformException as e:
                     self.get_logger().warn(f"Failed to transform point: {e}")
                     continue
 
                 # Check for movement (if obstacle moved compared to the previous frame)
                 dynamic_obstacle = False
-                if cluster_label in self.previous_positions:
-                    prev_x, prev_y = self.previous_positions[cluster_label]
+                if cluster_label in self.previous_means:
+                    prev_x, prev_y = self.previous_means[cluster_label]
+                    # Compare the mean positions of x and y
                     dist_moved = math.sqrt(
                         (transformed_x - prev_x) ** 2 + (transformed_y - prev_y) ** 2
                     )
@@ -189,8 +196,8 @@ class Detection(Node):
         # Publish the marker array
         self.marker_publisher.publish(marker_array)
 
-        # Store the current positions as previous for the next cycle
-        self.previous_positions = current_positions
+        # Store the current mean positions as previous for the next cycle
+        self.previous_means = current_means
 
     def publish_filtered_scan(self, original_scan_msg, filtered_ranges):
         # Create a new LaserScan message with filtered ranges
