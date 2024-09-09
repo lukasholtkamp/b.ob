@@ -98,6 +98,12 @@ class Detection(Node):
                 stddev_x = np.std(cluster_ranges * np.cos(cluster_angles))
                 stddev_y = np.std(cluster_ranges * np.sin(cluster_angles))
 
+                # Find the original indices for these points in the original scan
+                for angle, range_value in zip(cluster_angles, cluster_ranges):
+                    # Find the closest original angle to store the filtered value
+                    original_index = np.argmin(np.abs(angles - angle))
+                    filtered_ranges[original_index] = range_value  # Set filtered range
+
                 # Convert mean position from lidar_frame to odom frame
                 point_in_lidar = PoseStamped()
                 point_in_lidar.header.frame_id = "lidar_frame"
@@ -139,9 +145,9 @@ class Detection(Node):
                     )
                     if dist_moved > 0.05:  # Threshold for detecting movement
                         dynamic_obstacle = True
+
                 if not (stddev_x > 0.15 or stddev_y > 0.19):
                     # Create a marker for this cluster
-                    # Now that we know if it's dynamic, set marker color accordingly
                     marker = Marker()
                     marker.header.frame_id = (
                         "lidar_frame"  # The frame in which the data is published
