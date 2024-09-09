@@ -45,20 +45,38 @@ class Detection(Node):
     def scan_callback(self, scan_msg: LaserScan):
         # Extract ranges and angles (theta) from the LaserScan message
         original_ranges = np.array(scan_msg.ranges)
-        num_ranges = len(original_ranges)
-        angles = np.linspace(scan_msg.angle_min, scan_msg.angle_max, num_ranges)
+        num_ranges = len(original_ranges)  # DEBUG : 360
+        angles = np.linspace(
+            scan_msg.angle_min, scan_msg.angle_max, num_ranges
+        )  # DEBUG : Array from -3 to 3 , 360 sampels
 
         # Mask for valid (finite) range values
-        valid_mask = np.isfinite(original_ranges)
-        valid_angles = angles[valid_mask]
-        valid_ranges = original_ranges[valid_mask]
+        valid_mask = np.isfinite(
+            original_ranges
+        )  # DEBUG PPA/Screenshots/09.09.2024/valid_mask_1-3
+        valid_angles = angles[
+            valid_mask
+        ]  # DEBUG PPA/Screenshots/09.09.2024/valid_mask_1-3
+        valid_ranges = original_ranges[
+            valid_mask
+        ]  # DEBUG PPA/Screenshots/09.09.2024/valid_mask_1-3
 
         # Perform DBSCAN directly on theta (angles) and ranges
-        polar_data = np.vstack((valid_angles, valid_ranges)).T  # Shape: (n, 2)
+        polar_data = np.vstack(
+            (valid_angles, valid_ranges)
+        ).T  # Shape: (n, 2) # DEBUG PPA/Screenshots/09.09.2024/vstack_1-3
+
+        # # Or
+        # raw_data = [valid_ranges, valid_angles]
+        # polar_data = np.array(raw_data).T
+        # polar_data[:, [0, 1]] = polar_data[:, [1, 0]]
+        # print(polar_data)
 
         # Perform DBSCAN clustering on the polar coordinates (theta, ranges)
         db = DBSCAN(eps=0.25, min_samples=3).fit(polar_data)
-        labels = db.labels_  # Cluster labels
+        labels = (
+            db.labels_
+        )  # Cluster labels # DEBUG Array has a random numbers for the clusters (each cluster has a number)
 
         # Initialize filtered ranges array with zeros (same size as original)
         filtered_ranges = np.zeros(num_ranges)
@@ -66,7 +84,7 @@ class Detection(Node):
         # Prepare marker array to store circles for clusters
         marker_array = MarkerArray()
 
-        # Get the transformation from lidar_frame to odom frame
+        # Get the transformation from lidar_frame to odom frame # DEBUG PPA/Screenshots/09.09.2024/transform1_1-4
         try:
             transform = self.tf_buffer.lookup_transform(
                 "odom", "lidar_frame", rclpy.time.Time()
@@ -86,9 +104,15 @@ class Detection(Node):
                 continue  # Skip noise points
 
             # Mask for points in the current cluster
-            cluster_mask = labels == cluster_label
-            cluster_angles = valid_angles[cluster_mask]
-            cluster_ranges = valid_ranges[cluster_mask]
+            cluster_mask = (
+                labels == cluster_label
+            )  # DEBUG True, where the cluster_label(for example 2 obstacle and 1 wall -> 0,1 or 2) is in labels
+            cluster_angles = valid_angles[
+                cluster_mask
+            ]  # DEBUG Store the angles, which are true in labels
+            cluster_ranges = valid_ranges[
+                cluster_mask
+            ]  # DEBUG Store the ranges, which are true in labels
 
             # Filter clusters based on size (e.g., between 2 and 40 points)
             if 2 < len(cluster_ranges) < 40:
@@ -100,11 +124,11 @@ class Detection(Node):
 
                 # Find the original indices for these points in the original scan
                 for angle, range_value in zip(cluster_angles, cluster_ranges):
-                    # Find the closest original angle to store the filtered value
+                    # Find the closest original angle to store the filtered value # DEBUG PPA/Screenshots/09.09.2024/filtered_ranges_1-5
                     original_index = np.argmin(np.abs(angles - angle))
                     filtered_ranges[original_index] = range_value  # Set filtered range
 
-                # Convert mean position from lidar_frame to odom frame
+                # Convert mean position from lidar_frame to odom frame # DEBUG PPA/Screenshots/09.09.2024/transform2_1-4
                 point_in_lidar = PoseStamped()
                 point_in_lidar.header.frame_id = "lidar_frame"
                 point_in_lidar.pose.position.x = mean_x
@@ -124,10 +148,10 @@ class Detection(Node):
                     transformed_x = round(transformed_x, 3)
                     transformed_y = round(transformed_y, 3)
 
-                    # Log the transformed position
-                    self.get_logger().info(
-                        f"Obstacle in odom frame: x={transformed_x}, y={transformed_y}"
-                    )
+                    # # Log the transformed position
+                    # self.get_logger().info(
+                    #     f"Obstacle in odom frame: x={transformed_x}, y={transformed_y}"
+                    # )
 
                     # Store the current mean position
                     current_means[cluster_label] = (transformed_x, transformed_y)
@@ -135,7 +159,7 @@ class Detection(Node):
                     self.get_logger().warn(f"Failed to transform point: {e}")
                     continue
 
-                # Check for movement (if obstacle moved compared to the previous frame)
+                # Check for movement (if obstacle moved compared to the previous frame) # DEBUG PPA/Screenshots/09.09.2024/dynamic_obstacle_1-3
                 dynamic_obstacle = False
                 if cluster_label in self.previous_means:
                     prev_x, prev_y = self.previous_means[cluster_label]
@@ -143,7 +167,7 @@ class Detection(Node):
                     dist_moved = math.sqrt(
                         (transformed_x - prev_x) ** 2 + (transformed_y - prev_y) ** 2
                     )
-                    if dist_moved > 0.05:  # Threshold for detecting movement
+                    if dist_moved > 0.035:  # Threshold for detecting movement
                         dynamic_obstacle = True
 
                 if not (stddev_x > 0.15 or stddev_y > 0.19):
