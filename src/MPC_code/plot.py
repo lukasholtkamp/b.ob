@@ -1,5 +1,6 @@
 import numpy as np
 from casadi import *
+import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, Rectangle
 
@@ -72,7 +73,7 @@ def shift(T, t0, x0, u, f):
 
 
 def reference_traj(s):
-    T = 60
+    T = 90
     etat1 = 6 * cos((2 * pi / T) * s)
     etat2 = 3 * sin((4 * pi / T) * s)
     # etat1 = s
@@ -85,25 +86,28 @@ def obstacle1(x, r=1.2):
     h = fmax(r**2 - x[0] ** 2 - x[1] ** 2,0)
     return h
 
-def obstacle2(x, r=1.2):
-    h = fmax(r**2 - (x[0]-4) ** 2 - (x[1]-3.5) ** 2,0)
+def obstacle(x, obs):
+    h = fmax(obs[2]**2 - (x[0]-obs[0]) ** 2 - (x[1]-obs[1]) ** 2,0)
     return h
 
-# Define the obstacle cost function
-def obstacle_cost(x_ob, x_ob_a, mu=10):
-    h_ob1 = obstacle1(x_ob)
-    h_ob_a1 = obstacle1(x_ob_a)
+def obstacle_cost(x_ob, x_ob_a, obs_list, mu=10):
 
-    h_ob2 = obstacle2(x_ob)
-    h_ob_a2 = obstacle2(x_ob_a)
+    V_obs = 0
 
-    V_obs = 0.5 * mu * h_ob1**2 + 0.5 * mu * h_ob_a1**2
-    V_obs += 0.5 * mu * h_ob2**2 + 0.5 * mu * h_ob_a2**2
+    for i in range(2):
+
+        h_ob = obstacle(x_ob,obs_list[i,:])
+        h_ob_a = obstacle(x_ob_a,obs_list[i,:])
+
+        cost = if_else(obs_list[i,2]>0,0.5 * mu * h_ob**2 + 0.5 * mu * h_ob_a**2,0)
+
+        V_obs += cost
+
     return V_obs
 
 
 # Controller frequency and Prediction horizon
-Ts = 0.5  # sampling time in [s]
+Ts = 1  # sampling time in [s]
 
 lmda = 0.05
 
@@ -162,6 +166,8 @@ umax = np.array([1, 1])
 
 P_a = SX.sym("P_a", nx+1)  # initial state paraemeter
 
+obs_list = SX.sym("obs",2,3)
+
 # P_obs = SX.sym('P_obs',nu, (N+1))  # obstacle list
 
 # tuning/weight matrices
@@ -188,7 +194,6 @@ V_a = bilin(K, x) + bilin(S, u)
 dyn_cost_fcn = Function("dy_cost", [x, u, w], [V_dyn])
 art_cost_fcn = Function("a_cost", [x, u], [V_a])
 
-obstacle_cost_fcn = Function("ob_cost", [x_ob, x_ob_a], [obstacle_cost(x_ob, x_ob_a)])
 
 # Input constraints
 lb_u = np.array([0, -1])
@@ -220,10 +225,10 @@ def objective_cost():
         du = U[:, i] - U_a[:, i]
         dx_a = X_a[:, i] - eta(S_a[i])
         du_a = U_a[:, i] - umax
-        J += dyn_cost_fcn(dx, du, W[i]) + art_cost_fcn(dx_a, du_a) + obstacle_cost_fcn(X[:2, i], X_a[:2, i])
+        J += dyn_cost_fcn(dx, du, W[i]) + art_cost_fcn(dx_a, du_a) + obstacle_cost(X[:2, i], X_a[:2, i],obs_list)
     deta_Na = X_a[:, N] - eta(S_a[N])
     deta_N = X[:, N] - X_a[:, N]
-    J += bilin(Q, deta_N) + bilin(K, deta_Na) + obstacle_cost_fcn(X[:2, N], X_a[:2, N])
+    J += bilin(Q, deta_N) + bilin(K, deta_Na) + obstacle_cost(X[:2, N], X_a[:2, N],obs_list)
     return J
 
 
@@ -301,7 +306,7 @@ def Pi_opt_formulation():
     vnlp_prob = {
         "f": J,
         "x": Opt_Vars,
-        "p": vertcat(P_a),  # ,reshape( P_obs, -1, 1)
+        "p": vertcat(P_a,reshape(obs_list,-1,1)),
         "g": G_vcsd,
     }
     pisolver = nlpsol("vsolver", "ipopt", vnlp_prob)
@@ -311,10 +316,10 @@ def Pi_opt_formulation():
 lbg_vcsd, ubg_vcsd, G_vcsd, pisolver = Pi_opt_formulation()
 
 
-def run_open_loop_mpc(x0,s0,x_st_0, x_st_0_a, u_st_0, u_st_0_a, w_st_0, s_st_0, solver):
+def run_open_loop_mpc(x0,s0,x_st_0, x_st_0_a, u_st_0, u_st_0_a, w_st_0, s_st_0, solver,obs):
 
     args_p = np.append(x0,s0)
-    args_p = vertcat(*args_p)
+    args_p = vertcat(*args_p, *obs)
     args_x0 = np.concatenate(
         [
             x_st_0.T.reshape(-1),
@@ -345,8 +350,8 @@ def run_open_loop_mpc(x0,s0,x_st_0, x_st_0_a, u_st_0, u_st_0_a, w_st_0, s_st_0, 
 
 u0 = np.array([0.5, 2])
 u0_a = np.array([0.5, 2])
-x0 = np.array([0,3,-np.pi/2])
-x0_a = np.array([0, 3, -np.pi / 2])
+x0 = np.array([4,-1, 0])
+x0_a = np.array([4,-1, 0])
 w0 = 1
 s0 = 0
 
@@ -365,18 +370,45 @@ x_st_0_a = np.tile(x0_a, (N + 1, 1)).T
 w_st_0 = np.tile(w0, (N, 1))
 s_st_0 = np.tile(s0, (N + 1, 1))
 
-N_sim = 120
+N_sim = 180*(5)
 
 plt.figure(figsize=(10, 6))
 
+data_log = pd.read_csv('nmpc_data_log_2.csv')
+
+s_data = data_log['s'].values
+x_data = data_log['x'].values
+y_data = data_log['y'].values
+theta_data = data_log['theta'].values
+obs1_x = data_log['obs1_x'].values
+obs1_y = data_log['obs1_y'].values
+obs1_r = data_log['obs1_r'].values
+obs2_x = data_log['obs2_x'].values
+obs2_y = data_log['obs2_y'].values
+obs2_r = data_log['obs2_r'].values
+
+def find_obs(s):
+    ind = np.argmin(np.abs(s_data-s))
+
+    obs = np.zeros((2, 3))
+
+    obs[0] = [obs1_x[ind],obs1_y[ind],obs1_r[ind]]
+
+    obs[1] = [obs2_x[ind],obs2_y[ind],obs2_r[ind]]
+
+    return obs
+
 for i in range(N_sim):
-    x_pred, x_pred_a, usol, usol_a, w, s = run_open_loop_mpc(x0,s0, x_st_0, x_st_0_a, u_st_0, u_st_0_a, w_st_0, s_st_0, pisolver)    
+
+    obs = find_obs(s0)
+
+    x_pred, x_pred_a, usol, usol_a, w, s = run_open_loop_mpc(x0,s0, x_st_0, x_st_0_a, u_st_0, u_st_0_a, w_st_0, s_st_0, pisolver,np.transpose(obs).reshape((1, -1)))    
 
     # plt.plot(x_pred[:,0], x_pred[:,1], color='r')
 
-    _, x0, _ = shift(Ts, 0, x0, usol, system)
+    _, x0, _ = shift(0.5/5, 0, x0, usol, system)
     w0 = w[0]
-    s0 =  s0 + Ts*w0
+    s0 =  s0 + (0.5/5)*w0
 
     x_hist = np.vstack((x_hist,x0.T))
     s_hist = np.vstack((s_hist, s[0]))
@@ -393,7 +425,6 @@ for i in range(N_sim):
     x_st_0_a = np.vstack((x_pred_a[1:], x_pred_a[-1]))
     w_st_0 = np.vstack((w[1:], w[-1]))
     s_st_0 = np.vstack((s[1:], s[-1]))
-
 
 eta_val  = []
 for  eta in range(90): 
@@ -435,40 +466,65 @@ eta_val = np.array(eta_val).reshape(90,3)
 # axs[6].plot(s)
 # axs[6].set_title("s")
 
+# Load the data from the CSV file
+
+
+# Assuming the CSV columns are named as 's', 'x', 'y', 'theta', adjust as necessary
+
+
 plt.plot(eta_val[:,0], eta_val[:,1], label='Reference Trajectory', color='b')
 plt.plot(x_hist[:,0], x_hist[:,1], label='Closed loop Trajectory', color='r')
+plt.plot(x_data,y_data,label='ROS Closed loop Trajectory', color='c')
 circle1 = Circle((0, 0), 1, color='g', fill=False, linestyle='--', linewidth=2, label='Obstacle Boundary')
 plt.gca().add_patch(circle1)
 circle2 = Circle((4, 3.5), 1, color='g', fill=False, linestyle='--', linewidth=2)
 plt.gca().add_patch(circle2)
 rectangle = Rectangle((-5.5, -2.5), 12, 6, color='g', fill=False, linestyle='--', linewidth=2)
 # plt.gca().add_patch(rectangle)
-plt.xlabel('eta1')
-plt.ylabel('eta2')
-plt.title('Plot of eta1 vs eta2')
+plt.xlabel('x')
+plt.ylabel('y')
+plt.title('Trajectories')
 plt.grid(True)
 plt.legend()
 
-fig, axs = plt.subplots(7, 1, figsize=(15, 15))
-axs[0].plot(x_hist[:, 0])
-axs[0].set_title("r_x")
+# Plotting the x_hist and u_hist values along with the reference trajectory
+fig, axs = plt.subplots(2, 1, figsize=(15, 15))
 
-axs[1].plot(x_hist[:, 1])
-axs[1].set_title("r_y")
+# Plot x_hist[:, 0] and reference x
+axs[0].plot(s_hist,x_hist[:, 0], label='Closed Loop Trajectory x', color='r')
+axs[0].plot(eta_val[:len(x_hist), 0], label='Reference x', color='b', linestyle='--')
+axs[0].plot(s_data, x_data, label='ROS Closed Loop Trajectory x', color='g', linestyle='-.')  # Plotting CSV data
+axs[0].set_title("x vs s", fontsize=15)
+axs[0].legend(fontsize="16")
+axs[0].tick_params(axis='both', which='major', labelsize=22)
 
-axs[2].plot(x_hist[:, 2])
-axs[2].set_title("theta")
+# Plot x_hist[:, 1] and reference y
+axs[1].plot(s_hist,x_hist[:, 1], label='Closed Loop Trajectory y', color='r')
+axs[1].plot(eta_val[:len(x_hist), 1], label='Reference y', color='b', linestyle='--')
+axs[1].plot(s_data, y_data, label='ROS Closed Loop Trajectory y', color='g', linestyle='-.')  # Plotting CSV data
+axs[1].set_title("y vs s", fontsize=15)
+axs[1].legend(fontsize="16")
+axs[1].tick_params(axis='both', which='major', labelsize=22)
 
-axs[3].plot(u_hist[:, 0])
-axs[3].set_title("u_1")
+# # Plot x_hist[:, 2]
+# axs[2].plot(s_hist,x_hist[:, 2], label='theta', color='r')
+# axs[2].set_title("theta")
 
-axs[4].plot(u_hist[:, 1])
-axs[4].set_title("u_2")
+# # Plot u_hist[:, 0]
+# axs[3].plot(s_hist[:-1],u_hist[:, 0], label='u_1', color='r')
+# axs[3].set_title("u_1")
 
-axs[5].plot(w_hist)
-axs[5].set_title("w")
+# # Plot u_hist[:, 1]
+# axs[4].plot(s_hist[:-1],u_hist[:, 1], label='u_2', color='r')
+# axs[4].set_title("u_2")
 
-axs[6].plot(s_hist)
-axs[6].set_title("s")
+# # Plot w_hist
+# axs[5].plot(s_hist,w_hist, label='w', color='r')
+# axs[5].set_title("w")
 
+# # Plot s_hist
+# axs[6].plot(s_hist,s_hist, label='s', color='r')
+# axs[6].set_title("s")
+
+plt.tight_layout()
 plt.show()

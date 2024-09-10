@@ -6,7 +6,8 @@ from geometry_msgs.msg import Twist, PoseStamped
 from obstacle_detector.msg import Obstacles
 import numpy as np
 from casadi import *
-import time 
+import time
+import csv  # Import CSV module
 
 class NMPCController(Node):
 
@@ -31,14 +32,14 @@ class NMPCController(Node):
         self.lb_w = 0                   # Lower bound for w
         self.ub_w = 1                   # Upper bound for w
         self.lb_s = 0                   # Lower bound for s (reference trajectory variable)
-        self.ub_s = 60                  # Upper bound for s (reference trajectory variable)
+        self.ub_s = 90                  # Upper bound for s (reference trajectory variable)
 
         # Weight matrices for cost function
         self.Q = np.diag([10, 10, 0])   # State weight
-        self.K = np.diag([2.5, 2.5, 0]) # Artificial state weight
-        self.R = np.diag([1, 1])        # Control input weight
-        self.S = np.diag([5, 5])        # Artificial control input weight
-        self.T = 15
+        self.K = np.diag([0.5, 0.5, 0]) # Artificial state weight
+        self.R = np.diag([10, 10])        # Control input weight
+        self.S = np.diag([0.01, 0.01])        # Artificial control input weight
+        self.T = 10
 
         # Other initializations
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
@@ -46,10 +47,10 @@ class NMPCController(Node):
         self.ref_path_pub = self.create_publisher(Path, '/ref_path', 10)
         self.ol_path_pub = self.create_publisher(Path, '/ol_path', 10)
 
-        self.obs_sub = self.create_subscription(Obstacles,'/obstacles',self.obs_callback,10)
+        self.obs_sub = self.create_subscription(Obstacles, '/obstacles', self.obs_callback, 10)
 
-        self.max_obs = 5
-        self.obs_list = np.zeros((self.max_obs,3))
+        self.max_obs = 2
+        self.obs_list = np.zeros((self.max_obs, 3))
         self.current_state = []
 
         self.initialized = False
@@ -57,6 +58,9 @@ class NMPCController(Node):
         self.u0_a = np.array([0.5, 2])
         self.w0 = 1
         self.s0 = 0
+
+        # Array to store x, y, theta, s values
+        self.data_log = []
 
         # Initialize NMPC settings
         self.lbg_vcsd, self.ubg_vcsd, self.G_vcsd, self.pisolver = self.Pi_opt_formulation()
@@ -96,7 +100,7 @@ class NMPCController(Node):
 
         self.current_state = np.array([x, y, theta])
 
-        if self.start==0:
+        if self.start == 0:
             self.start = time.perf_counter()
         else:
             self.end = time.perf_counter()
@@ -109,15 +113,24 @@ class NMPCController(Node):
         else:
             x_pred, x_pred_a, usol, usol_a, w, s = self.run_open_loop_mpc(
                 self.x0, self.s0, self.x_st_0, self.x_st_0_a,
-                self.u_st_0, self.u_st_0_a, self.w_st_0, self.s_st_0, self.pisolver,np.transpose(self.obs_list).reshape((1,-1))
+                self.u_st_0, self.u_st_0_a, self.w_st_0, self.s_st_0, self.pisolver, np.transpose(self.obs_list).reshape((1, -1))
             )
-            if self.s0 < 58:
+            if self.s0 < self.ub_s-0.5:
                 self.publish_control(usol[0])
                 self.publish_reference_path()
                 self.publish_ol_path(x_pred)
                 self.x0 = self.current_state
                 self.w0 = w[0]
                 self.s0 += self.dt * self.w0
+
+                # Log the data
+                obstacles = []
+                for obs in self.obs_list:
+                    obstacles.append(obs[0])
+                    obstacles.append(obs[1])
+                    obstacles.append(obs[2])
+
+                self.data_log.append([x, y, theta, np.copy(self.s0)[0]]+obstacles)
 
                 self.u_st_0 = np.vstack((usol[1:], usol[-1]))
                 self.u_st_0_a = np.vstack((usol_a[1:], usol_a[-1]))
@@ -126,8 +139,8 @@ class NMPCController(Node):
                 self.w_st_0 = np.vstack((w[1:], w[-1]))
                 self.s_st_0 = np.vstack((s[1:], s[-1]))
             else:
+                self.save_to_csv()
                 self.stop_robot()
-
 
     def obs_callback(self, msg):
 
@@ -138,22 +151,20 @@ class NMPCController(Node):
         for i in range(len(msg.circles)):
             obs[i] = [msg.circles[i].center.x, msg.circles[i].center.y, msg.circles[i].radius]
 
-            
         # Calculate the difference between the obstacle positions and the current position
         diff = obs[:, :2] - np.tile(self.current_state[:2], (obs[:, :2].shape[0], 1))
-        
+
         # Calculate the Euclidean distance
         distances = np.linalg.norm(diff, axis=1)
-        
+
         # Sort the obs array according to the distances
         sorted_indices = np.argsort(distances)
         obs_sorted = obs[sorted_indices]
 
         if obs_sorted.shape[0] < self.max_obs:
-            obs_sorted = np.vstack((obs_sorted,np.zeros((self.max_obs-obs_sorted.shape[0],3))))
+            obs_sorted = np.vstack((obs_sorted, np.zeros((self.max_obs - obs_sorted.shape[0], 3))))
 
-        self.obs_list = obs_sorted[:self.max_obs,:]
-
+        self.obs_list = obs_sorted[:self.max_obs, :]
 
     def stop_robot(self):
         twist_msg = Twist()
@@ -161,13 +172,13 @@ class NMPCController(Node):
         twist_msg.angular.z = 0.0
         self.cmd_vel_pub.publish(twist_msg)
 
-    def publish_ol_path(self,path):
+    def publish_ol_path(self, path):
         ol_path = Path()
         ol_path.header.stamp = self.get_clock().now().to_msg()
         ol_path.header.frame_id = "odom"  # Adjust frame_id to your setup
 
         for i in range(path.shape[0]):
-            val = path[i,:]
+            val = path[i, :]
             pose = PoseStamped()
             pose.header.stamp = ol_path.header.stamp
             pose.header.frame_id = ol_path.header.frame_id
@@ -211,12 +222,12 @@ class NMPCController(Node):
         twist_msg.angular.z = control_input[1]
         self.cmd_vel_pub.publish(twist_msg)
 
-    def run_open_loop_mpc(self, x0, s0, x_st_0, x_st_0_a, u_st_0, u_st_0_a, w_st_0, s_st_0, solver,obs):
+    def run_open_loop_mpc(self, x0, s0, x_st_0, x_st_0_a, u_st_0, u_st_0_a, w_st_0, s_st_0, solver, obs):
 
         args_p = np.append(x0, s0)
 
-        args_p = vertcat(*args_p,*obs)
-        
+        args_p = vertcat(*args_p, *obs)
+
         args_x0 = np.concatenate([
             x_st_0.T.reshape(-1),
             x_st_0_a.T.reshape(-1),
@@ -261,7 +272,7 @@ class NMPCController(Node):
         return dx
 
     def reference_traj(self, s):
-        T = 60
+        T = 90
         etat1 = 6 * cos((2 * pi / T) * s)
         etat2 = 3 * sin((4 * pi / T) * s)
         eta = vertcat(etat1, etat2, 0)
@@ -277,10 +288,10 @@ class NMPCController(Node):
 
         for i in range(self.max_obs):
 
-            h_ob = self.obstacle(x_ob,obs_list[i,:])
-            h_ob_a = self.obstacle(x_ob_a,obs_list[i,:])
+            h_ob = self.obstacle(x_ob, obs_list[i, :])
+            h_ob_a = self.obstacle(x_ob_a, obs_list[i, :])
 
-            cost = if_else(obs_list[i,2]>0,0.5 * mu * h_ob**2 + 0.5 * mu * h_ob_a**2,0)
+            cost = if_else(obs_list[i, 2] > 0, 0.5 * mu * h_ob**2 + 0.5 * mu * h_ob_a**2, 0)
 
             V_obs += cost
 
@@ -289,23 +300,23 @@ class NMPCController(Node):
     def bilin(self, M, x):
         return mtimes(mtimes(x.T, M), x)
 
-    def objective_cost(self, X, U, W, S_a, X_a, U_a,obs_list):
+    def objective_cost(self, X, U, W, S_a, X_a, U_a, obs_list):
         J = 0.0
         for i in range(self.N):
             dx = X[:, i] - X_a[:, i]
             du = U[:, i] - U_a[:, i]
             dx_a = X_a[:, i] - self.reference_traj(S_a[i])
             du_a = U_a[:, i] - self.umax
-            obs_cost = self.obstacle_cost(X[:2, i], X_a[:2, i],obs_list)
+            obs_cost = self.obstacle_cost(X[:2, i], X_a[:2, i], obs_list)
             J += self.bilin(self.Q, dx) + self.bilin(self.R, du) + self.bilin(self.T, (1 - W[i])) + self.bilin(self.K, dx_a) + self.bilin(self.S, du_a) + obs_cost
         deta_Na = X_a[:, self.N] - self.reference_traj(S_a[self.N])
         deta_N = X[:, self.N] - X_a[:, self.N]
-        obs_cost = self.obstacle_cost(X[:2, self.N], X_a[:2, self.N],obs_list)
+        obs_cost = self.obstacle_cost(X[:2, self.N], X_a[:2, self.N], obs_list)
         J += self.bilin(self.Q, deta_N) + self.bilin(self.K, deta_Na) + obs_cost
 
         return J
 
-    def equality_constraints(self, X, U, S_a, W, P_a,X_a):
+    def equality_constraints(self, X, U, S_a, W, P_a, X_a):
         g = []  # Equality constraints initialization
         g.append(X[:, 0] - P_a[:self.nx])  # Initial state constraint
         g.append(X_a[:, 0] - P_a[:self.nx])  # Initial artificial state constraint
@@ -346,12 +357,12 @@ class NMPCController(Node):
         S_a = SX.sym("S_a", self.N + 1, 1)  # Decision variable for ref traj
         W = SX.sym("W", 1, self.N)  # Decision variable
         P_a = SX.sym("P_a", self.nx + 1)  # Initial state parameter
-        obs_list = SX.sym("obs",self.max_obs,3)
+        obs_list = SX.sym("obs", self.max_obs, 3)
 
         self.system = Function("sys", [X, U], [self.mobile_robot_ode(X, U)])
 
-        J = self.objective_cost(X, U, W, S_a, X_a, U_a,obs_list)
-        g = self.equality_constraints(X, U, S_a, W, P_a,X_a)
+        J = self.objective_cost(X, U, W, S_a, X_a, U_a, obs_list)
+        g = self.equality_constraints(X, U, S_a, W, P_a, X_a)
         G = vertcat(*g)
 
         hx, hx_a, hu, hu_a, hs, hw = self.inequality_constraints(X, U, S_a, W, U_a)
@@ -365,7 +376,7 @@ class NMPCController(Node):
 
         lbg_vcsd = vertcat(*lbg)
         ubg_vcsd = vertcat(*ubg)
-        
+
         Opt_Vars = vertcat(
             reshape(X, -1, 1),
             reshape(X_a, -1, 1),
@@ -386,12 +397,21 @@ class NMPCController(Node):
         vnlp_prob = {
             "f": J,
             "x": Opt_Vars,
-            "p": vertcat(P_a,reshape(obs_list,-1,1)),
+            "p": vertcat(P_a, reshape(obs_list, -1, 1)),
             "g": G_vcsd,
         }
         pisolver = nlpsol("vsolver", "ipopt", vnlp_prob, opts_setting)
 
         return lbg_vcsd, ubg_vcsd, G_vcsd, pisolver
+
+    def save_to_csv(self, filename='nmpc_data_log.csv'):
+        """Save the logged x, y, theta, s data to a CSV file."""
+        with open(filename, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['x', 'y', 'theta', 's','obs1_x','obs1_y','obs1_r','obs2_x','obs2_y','obs2_r'])  # Header
+            writer.writerows(self.data_log)
+        self.get_logger().info(f'Data saved to {filename}')
+
 
 
 def main(args=None):
