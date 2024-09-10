@@ -73,8 +73,8 @@ class RayCastNode(Node):
         # Get the yaw from the lidar_frame to the map frame
         lidar_yaw = self.get_yaw_from_quaternion(transform.transform.rotation)
 
-        # Adjust angles to account for the LiDAR rotation relative to the map frame
-        adjusted_angles = angles + lidar_yaw  # Apply inverse rotation
+        # Adjust angles by adding the yaw to account for LiDAR rotation relative to the map frame
+        adjusted_angles = angles + lidar_yaw  # Apply correct rotation adjustment
 
         # Perform the ray-casting logic with adjusted angles
         truncated_ranges = ray_cast_bresenham_optimized(
@@ -105,7 +105,7 @@ class RayCastNode(Node):
         yaw = np.arctan2(2.0 * (q_w * q_z + q_x * q_y), 1.0 - 2.0 * (q_y * q_y + q_z * q_z))
         return yaw
 
-# Optimized ray-casting function (unchanged)
+# Optimized ray-casting function with debugging and boundary checks
 def ray_cast_bresenham_optimized(lidar_origin, angles, ranges, range_max, costmap, map_origin, map_resolution):
     lidar_grid_x = np.floor((lidar_origin[0] - map_origin[0]) / map_resolution).astype(int)
     lidar_grid_y = np.floor((lidar_origin[1] - map_origin[1]) / map_resolution).astype(int)
@@ -113,6 +113,7 @@ def ray_cast_bresenham_optimized(lidar_origin, angles, ranges, range_max, costma
     end_x = lidar_origin[0] + ranges * np.cos(angles)
     end_y = lidar_origin[1] + ranges * np.sin(angles)
 
+    # Ensure points are clipped within the map boundary
     end_x = np.clip(end_x, map_origin[0], map_origin[0] + costmap.shape[1] * map_resolution)
     end_y = np.clip(end_y, map_origin[1], map_origin[1] + costmap.shape[0] * map_resolution)
 
@@ -123,6 +124,7 @@ def ray_cast_bresenham_optimized(lidar_origin, angles, ranges, range_max, costma
 
     for i in range(len(angles)):
         if not is_in_grid(end_grid_x[i], end_grid_y[i], costmap.shape):
+            truncated_ranges[i] = ranges[i]  # If point is out of bounds, keep original range
             continue
 
         points = bresenham(lidar_grid_x, lidar_grid_y, end_grid_x[i], end_grid_y[i])
@@ -135,6 +137,9 @@ def ray_cast_bresenham_optimized(lidar_origin, angles, ranges, range_max, costma
                 distance = np.sqrt((hit_x - lidar_origin[0]) ** 2 + (hit_y - lidar_origin[1]) ** 2)
                 truncated_ranges[i] = min(truncated_ranges[i], distance)
                 break
+        else:
+            # If no obstacle is hit, keep the original range
+            truncated_ranges[i] = ranges[i]
 
     return truncated_ranges
 
