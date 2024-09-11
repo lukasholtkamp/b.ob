@@ -65,7 +65,7 @@ class Detection(Node):
         polar_data = np.vstack((valid_angles, valid_ranges)).T
 
         # Perform DBSCAN clustering on the polar coordinates (theta, ranges)
-        db = DBSCAN(eps=0.25, min_samples=3).fit(polar_data)
+        db = DBSCAN(eps=0.33, min_samples=2).fit(polar_data)
         labels = db.labels_
 
         # Initialize filtered ranges array with zeros (same size as original)
@@ -99,7 +99,7 @@ class Detection(Node):
             cluster_ranges = valid_ranges[cluster_mask]
 
             # Filter clusters based on size (e.g., between 2 and 40 points)
-            if 2 < len(cluster_ranges) < 40:
+            if 1 < len(cluster_ranges) < 20:
                 # Find the mean of the cluster for marker positioning
                 mean_x = np.mean(cluster_ranges * np.cos(cluster_angles))
                 mean_y = np.mean(cluster_ranges * np.sin(cluster_angles))
@@ -126,10 +126,6 @@ class Detection(Node):
                     )
                     transformed_x = point_in_odom.pose.position.x
                     transformed_y = point_in_odom.pose.position.y
-
-                    # Limit to 3 decimal places for accuracy
-                    transformed_x = round(transformed_x, 3)
-                    transformed_y = round(transformed_y, 3)
 
                     # Implement Kalman-Filter
                     if not self.kf_initialized:
@@ -170,9 +166,17 @@ class Detection(Node):
                         )
 
                         # Extract the smoothed x and y positions from the Kalman filter state
+                        print(f"transformed_x before : {transformed_x}")
+                        print(f"transformed_y before : {transformed_y} \n\n")
                         transformed_x = self.kf_state_mean[0]
                         transformed_y = self.kf_state_mean[2]
 
+                        print(f"transformed_x after : {transformed_x}")
+                        print(f"transformed_y after : {transformed_y} \n\n")
+
+                    # Limit to 3 decimal places for accuracy
+                    transformed_x = round(transformed_x, 3)
+                    transformed_y = round(transformed_y, 3)
                     # Store the current mean position
                     current_means[cluster_label] = (transformed_x, transformed_y)
 
@@ -188,9 +192,9 @@ class Detection(Node):
                     dist_moved = math.sqrt(
                         (transformed_x - prev_x) ** 2 + (transformed_y - prev_y) ** 2
                     )
-                    print(f"current: x: {transformed_x} y: {transformed_y} ")
-                    print(f"prev: x: {prev_x} y: {prev_y} \n\n")
-                    if dist_moved > 0.070:  # Threshold for detecting movement
+                    # print(f"current: x: {transformed_x} y: {transformed_y} ")
+                    # print(f"prev: x: {prev_x} y: {prev_y} \n\n")
+                    if dist_moved > 0.045:  # Threshold for detecting movement
                         dynamic_obstacle = True
 
                 if not (stddev_x > 0.15 or stddev_y > 0.19):
