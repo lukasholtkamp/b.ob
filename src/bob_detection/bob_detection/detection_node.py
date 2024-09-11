@@ -190,7 +190,7 @@ class Detection(Node):
                     )
                     print(f"current: x: {transformed_x} y: {transformed_y} ")
                     print(f"prev: x: {prev_x} y: {prev_y} \n\n")
-                    if dist_moved > 0.09:  # Threshold for detecting movement
+                    if dist_moved > 0.070:  # Threshold for detecting movement
                         dynamic_obstacle = True
 
                 if not (stddev_x > 0.15 or stddev_y > 0.19):
@@ -235,7 +235,7 @@ class Detection(Node):
 
             # Update the marker array: clear old markers
             for marker in marker_array.markers:
-                marker.lifetime = rclpy.time.Duration(seconds=0.2).to_msg()
+                marker.lifetime = rclpy.time.Duration(seconds=0.1).to_msg()
 
         # Publish the filtered scan
         self.publish_filtered_scan(scan_msg, filtered_ranges)
