@@ -189,11 +189,8 @@ class Detection(Node):
                 if cluster_label in self.previous_means:
                     prev_x, prev_y = self.previous_means[cluster_label]
                     # Compare the mean positions of x and y
-                    dist_moved = math.sqrt(
-                        (transformed_x - prev_x) ** 2 + (transformed_y - prev_y) ** 2
-                    )
-                    # print(f"current: x: {transformed_x} y: {transformed_y} ")
-                    # print(f"prev: x: {prev_x} y: {prev_y} \n\n")
+                    # dist_moved = math.sqrt((transformed_x - prev_x) ** 2 + (transformed_y - prev_y) ** 2)
+
                     diff_x = abs(transformed_x - prev_x)
                     diff_y = abs(transformed_y - prev_y)
                     if (
@@ -201,7 +198,7 @@ class Detection(Node):
                     ):  # Threshold for detecting movement
                         dynamic_obstacle = True
 
-                if not (stddev_x > 0.15 or stddev_y > 0.19):
+                if (stddev_x > 0.03) and (not (stddev_x > 0.15 or stddev_y > 0.19)):
                     # Create a marker for this cluster
                     marker = Marker()
                     marker.header.frame_id = "lidar_frame"
