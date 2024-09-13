@@ -98,8 +98,8 @@ class Detection(Node):
             cluster_angles = valid_angles[cluster_mask]
             cluster_ranges = valid_ranges[cluster_mask]
 
-            # Filter clusters based on size (e.g., between 2 and 40 points)
-            if 1 < len(cluster_ranges) < 20:
+            # Filter clusters based on size (e.g., between 2 and 35 points)
+            if 1 < len(cluster_ranges) < 35:
                 # Find the mean of the cluster for marker positioning
                 mean_x = np.mean(cluster_ranges * np.cos(cluster_angles))
                 mean_y = np.mean(cluster_ranges * np.sin(cluster_angles))
@@ -166,13 +166,13 @@ class Detection(Node):
                         )
 
                         # Extract the smoothed x and y positions from the Kalman filter state
-                        print(f"transformed_x before : {transformed_x}")
-                        print(f"transformed_y before : {transformed_y} \n\n")
-                        transformed_x = self.kf_state_mean[0]
-                        transformed_y = self.kf_state_mean[2]
+                        print(f"transformed_x  : {transformed_x}")
+                        print(f"transformed_y  : {transformed_y} \n\n")
+                        # transformed_x = self.kf_state_mean[0]
+                        # transformed_y = self.kf_state_mean[2]
 
-                        print(f"transformed_x after : {transformed_x}")
-                        print(f"transformed_y after : {transformed_y} \n\n")
+                        # print(f"transformed_x after : {transformed_x}")
+                        # print(f"transformed_y after : {transformed_y} \n\n")
 
                     # Limit to 3 decimal places for accuracy
                     transformed_x = round(transformed_x, 3)
@@ -194,7 +194,11 @@ class Detection(Node):
                     )
                     # print(f"current: x: {transformed_x} y: {transformed_y} ")
                     # print(f"prev: x: {prev_x} y: {prev_y} \n\n")
-                    if dist_moved > 0.045:  # Threshold for detecting movement
+                    diff_x = abs(transformed_x - prev_x)
+                    diff_y = abs(transformed_y - prev_y)
+                    if (
+                        diff_x > 0.065 or diff_y > 0.065
+                    ):  # Threshold for detecting movement
                         dynamic_obstacle = True
 
                 if not (stddev_x > 0.15 or stddev_y > 0.19):
