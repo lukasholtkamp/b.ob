@@ -65,7 +65,7 @@ class Detection(Node):
         polar_data = np.vstack((valid_angles, valid_ranges)).T
 
         # Perform DBSCAN clustering on the polar coordinates (theta, ranges)
-        db = DBSCAN(eps=0.33, min_samples=2).fit(polar_data)
+        db = DBSCAN(eps=0.45, min_samples=5).fit(polar_data)
         labels = db.labels_
 
         # Initialize filtered ranges array with zeros (same size as original)
@@ -99,7 +99,7 @@ class Detection(Node):
             cluster_ranges = valid_ranges[cluster_mask]
 
             # Filter clusters based on size (e.g., between 2 and 35 points)
-            if 1 < len(cluster_ranges) < 35:
+            if 6 < len(cluster_ranges) < 15:
                 # Find the mean of the cluster for marker positioning
                 mean_x = np.mean(cluster_ranges * np.cos(cluster_angles))
                 mean_y = np.mean(cluster_ranges * np.sin(cluster_angles))
@@ -194,7 +194,7 @@ class Detection(Node):
                     diff_x = abs(transformed_x - prev_x)
                     diff_y = abs(transformed_y - prev_y)
                     if (
-                        diff_x > 0.065 or diff_y > 0.065
+                        diff_x > 2.45 or diff_y > 2.45
                     ):  # Threshold for detecting movement
                         dynamic_obstacle = True
 
