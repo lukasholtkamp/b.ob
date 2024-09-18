@@ -4,15 +4,11 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
 from visualization_msgs.msg import Marker, MarkerArray
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import PoseStamped
 import math
 import tf2_ros
 import tf_transformations
 import tf2_geometry_msgs  # Enables the transformation of PoseStamped
-from geometry_msgs.msg import TransformStamped, PoseStamped
-
-# from pykalman import KalmanFilter
-import time
 
 
 class Detection(Node):
@@ -45,18 +41,65 @@ class Detection(Node):
         # Cluster tracking variables
         self.cluster_tracker = {}  # maps cluster IDs to cluster data
         self.next_cluster_id = 0  # to assign new IDs
-        self.max_cluster_distance = (
-            0.5  # maximum allowed distance to match clusters (tune as needed)
-        )
-        self.max_missing_frames = 5  # Maximum frames to keep a missing cluster
+        self.max_cluster_distance = 1.0  # Adjusted from 0.5 to 1.0
+        self.max_missing_frames = 10  # Adjusted from 5 to 10
         self.frame_counter = 0  # Frame counter
 
         # Set to keep track of active marker IDs
         self.active_marker_ids = set()
 
+        # Store the robot's previous pose
+        self.prev_robot_pose = None
+
+        # Stability threshold for clusters
+        self.stability_threshold = 3  # Minimum stability to consider a cluster valid
+
     def scan_callback(self, scan_msg: LaserScan):
         # Increment frame counter
         self.frame_counter += 1
+
+        # Remove robot pose retrieval
+        # Removed the following lines:
+        # try:
+        #     robot_pose = self.tf_buffer.lookup_transform(
+        #         "odom", "odom", rclpy.time.Time()
+        #     )
+        #     current_robot_x = robot_pose.transform.translation.x
+        #     current_robot_y = robot_pose.transform.translation.y
+        #     current_robot_theta = tf_transformations.euler_from_quaternion(
+        #         [
+        #             robot_pose.transform.rotation.x,
+        #             robot_pose.transform.rotation.y,
+        #             robot_pose.transform.rotation.z,
+        #             robot_pose.transform.rotation.w,
+        #         ]
+        #     )[2]
+        # except tf2_ros.TransformException as e:
+        #     self.get_logger().warn(f"Failed to get robot pose: {e}")
+        #     return
+
+        # Since we removed robot_pose, set deltas to zero
+        delta_x = delta_y = delta_theta = 0.0
+
+        # Before adjusting previous clusters for robot movement, store 'mean_x' and 'mean_y' as 'prev_mean_x' and 'prev_mean_y'
+        for cluster_id, cluster_data in self.cluster_tracker.items():
+            cluster_data["prev_mean_x"] = cluster_data["mean_x"]
+            cluster_data["prev_mean_y"] = cluster_data["mean_y"]
+
+        # Adjust previous clusters for robot movement (deltas are zero)
+        for cluster_id, cluster_data in self.cluster_tracker.items():
+            # Adjust 'prev_mean_x' and 'prev_mean_y' for robot movement
+            prev_x = cluster_data["prev_mean_x"] - delta_x
+            prev_y = cluster_data["prev_mean_y"] - delta_y
+
+            # Rotate previous cluster positions
+            cos_theta = math.cos(-delta_theta)
+            sin_theta = math.sin(-delta_theta)
+            adjusted_prev_x = cos_theta * prev_x - sin_theta * prev_y
+            adjusted_prev_y = sin_theta * prev_x + cos_theta * prev_y
+
+            cluster_data["adjusted_prev_mean_x"] = adjusted_prev_x
+            cluster_data["adjusted_prev_mean_y"] = adjusted_prev_y
 
         # Extract ranges and angles (theta) from the LaserScan message
         original_ranges = np.array(scan_msg.ranges)
@@ -72,7 +115,7 @@ class Detection(Node):
         polar_data = np.vstack((valid_angles, valid_ranges)).T
 
         # Perform DBSCAN clustering on the polar coordinates (theta, ranges)
-        db = DBSCAN(eps=0.45, min_samples=2).fit(polar_data)
+        db = DBSCAN(eps=0.47, min_samples=1).fit(polar_data)
         labels = db.labels_
 
         # Initialize filtered ranges array with zeros (same size as original)
@@ -106,8 +149,8 @@ class Detection(Node):
             cluster_angles = valid_angles[cluster_mask]
             cluster_ranges = valid_ranges[cluster_mask]
 
-            # Filter clusters based on size (e.g., between 2 and 35 points)
-            if 2 < len(cluster_ranges) < 25:
+            # Filter clusters based on size (e.g., between 1 and 25 points)
+            if 1 < len(cluster_ranges) < 25:
                 # Find the mean of the cluster for marker positioning
                 mean_x = np.mean(cluster_ranges * np.cos(cluster_angles))
                 mean_y = np.mean(cluster_ranges * np.sin(cluster_angles))
@@ -150,6 +193,12 @@ class Detection(Node):
                     self.get_logger().warn(f"Failed to transform point: {e}")
                     continue
 
+        # Copy of previous cluster IDs
+        prev_cluster_ids = list(self.cluster_tracker.keys())
+
+        # Collect new clusters
+        new_clusters = {}
+
         # Perform data association between current clusters and previous clusters
         matched_prev_ids = set()
 
@@ -161,12 +210,13 @@ class Detection(Node):
             matched_id = None
 
             # Loop over previous clusters
-            for cluster_id, cluster_data in self.cluster_tracker.items():
+            for cluster_id in prev_cluster_ids:
                 if cluster_id in matched_prev_ids:
                     continue  # This previous cluster is already matched
 
-                prev_x = cluster_data["mean_x"]
-                prev_y = cluster_data["mean_y"]
+                cluster_data = self.cluster_tracker[cluster_id]
+                prev_x = cluster_data["adjusted_prev_mean_x"]
+                prev_y = cluster_data["adjusted_prev_mean_y"]
 
                 distance = math.hypot(current_x - prev_x, current_y - prev_y)
 
@@ -180,8 +230,15 @@ class Detection(Node):
                 matched_prev_ids.add(matched_id)
 
                 # Update cluster data in tracker
-                self.cluster_tracker[matched_id]["mean_x"] = current_x
-                self.cluster_tracker[matched_id]["mean_y"] = current_y
+                alpha = 0.3  # Smoothing factor
+                self.cluster_tracker[matched_id]["mean_x"] = (
+                    alpha * current_x
+                    + (1 - alpha) * self.cluster_tracker[matched_id]["mean_x"]
+                )
+                self.cluster_tracker[matched_id]["mean_y"] = (
+                    alpha * current_y
+                    + (1 - alpha) * self.cluster_tracker[matched_id]["mean_y"]
+                )
                 self.cluster_tracker[matched_id]["stddev_x"] = current_cluster[
                     "stddev_x"
                 ]
@@ -192,7 +249,14 @@ class Detection(Node):
                 self.cluster_tracker[matched_id][
                     "missing_frames"
                 ] = 0  # Reset missing frames
+                self.cluster_tracker[matched_id]["confidence"] = min(
+                    self.cluster_tracker[matched_id].get("confidence", 1.0) + 0.1, 1.0
+                )
 
+                # Update stability
+                self.cluster_tracker[matched_id]["stability"] = min(
+                    self.cluster_tracker[matched_id].get("stability", 0) + 1, 5
+                )
             else:
                 # No match found, assign new cluster ID
                 new_cluster_id = self.next_cluster_id
@@ -200,8 +264,8 @@ class Detection(Node):
 
                 current_cluster["cluster_id"] = new_cluster_id
 
-                # Add to cluster tracker
-                self.cluster_tracker[new_cluster_id] = {
+                # Add to new_clusters dict
+                new_clusters[new_cluster_id] = {
                     "mean_x": current_x,
                     "mean_y": current_y,
                     "stddev_x": current_cluster["stddev_x"],
@@ -210,17 +274,27 @@ class Detection(Node):
                     "missing_frames": 0,
                     "prev_mean_x": current_x,
                     "prev_mean_y": current_y,
+                    "confidence": 1.0,
+                    "stability": 1,  # Initialize stability
+                    # Adjusted previous mean positions will be set in the next frame
                 }
 
-        # Update missing frames for unmatched previous clusters
+        # Update self.cluster_tracker with new clusters after the loop
+        self.cluster_tracker.update(new_clusters)
+
+        # Update missing frames and confidence for unmatched previous clusters
         for cluster_id, cluster_data in self.cluster_tracker.items():
             if cluster_id not in matched_prev_ids:
                 cluster_data["missing_frames"] += 1
+                cluster_data["confidence"] -= 0.2  # Decrease confidence
 
-        # Remove clusters that have been missing for too long
+                # Decrease stability
+                cluster_data["stability"] = max(cluster_data.get("stability", 1) - 1, 0)
+
+        # Remove clusters that have low confidence
         clusters_to_remove = []
         for cluster_id, cluster_data in self.cluster_tracker.items():
-            if cluster_data["missing_frames"] > self.max_missing_frames:
+            if cluster_data["confidence"] <= 0.0:
                 clusters_to_remove.append(cluster_id)
 
         for cluster_id in clusters_to_remove:
@@ -244,74 +318,92 @@ class Detection(Node):
             stddev_x = current_cluster["stddev_x"]
             stddev_y = current_cluster["stddev_y"]
 
-            # Retrieve previous position from cluster tracker
+            # Retrieve cluster data from tracker
             cluster_data = self.cluster_tracker[cluster_id]
 
-            # Check for movement
-            dynamic_obstacle = False
-            prev_x = cluster_data.get("prev_mean_x", current_x)
-            prev_y = cluster_data.get("prev_mean_y", current_y)
+            # Only consider stable clusters
+            if cluster_data["stability"] >= self.stability_threshold:
+                # Check for movement
+                dynamic_obstacle = False
 
-            diff_x = abs(current_x - prev_x)
-            diff_y = abs(current_y - prev_y)
+                # Get adjusted previous mean positions
+                prev_x = cluster_data.get("adjusted_prev_mean_x", current_x)
+                prev_y = cluster_data.get("adjusted_prev_mean_y", current_y)
 
-            movement_threshold = 0.05  # Set appropriate threshold
+                # Get current smoothed mean positions
+                mean_x = cluster_data["mean_x"]
+                mean_y = cluster_data["mean_y"]
 
-            if diff_x > movement_threshold or diff_y > movement_threshold:
-                dynamic_obstacle = True
+                diff_x = abs(mean_x - prev_x)
+                diff_y = abs(mean_y - prev_y)
 
-            # Update previous position in cluster_data
-            cluster_data["prev_mean_x"] = current_x
-            cluster_data["prev_mean_y"] = current_y
+                movement_threshold = 0.025  # Adjusted threshold
 
-            # Filter out noise based on standard deviations
-            if not (stddev_x > 0.15 or stddev_y > 0.20):
-                # Create a marker for this cluster
-                marker = Marker()
-                marker.header.frame_id = "odom"
-                marker.type = Marker.CYLINDER  # Circle marker
-                marker.action = Marker.ADD
-                marker.id = cluster_id  # Use cluster_id as marker id
+                if diff_x > movement_threshold or diff_y > movement_threshold:
+                    dynamic_obstacle = True
 
-                # Set marker position
-                marker.pose.position.x = current_x
-                marker.pose.position.y = current_y
-                marker.pose.position.z = 0.0
+                # Filter out noise based on standard deviations
+                if not (stddev_x > 0.17 or stddev_y > 0.25):
+                    # Create a marker for this cluster
+                    marker = Marker()
+                    marker.header.frame_id = "odom"
+                    marker.type = Marker.CYLINDER  # Circle marker
+                    marker.action = Marker.ADD
+                    marker.id = cluster_id  # Use cluster_id as marker id
 
-                # Orientation (keep the marker upright)
-                marker.pose.orientation.x = 0.0
-                marker.pose.orientation.y = 0.0
-                marker.pose.orientation.z = 0.0
-                marker.pose.orientation.w = 1.0
+                    # Set marker position
+                    marker.pose.position.x = mean_x
+                    marker.pose.position.y = mean_y
+                    marker.pose.position.z = 0.0
 
-                # Set marker scale
-                marker.scale.x = float(4 * max(stddev_x, stddev_y))
-                marker.scale.y = float(4 * max(stddev_x, stddev_y))
-                marker.scale.z = 0.1  # Height of the cylinder (thin circle)
+                    # Orientation (keep the marker upright)
+                    marker.pose.orientation.x = 0.0
+                    marker.pose.orientation.y = 0.0
+                    marker.pose.orientation.z = 0.0
+                    marker.pose.orientation.w = 1.0
 
-                # Set marker color
-                if dynamic_obstacle:
-                    marker.color.r = 1.0  # Red for dynamic obstacles
-                    marker.color.g = 0.0
-                    marker.color.b = 0.0
-                    marker.color.a = 1.0  # Fully opaque
-                else:
-                    marker.color.r = 0.0  # Green for static obstacles
-                    marker.color.g = 1.0
-                    marker.color.b = 0.0
-                    marker.color.a = 1.0  # Fully opaque
+                    # Set marker scale
+                    marker.scale.x = float(4 * max(stddev_x, stddev_y))
+                    marker.scale.y = float(4 * max(stddev_x, stddev_y))
+                    marker.scale.z = 0.1  # Height of the cylinder (thin circle)
 
-                # Add this marker to the marker array
-                marker_array.markers.append(marker)
+                    # Set marker color
+                    if dynamic_obstacle:
+                        marker.color.r = 1.0  # Red for dynamic obstacles
+                        marker.color.g = 0.0
+                        marker.color.b = 0.0
+                        marker.color.a = 1.0  # Fully opaque
+                    else:
+                        marker.color.r = 0.0  # Green for static obstacles
+                        marker.color.g = 1.0
+                        marker.color.b = 0.0
+                        marker.color.a = 1.0  # Fully opaque
 
-                # Keep track of active marker IDs
-                self.active_marker_ids.add(cluster_id)
+                    # Set marker lifetime
+                    marker.lifetime = rclpy.time.Duration(seconds=0.2).to_msg()
+
+                    # Add this marker to the marker array
+                    marker_array.markers.append(marker)
+
+                    # Keep track of active marker IDs
+                    self.active_marker_ids.add(cluster_id)
+
+        # Handle the case with no clusters
+        if not current_clusters:
+            delete_all_marker = Marker()
+            delete_all_marker.action = Marker.DELETEALL
+            marker_array.markers.append(delete_all_marker)
+            self.cluster_tracker.clear()
+            self.active_marker_ids.clear()
 
         # Publish the filtered scan
         self.publish_filtered_scan(scan_msg, filtered_ranges)
 
         # Publish the marker array
         self.marker_publisher.publish(marker_array)
+
+        # Store current robot pose for next frame (set to None since we removed robot_pose)
+        self.prev_robot_pose = None
 
     def publish_filtered_scan(self, original_scan_msg, filtered_ranges):
         # Create a new LaserScan message with filtered ranges
