@@ -79,20 +79,38 @@ class RayCastNode(Node):
         # Perform the ray-casting logic with adjusted angles
         truncated_ranges = ray_cast_bresenham_optimized(
             lidar_origin, adjusted_angles, ranges, scan.range_max, self.costmap_data, self.map_origin, self.map_resolution)
+        
+        if(not all(i==truncated_ranges[0] for i in truncated_ranges)):
 
-        # Create the altered scan message
-        altered_scan = LaserScan()
-        altered_scan.header = scan.header
-        altered_scan.header.frame_id = 'lidar_frame'  # Keep the frame_id as lidar_frame
-        altered_scan.angle_min = scan.angle_min
-        altered_scan.angle_max = scan.angle_max
-        altered_scan.angle_increment = scan.angle_increment
-        altered_scan.time_increment = scan.time_increment
-        altered_scan.scan_time = scan.scan_time
-        altered_scan.range_min = scan.range_min
-        altered_scan.range_max = scan.range_max
-        altered_scan.ranges = truncated_ranges.tolist()
-        altered_scan.intensities = scan.intensities
+            # Create the altered scan message
+            altered_scan = LaserScan()
+            altered_scan.header = scan.header
+            altered_scan.header.frame_id = 'lidar_frame'  # Keep the frame_id as lidar_frame
+            altered_scan.angle_min = scan.angle_min
+            altered_scan.angle_max = scan.angle_max
+            altered_scan.angle_increment = scan.angle_increment
+            altered_scan.time_increment = scan.time_increment
+            altered_scan.scan_time = scan.scan_time
+            altered_scan.range_min = scan.range_min
+            altered_scan.range_max = scan.range_max
+            altered_scan.ranges = truncated_ranges.tolist()
+            altered_scan.intensities = scan.intensities
+
+        else:
+
+            # Create the altered scan message
+            altered_scan = LaserScan()
+            altered_scan.header = scan.header
+            altered_scan.header.frame_id = 'lidar_frame'  # Keep the frame_id as lidar_frame
+            altered_scan.angle_min = scan.angle_min
+            altered_scan.angle_max = scan.angle_max
+            altered_scan.angle_increment = scan.angle_increment
+            altered_scan.time_increment = scan.time_increment
+            altered_scan.scan_time = scan.scan_time
+            altered_scan.range_min = scan.range_min
+            altered_scan.range_max = scan.range_max
+            altered_scan.ranges = ranges.tolist()
+            altered_scan.intensities = scan.intensities
 
         return altered_scan
 
@@ -132,7 +150,7 @@ def ray_cast_bresenham_optimized(lidar_origin, angles, ranges, range_max, costma
         for grid_x, grid_y in points:
             if not is_in_grid(grid_x, grid_y, costmap.shape):
                 break
-            if costmap[grid_y, grid_x] > 50:  # Occupied cell
+            if costmap[grid_y, grid_x] >= 90:  # Occupied cell
                 hit_x, hit_y = grid_to_world(grid_x, grid_y, map_origin, map_resolution)
                 distance = np.sqrt((hit_x - lidar_origin[0]) ** 2 + (hit_y - lidar_origin[1]) ** 2)
                 truncated_ranges[i] = min(truncated_ranges[i], distance)

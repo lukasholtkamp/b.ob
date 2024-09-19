@@ -485,20 +485,15 @@ class NMPCController(Node):
         dx = vertcat(dx1, dx2, dx3)
         return dx
 
-    def obstacle(self, x, obs):
-        h = fmax(0.1**2 - (x[0]-obs[0]) ** 2 - (x[1]-obs[1]) ** 2, 0)
-        return h
-
-    def obstacle_cost(self, x_ob, Lidar, mu=500000):
-
-        V_obs = 0
-
-        for i in range(360):
-
-            h_ob = self.obstacle(x_ob, Lidar[i,:])
-
-            V_obs +=  0.5 * mu * h_ob**2
-
+    def obstacle_cost(self, x_ob, Lidar, mu=100.0, d_safe=0.5, alpha=10):
+        # Vectorized computation for efficiency
+        dx = x_ob[0] - Lidar[:, 0]
+        dy = x_ob[1] - Lidar[:, 1]
+        dist = sqrt(dx**2 + dy**2)
+        # Softplus barrier function applied to all distances
+        h = (1/alpha) * log(1 + exp(-alpha * (dist - d_safe)))
+        # Sum of obstacle costs
+        V_obs = mu * sum1(h)
         return V_obs
     
     def bilin(self, M, x):
