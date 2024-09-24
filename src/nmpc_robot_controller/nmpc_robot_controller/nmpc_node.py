@@ -4,7 +4,6 @@ from rclpy.node import Node
 from nav_msgs.msg import Odometry, Path
 from geometry_msgs.msg import Twist, PoseStamped, PointStamped, TransformStamped, Point
 from sensor_msgs.msg import LaserScan
-from obstacle_detector.msg import Obstacles
 import numpy as np
 from casadi import *
 import time
@@ -33,23 +32,22 @@ class NMPCController(Node):
         self.end = 0
 
         # Bounds
-        self.umax = np.array([0.3, 0.2])    # Upper bounds on controls
-        self.lb_u = np.array([0, -0.2])   # Lower bounds on controls
-        self.ub_u = np.array([0.3, 0.2])    # Upper bounds on controls
+        self.umax = np.array([0.1, 0.1])    # Upper bounds on controls
+        self.lb_u = np.array([0, -0.1])   # Lower bounds on controls
+        self.ub_u = np.array([0.1, 0.1])    # Upper bounds on controls
         self.lb_w = 0                   # Lower bound for w
         self.ub_w = 1                   # Upper bound for w
         self.lb_s = 0                   # Lower bound for s (reference trajectory variable)
-        self.ub_s = 60                  # Upper bound for s (reference trajectory variable)
 
         # Weight matrices for cost function
-        self.Q = np.diag([10, 10, 0])   # State weight
+        self.Q = np.diag([100, 100, 0])   # State weight
         self.R = np.diag([1, 1])        # Control input weight
         self.T = 10
 
         # Other initializations
 
-        self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
-        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.odom_sub = self.create_subscription(Odometry, '/odometry/filtered', self.odom_callback, 10)
+        self.cmd_vel_pub = self.create_publisher(Twist, '/diffbot_base_controller/cmd_vel_unstamped', 10)
         self.ref_path_pub = self.create_publisher(Path, '/ref_path', 10)
         self.ol_path_pub = self.create_publisher(Path, '/ol_path', 10)
 

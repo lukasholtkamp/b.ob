@@ -248,6 +248,7 @@ global_costmap:
         plugin: "nav2_costmap_2d::KeepoutFilter"
         enabled: True
         filter_info_topic: "/costmap_filter_info"
+        
       always_send_full_costmap: True
 
 map_server:
