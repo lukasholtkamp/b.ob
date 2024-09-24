@@ -35,14 +35,11 @@ class Detection(Node):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
-        # Keep track of the marker IDs
-        self.marker_id = 0
-
         # Cluster tracking variables
-        self.cluster_tracker = {}  # maps cluster IDs to cluster data
-        self.next_cluster_id = 0  # to assign new IDs
-        self.max_cluster_distance = 1.0  # Adjusted from 0.5 to 1.0
-        self.max_missing_frames = 10  # Adjusted from 5 to 10
+        self.cluster_tracker = {}  # Maps cluster IDs to cluster data
+        self.next_cluster_id = 0  # To assign new IDs
+        self.max_cluster_distance = 1.0
+        self.max_missing_frames = 10
         self.frame_counter = 0  # Frame counter
 
         # Set to keep track of active marker IDs
@@ -52,33 +49,13 @@ class Detection(Node):
         self.prev_robot_pose = None
 
         # Stability threshold for clusters
-        self.stability_threshold = 3  # Minimum stability to consider a cluster valid
+        self.stability_threshold = 3  # Reduced from 5
 
     def scan_callback(self, scan_msg: LaserScan):
         # Increment frame counter
         self.frame_counter += 1
 
-        # Remove robot pose retrieval
-        # Removed the following lines:
-        # try:
-        #     robot_pose = self.tf_buffer.lookup_transform(
-        #         "odom", "odom", rclpy.time.Time()
-        #     )
-        #     current_robot_x = robot_pose.transform.translation.x
-        #     current_robot_y = robot_pose.transform.translation.y
-        #     current_robot_theta = tf_transformations.euler_from_quaternion(
-        #         [
-        #             robot_pose.transform.rotation.x,
-        #             robot_pose.transform.rotation.y,
-        #             robot_pose.transform.rotation.z,
-        #             robot_pose.transform.rotation.w,
-        #         ]
-        #     )[2]
-        # except tf2_ros.TransformException as e:
-        #     self.get_logger().warn(f"Failed to get robot pose: {e}")
-        #     return
-
-        # Since we removed robot_pose, set deltas to zero
+        # Since the robot is stationary, set deltas to zero
         delta_x = delta_y = delta_theta = 0.0
 
         # Before adjusting previous clusters for robot movement, store 'mean_x' and 'mean_y' as 'prev_mean_x' and 'prev_mean_y'
@@ -115,7 +92,9 @@ class Detection(Node):
         polar_data = np.vstack((valid_angles, valid_ranges)).T
 
         # Perform DBSCAN clustering on the polar coordinates (theta, ranges)
-        db = DBSCAN(eps=0.47, min_samples=1).fit(polar_data)
+        db = DBSCAN(eps=0.47, min_samples=3).fit(
+            polar_data
+        )  # min_samples increased from 1 to 3
         labels = db.labels_
 
         # Initialize filtered ranges array with zeros (same size as original)
@@ -149,8 +128,8 @@ class Detection(Node):
             cluster_angles = valid_angles[cluster_mask]
             cluster_ranges = valid_ranges[cluster_mask]
 
-            # Filter clusters based on size (e.g., between 1 and 25 points)
-            if 1 < len(cluster_ranges) < 25:
+            # Filter clusters based on size (e.g., between 3 and 25 points) instead of 1 and 25
+            if 3 <= len(cluster_ranges) < 25:
                 # Find the mean of the cluster for marker positioning
                 mean_x = np.mean(cluster_ranges * np.cos(cluster_angles))
                 mean_y = np.mean(cluster_ranges * np.sin(cluster_angles))
@@ -229,8 +208,8 @@ class Detection(Node):
                 current_cluster["cluster_id"] = matched_id
                 matched_prev_ids.add(matched_id)
 
-                # Update cluster data in tracker
-                alpha = 0.3  # Smoothing factor
+                # Update cluster data in tracker with adjusted smoothing
+                alpha = 0.2  # Increased from 0.1
                 self.cluster_tracker[matched_id]["mean_x"] = (
                     alpha * current_x
                     + (1 - alpha) * self.cluster_tracker[matched_id]["mean_x"]
@@ -250,13 +229,21 @@ class Detection(Node):
                     "missing_frames"
                 ] = 0  # Reset missing frames
                 self.cluster_tracker[matched_id]["confidence"] = min(
-                    self.cluster_tracker[matched_id].get("confidence", 1.0) + 0.1, 1.0
+                    self.cluster_tracker[matched_id].get("confidence", 1.0) + 0.1,
+                    1.0,  # Adjusted increase rate
                 )
 
                 # Update stability
                 self.cluster_tracker[matched_id]["stability"] = min(
-                    self.cluster_tracker[matched_id].get("stability", 0) + 1, 5
+                    self.cluster_tracker[matched_id].get("stability", 0) + 1,
+                    10,  # Increased max stability
                 )
+
+                # Increment age
+                self.cluster_tracker[matched_id]["age"] = (
+                    self.cluster_tracker[matched_id].get("age", 0) + 1
+                )
+
             else:
                 # No match found, assign new cluster ID
                 new_cluster_id = self.next_cluster_id
@@ -274,9 +261,9 @@ class Detection(Node):
                     "missing_frames": 0,
                     "prev_mean_x": current_x,
                     "prev_mean_y": current_y,
-                    "confidence": 1.0,
+                    "confidence": 0.5,  # Start with lower confidence
                     "stability": 1,  # Initialize stability
-                    # Adjusted previous mean positions will be set in the next frame
+                    "age": 1,  # Initialize age
                 }
 
         # Update self.cluster_tracker with new clusters after the loop
@@ -286,15 +273,20 @@ class Detection(Node):
         for cluster_id, cluster_data in self.cluster_tracker.items():
             if cluster_id not in matched_prev_ids:
                 cluster_data["missing_frames"] += 1
-                cluster_data["confidence"] -= 0.2  # Decrease confidence
+                cluster_data["confidence"] -= 0.05  # Decreased decrease rate
 
-                # Decrease stability
-                cluster_data["stability"] = max(cluster_data.get("stability", 1) - 1, 0)
+                # Decrease stability slowly
+                cluster_data["stability"] = max(
+                    cluster_data.get("stability", 1) - 0.5, 0
+                )
 
         # Remove clusters that have low confidence
         clusters_to_remove = []
         for cluster_id, cluster_data in self.cluster_tracker.items():
-            if cluster_data["confidence"] <= 0.0:
+            if (
+                cluster_data["confidence"] <= 0.0
+                or cluster_data["missing_frames"] > self.max_missing_frames
+            ):
                 clusters_to_remove.append(cluster_id)
 
         for cluster_id in clusters_to_remove:
@@ -321,8 +313,11 @@ class Detection(Node):
             # Retrieve cluster data from tracker
             cluster_data = self.cluster_tracker[cluster_id]
 
-            # Only consider stable clusters
-            if cluster_data["stability"] >= self.stability_threshold:
+            # Only consider clusters with sufficient stability and age
+            if (
+                cluster_data["stability"] >= self.stability_threshold
+                and cluster_data["age"] >= 1
+            ):
                 # Check for movement
                 dynamic_obstacle = False
 
@@ -334,16 +329,16 @@ class Detection(Node):
                 mean_x = cluster_data["mean_x"]
                 mean_y = cluster_data["mean_y"]
 
-                diff_x = abs(mean_x - prev_x)
-                diff_y = abs(mean_y - prev_y)
+                # Calculate movement as Euclidean distance
+                movement = math.hypot(mean_x - prev_x, mean_y - prev_y)
 
-                movement_threshold = 0.025  # Adjusted threshold
+                movement_threshold = 0.05  # Adjust as needed
 
-                if diff_x > movement_threshold or diff_y > movement_threshold:
+                if movement > movement_threshold:
                     dynamic_obstacle = True
 
                 # Filter out noise based on standard deviations
-                if not (stddev_x > 0.17 or stddev_y > 0.25):
+                if not (stddev_x > 0.15 or stddev_y > 0.27):
                     # Create a marker for this cluster
                     marker = Marker()
                     marker.header.frame_id = "odom"
@@ -388,6 +383,12 @@ class Detection(Node):
                     # Keep track of active marker IDs
                     self.active_marker_ids.add(cluster_id)
 
+                    # Add logging for debugging
+                    self.get_logger().info(
+                        f"Cluster {cluster_id}: mean_x={mean_x:.3f}, mean_y={mean_y:.3f}, "
+                        f"movement={movement:.3f}, dynamic={dynamic_obstacle}"
+                    )
+
         # Handle the case with no clusters
         if not current_clusters:
             delete_all_marker = Marker()
@@ -402,7 +403,7 @@ class Detection(Node):
         # Publish the marker array
         self.marker_publisher.publish(marker_array)
 
-        # Store current robot pose for next frame (set to None since we removed robot_pose)
+        # Store current robot pose for next frame (set to None since robot is stationary)
         self.prev_robot_pose = None
 
     def publish_filtered_scan(self, original_scan_msg, filtered_ranges):
