@@ -25,7 +25,7 @@ from pathlib import Path
 
 def generate_launch_description():
 
-    scene = "tb3_house_demo_crowd"
+    scene = "new_scenario"
 
     pkg_path = os.path.join(Path.cwd(), "src", "bob_simulation")
     pkg_teleop = os.path.join(Path.cwd(), "src", "bob_teleop")
@@ -43,7 +43,9 @@ def generate_launch_description():
     pedsim_dir = get_package_share_directory("pedsim_simulator")
     pedsim_viz_dir = get_package_share_directory("pedsim_visualizer")
 
-    world_model_path = os.path.join(pedsim_gazebo_dir, "worlds", scene + ".world")
+    world_model_path = os.path.join(
+        pedsim_gazebo_dir, "worlds", "empty_world" + ".world"
+    )
     default_pedsim_scene_path = os.path.join(pedsim_dir, "scenarios", scene + ".xml")
     default_pedsim_config_path = os.path.join(pedsim_dir, "config", "params.yaml")
 
