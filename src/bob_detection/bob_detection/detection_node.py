@@ -92,7 +92,7 @@ class Detection(Node):
         polar_data = np.vstack((valid_angles, valid_ranges)).T
 
         # Perform DBSCAN clustering on the polar coordinates (theta, ranges)
-        db = DBSCAN(eps=0.47, min_samples=2).fit(
+        db = DBSCAN(eps=0.50, min_samples=3).fit(
             polar_data
         )  # min_samples increased from 1 to 2
         labels = db.labels_
@@ -129,7 +129,7 @@ class Detection(Node):
             cluster_ranges = valid_ranges[cluster_mask]
 
             # Filter clusters based on size (e.g., between 2 and 25 points) instead of 1 and 25
-            if 2 <= len(cluster_ranges) < 25:
+            if 2 <= len(cluster_ranges) < 15:
                 # Find the mean of the cluster for marker positioning
                 mean_x = np.mean(cluster_ranges * np.cos(cluster_angles))
                 mean_y = np.mean(cluster_ranges * np.sin(cluster_angles))
@@ -383,11 +383,11 @@ class Detection(Node):
                     # Keep track of active marker IDs
                     self.active_marker_ids.add(cluster_id)
 
-                    # Add logging for debugging
-                    self.get_logger().info(
-                        f"Cluster {cluster_id}: mean_x={mean_x:.3f}, mean_y={mean_y:.3f}, "
-                        f"movement={movement:.3f}, dynamic={dynamic_obstacle}"
-                    )
+                    # # Add logging for debugging
+                    # self.get_logger().info(
+                    #     f"Cluster {cluster_id}: mean_x={mean_x:.3f}, mean_y={mean_y:.3f}, "
+                    #     f"movement={movement:.3f}, dynamic={dynamic_obstacle}"
+                    # )
 
         # Handle the case with no clusters
         if not current_clusters:
