@@ -92,9 +92,9 @@ class Detection(Node):
         polar_data = np.vstack((valid_angles, valid_ranges)).T
 
         # Perform DBSCAN clustering on the polar coordinates (theta, ranges)
-        db = DBSCAN(eps=0.47, min_samples=3).fit(
+        db = DBSCAN(eps=0.47, min_samples=2).fit(
             polar_data
-        )  # min_samples increased from 1 to 3
+        )  # min_samples increased from 1 to 2
         labels = db.labels_
 
         # Initialize filtered ranges array with zeros (same size as original)
@@ -128,8 +128,8 @@ class Detection(Node):
             cluster_angles = valid_angles[cluster_mask]
             cluster_ranges = valid_ranges[cluster_mask]
 
-            # Filter clusters based on size (e.g., between 3 and 25 points) instead of 1 and 25
-            if 3 <= len(cluster_ranges) < 25:
+            # Filter clusters based on size (e.g., between 2 and 25 points) instead of 1 and 25
+            if 2 <= len(cluster_ranges) < 25:
                 # Find the mean of the cluster for marker positioning
                 mean_x = np.mean(cluster_ranges * np.cos(cluster_angles))
                 mean_y = np.mean(cluster_ranges * np.sin(cluster_angles))
@@ -209,7 +209,7 @@ class Detection(Node):
                 matched_prev_ids.add(matched_id)
 
                 # Update cluster data in tracker with adjusted smoothing
-                alpha = 0.2  # Increased from 0.1
+                alpha = 0.35  # Increased from 0.1
                 self.cluster_tracker[matched_id]["mean_x"] = (
                     alpha * current_x
                     + (1 - alpha) * self.cluster_tracker[matched_id]["mean_x"]
