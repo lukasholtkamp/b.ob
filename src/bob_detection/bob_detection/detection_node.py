@@ -38,8 +38,8 @@ class Detection(Node):
         # Cluster tracking variables
         self.cluster_tracker = {}  # Maps cluster IDs to cluster data
         self.next_cluster_id = 0  # To assign new IDs
-        self.max_cluster_distance = 1.0
-        self.max_missing_frames = 10
+        self.max_cluster_distance = 0.5  # Decreased from 1.0
+        self.max_missing_frames = 5  # Decreased from 10
         self.frame_counter = 0  # Frame counter
 
         # Set to keep track of active marker IDs
@@ -49,7 +49,10 @@ class Detection(Node):
         self.prev_robot_pose = None
 
         # Stability threshold for clusters
-        self.stability_threshold = 3  # Reduced from 5
+        self.stability_threshold = 3  # Reduced from 5 for testing
+
+        # Minimum age for clusters to be considered
+        self.min_cluster_age = 1  # Reduced from 3 for testing
 
     def scan_callback(self, scan_msg: LaserScan):
         # Increment frame counter
@@ -92,9 +95,7 @@ class Detection(Node):
         polar_data = np.vstack((valid_angles, valid_ranges)).T
 
         # Perform DBSCAN clustering on the polar coordinates (theta, ranges)
-        db = DBSCAN(eps=0.50, min_samples=3).fit(
-            polar_data
-        )  # min_samples increased from 1 to 2
+        db = DBSCAN(eps=0.50, min_samples=3).fit(polar_data)
         labels = db.labels_
 
         # Initialize filtered ranges array with zeros (same size as original)
@@ -128,13 +129,64 @@ class Detection(Node):
             cluster_angles = valid_angles[cluster_mask]
             cluster_ranges = valid_ranges[cluster_mask]
 
-            # Filter clusters based on size (e.g., between 2 and 25 points) instead of 1 and 25
+            # Filter clusters based on size (e.g., between 2 and 15 points)
             if 2 <= len(cluster_ranges) < 15:
-                # Find the mean of the cluster for marker positioning
-                mean_x = np.mean(cluster_ranges * np.cos(cluster_angles))
-                mean_y = np.mean(cluster_ranges * np.sin(cluster_angles))
-                stddev_x = np.std(cluster_ranges * np.cos(cluster_angles))
-                stddev_y = np.std(cluster_ranges * np.sin(cluster_angles))
+                # Convert polar coordinates to Cartesian coordinates
+                cluster_x = cluster_ranges * np.cos(cluster_angles)
+                cluster_y = cluster_ranges * np.sin(cluster_angles)
+
+                mean_x = np.mean(cluster_x)
+                mean_y = np.mean(cluster_y)
+
+                centered_x = cluster_x - mean_x
+                centered_y = cluster_y - mean_y
+
+                if len(cluster_x) >= 2:
+                    cov_matrix = np.cov(np.vstack((centered_x, centered_y)))
+
+                    eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
+
+                    # The eigenvalues are sorted in ascending order
+                    largest_eigenvalue = eigenvalues[1]
+                    largest_eigenvector = eigenvectors[:, 1]
+                    smallest_eigenvalue = eigenvalues[0]
+                    smallest_eigenvector = eigenvectors[:, 0]
+
+                    # Project points onto the largest eigenvector
+                    projections = (
+                        centered_x * largest_eigenvector[0]
+                        + centered_y * largest_eigenvector[1]
+                    )
+                    min_proj = np.min(projections)
+                    max_proj = np.max(projections)
+                    length_along_axis = max_proj - min_proj
+
+                    # Project points onto the smallest eigenvector (perpendicular)
+                    projections_perp = (
+                        centered_x * smallest_eigenvector[0]
+                        + centered_y * smallest_eigenvector[1]
+                    )
+                    spread_perp = np.max(projections_perp) - np.min(projections_perp)
+
+                    # Ratio of eigenvalues
+                    eigenvalue_ratio = (
+                        largest_eigenvalue / smallest_eigenvalue
+                        if smallest_eigenvalue > 0
+                        else float("inf")
+                    )
+
+                    # Now, check if the cluster is likely a wall
+                    if (
+                        length_along_axis > 0.5
+                        and eigenvalue_ratio > 10
+                        and spread_perp < 0.1
+                    ):
+                        # It's a wall, skip this cluster
+                        continue
+
+                # Standard deviations for marker scaling
+                stddev_x = np.std(cluster_x)
+                stddev_y = np.std(cluster_y)
 
                 # Find the original indices for these points in the original scan
                 for angle, range_value in zip(cluster_angles, cluster_ranges):
@@ -209,7 +261,7 @@ class Detection(Node):
                 matched_prev_ids.add(matched_id)
 
                 # Update cluster data in tracker with adjusted smoothing
-                alpha = 0.35  # Increased from 0.1
+                alpha = 0.5  # Adjusted smoothing factor
                 self.cluster_tracker[matched_id]["mean_x"] = (
                     alpha * current_x
                     + (1 - alpha) * self.cluster_tracker[matched_id]["mean_x"]
@@ -229,19 +281,19 @@ class Detection(Node):
                     "missing_frames"
                 ] = 0  # Reset missing frames
                 self.cluster_tracker[matched_id]["confidence"] = min(
-                    self.cluster_tracker[matched_id].get("confidence", 1.0) + 0.1,
-                    1.0,  # Adjusted increase rate
+                    self.cluster_tracker[matched_id].get("confidence", 0.5) + 0.1,
+                    1.0,  # Confidence increment adjusted
                 )
 
                 # Update stability
                 self.cluster_tracker[matched_id]["stability"] = min(
-                    self.cluster_tracker[matched_id].get("stability", 0) + 1,
-                    10,  # Increased max stability
+                    self.cluster_tracker[matched_id].get("stability", 1) + 1,
+                    10,  # Max stability
                 )
 
                 # Increment age
                 self.cluster_tracker[matched_id]["age"] = (
-                    self.cluster_tracker[matched_id].get("age", 0) + 1
+                    self.cluster_tracker[matched_id].get("age", 1) + 1
                 )
 
             else:
@@ -261,7 +313,7 @@ class Detection(Node):
                     "missing_frames": 0,
                     "prev_mean_x": current_x,
                     "prev_mean_y": current_y,
-                    "confidence": 0.5,  # Start with lower confidence
+                    "confidence": 0.5,  # Start with higher initial confidence
                     "stability": 1,  # Initialize stability
                     "age": 1,  # Initialize age
                 }
@@ -270,21 +322,22 @@ class Detection(Node):
         self.cluster_tracker.update(new_clusters)
 
         # Update missing frames and confidence for unmatched previous clusters
-        for cluster_id, cluster_data in self.cluster_tracker.items():
+        for cluster_id in list(self.cluster_tracker.keys()):
             if cluster_id not in matched_prev_ids:
+                cluster_data = self.cluster_tracker[cluster_id]
                 cluster_data["missing_frames"] += 1
-                cluster_data["confidence"] -= 0.05  # Decreased decrease rate
+                cluster_data["confidence"] = max(
+                    cluster_data.get("confidence", 0.0) - 0.05, 0.0
+                )  # Decrease confidence
 
-                # Decrease stability slowly
-                cluster_data["stability"] = max(
-                    cluster_data.get("stability", 1) - 0.5, 0
-                )
+                # Decrease stability
+                cluster_data["stability"] = max(cluster_data.get("stability", 1) - 1, 0)
 
-        # Remove clusters that have low confidence
+        # Remove clusters that have low confidence or exceeded missing frames
         clusters_to_remove = []
         for cluster_id, cluster_data in self.cluster_tracker.items():
             if (
-                cluster_data["confidence"] <= 0.0
+                cluster_data["confidence"] < 0.3  # Adjusted threshold
                 or cluster_data["missing_frames"] > self.max_missing_frames
             ):
                 clusters_to_remove.append(cluster_id)
@@ -305,18 +358,22 @@ class Detection(Node):
         # Now process current clusters for visualization and movement detection
         for current_cluster in current_clusters:
             cluster_id = current_cluster["cluster_id"]
+
+            # Check if cluster_id is still in self.cluster_tracker
+            if cluster_id not in self.cluster_tracker:
+                continue  # Skip clusters that are no longer tracked
+
+            cluster_data = self.cluster_tracker[cluster_id]
+
             current_x = current_cluster["mean_x"]
             current_y = current_cluster["mean_y"]
             stddev_x = current_cluster["stddev_x"]
             stddev_y = current_cluster["stddev_y"]
 
-            # Retrieve cluster data from tracker
-            cluster_data = self.cluster_tracker[cluster_id]
-
             # Only consider clusters with sufficient stability and age
             if (
                 cluster_data["stability"] >= self.stability_threshold
-                and cluster_data["age"] >= 1
+                and cluster_data["age"] >= self.min_cluster_age
             ):
                 # Check for movement
                 dynamic_obstacle = False
@@ -382,12 +439,6 @@ class Detection(Node):
 
                     # Keep track of active marker IDs
                     self.active_marker_ids.add(cluster_id)
-
-                    # # Add logging for debugging
-                    # self.get_logger().info(
-                    #     f"Cluster {cluster_id}: mean_x={mean_x:.3f}, mean_y={mean_y:.3f}, "
-                    #     f"movement={movement:.3f}, dynamic={dynamic_obstacle}"
-                    # )
 
         # Handle the case with no clusters
         if not current_clusters:
