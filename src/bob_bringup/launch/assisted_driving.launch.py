@@ -36,7 +36,7 @@ def generate_launch_description():
             launch_ros.actions.Node(
                 package="bob_teleop",
                 executable="bob_teleop_node",
-                parameters=[controller_config_filepath, {"use_pid": True}],
+                parameters=[controller_config_filepath, {"use_pid": False}],
                 remappings=[("/cmd_vel", "/diffbot_base_controller/cmd_vel_unstamped")],
                 output="screen",
             ),
