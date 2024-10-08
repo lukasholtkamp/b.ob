@@ -10,10 +10,12 @@ from acados_template import AcadosOcp, AcadosOcpSolver, AcadosModel
 import time
 import csv  # Import CSV module
 import tf2_ros
-from tf_transformations import euler_from_quaternion
+from tf_transformations import euler_from_quaternion, quaternion_matrix
 import math
 from sklearn.linear_model import LinearRegression
 from scipy.linalg import block_diag
+from scipy.spatial.transform import Rotation as R
+
 
 from geometry_msgs.msg import TransformStamped
 from visualization_msgs.msg import Marker
@@ -70,9 +72,12 @@ class NMPCController(Node):
 
         # LiDAR scan subscriber
         self.scan_sub = self.create_subscription(LaserScan, '/altered_scan', self.scan_callback, 10)
+        self.min_dist = float('inf')
+        self.closest_obstacle_pos = np.array([float('inf'), float('inf')])
+
 
         # Setup TF2 listener to transform LiDAR frame coordinates
-        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_buffer = tf2_ros.Buffer(cache_time=rclpy.time.Duration(seconds=30.0))
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         # To store the dynamic LiDAR frame center
@@ -272,10 +277,28 @@ class NMPCController(Node):
         # Increment marker ID if needed (useful when adding/removing markers)
         self.marker_id += 1
 
+    def rotate_point(self, point, yaw):
+        """Rotate a point by the given yaw angle (Z-axis)."""
+        cos_yaw = math.cos(yaw)
+        sin_yaw = math.sin(yaw)
+        rotation_matrix = np.array([[cos_yaw, -sin_yaw],
+                                    [sin_yaw, cos_yaw]])
 
+        # Apply the rotation to the point (assuming z=0, planar motion)
+        point_vec = np.array([point.x, point.y])
+        rotated_point_vec = np.dot(rotation_matrix, point_vec)
+
+        return Point(x=rotated_point_vec[0], y=rotated_point_vec[1], z=0.0)
+    
+    def manually_transform_point(self, point, translation_vec, yaw):
+        """Manually transform a point using translation and yaw rotation."""
+        rotated_point = self.rotate_point(point, yaw)
+        transformed_point = Point(x=rotated_point.x + translation_vec[0],
+                                  y=rotated_point.y + translation_vec[1],
+                                  z=rotated_point.z + translation_vec[2])
+        return transformed_point
 
     def control_loop(self):
-
         # Compute time difference (dt) for NMPC
         current_time = time.time()
         if self.last_time is None:
@@ -301,29 +324,75 @@ class NMPCController(Node):
 
             if goal_dist > 0.2:
 
-                self.x0 = np.append(self.current_state,np.array([self.s0]))
+                # Check if closest point data is available
+                if hasattr(self, 'closest_point_lidar'):
+                    try:
+                        # Get the transform from lidar_frame to map frame
+                        transform = self.tf_buffer.lookup_transform(
+                            'map',
+                            'lidar_frame',
+                            rclpy.time.Time()
+                        )
 
-                self.solver.set(0, "lbx", self.x0)
-                self.solver.set(0, "ubx", self.x0)
+                        # Extract the translation
+                        translation = transform.transform.translation
+                        translation_vec = np.array([translation.x, translation.y, translation.z])
 
-                status = self.solver.solve()
+                        # Extract the rotation quaternion and convert it to euler angles (yaw is the Z-axis rotation)
+                        rotation = transform.transform.rotation
+                        quaternion = [rotation.x, rotation.y, rotation.z, rotation.w]
+                        _, _, yaw = euler_from_quaternion(quaternion)
 
-                if status != 0:
-                    print(f"ACADOS returned status {status}")
+                        self.closest_obstacle_pos = self.manually_transform_point(self.closest_point_lidar, translation_vec, yaw)
+
+                        self.x0 = np.append(self.current_state, np.array([self.s0]))
+
+                        self.solver.set(0, "lbx", self.x0)
+                        self.solver.set(0, "ubx", self.x0)
+
+                        # Update obstacle parameters
+                        if hasattr(self, 'closest_obstacle_pos'):
+                            p_obs_x_val = float(self.closest_obstacle_pos.x)
+                            p_obs_y_val = float(self.closest_obstacle_pos.y)
+                        else:
+                            # No obstacle detected, set obstacle far away
+                            p_obs_x_val = 1e5
+                            p_obs_y_val = 1e5
+
+                        p_vals = np.array([p_obs_x_val, p_obs_y_val])
+
+                        for i in range(self.N):
+                            self.solver.set(i, 'p', p_vals)
+
+                        status = self.solver.solve()
+
+                        if status != 0:
+                            print(f"ACADOS returned status {status}")
+                            # Handle the error or continue
+
+                        usol = self.solver.get(0, "u")
+
+                        x_opt = np.array([self.solver.get(i, "x") for i in range(self.ocp.dims.N + 1)])
+
+                        self.publish_control(usol)
+                        self.publish_reference_path()
+                        self.publish_ol_path(x_opt)
+
+                        self.w0 = usol[2]
+                        self.s0 += self.dt * self.w0
+
+                    except Exception as e:
+                        self.get_logger().error(f"Error transforming closest point: {str(e)}")
+                        self.stop_robot()
+
+                else:
+                    self.get_logger().warn("No closest point data available.")
+                    self.stop_robot()
                     
-                usol = self.solver.get(0, "u")
-
-                x_opt = np.array([self.solver.get(i, "x") for i in range(self.ocp.dims.N + 1)])
-
-                self.publish_control(usol)
-                self.publish_reference_path()
-                self.publish_ol_path(x_opt)
-
-                self.w0 = usol[2]
-                self.s0 += self.dt * self.w0
 
             else:
                 self.stop_robot()
+
 
     def stop_robot(self):
         # Publish zero velocity to stop the robot
@@ -331,23 +400,6 @@ class NMPCController(Node):
         twist.linear.x = 0.0
         twist.angular.z = 0.0
         self.cmd_vel_pub.publish(twist)
-
-    def update_current_state_from_tf(self):
-        try:
-            # Set a timeout for the transform lookup
-            timeout = rclpy.time.Duration(seconds=2.0)  # Set a 2-second timeout
-
-            # Get the transformation between 'map' and 'odom'
-            transform = self.tf_buffer.lookup_transform('map', 'base_footprint', rclpy.time.Time(), timeout)
-
-
-        except tf2_ros.LookupException:
-            self.get_logger().warn("Transform not found from 'map' to 'base_footprint'. Waiting for it...")
-        except tf2_ros.ExtrapolationException as e:
-            self.get_logger().warn(f"Extrapolation error: {str(e)}")
-        except Exception as e:
-            self.get_logger().warn(f"Error in transform from 'map' to 'base_footprint': {str(e)}")
-
 
     def dist(self, current, goal):
         return np.sqrt((current[0] - goal[0])**2 + (current[1] - goal[1])**2)
@@ -402,89 +454,31 @@ class NMPCController(Node):
         self.ocp = self.setup_ocp_with_cost_function()
         self.solver = AcadosOcpSolver(self.ocp, json_file="acados_ocp.json")
 
-    def get_lidar_frame_transform(self):
-        """Manually extract the translation and yaw angle from 'lidar_frame' to 'map'."""
-        try:
-            # Get the transform between 'map' and 'lidar_frame'
-            transform = self.tf_buffer.lookup_transform('map', 'lidar_frame', rclpy.time.Time())
-
-            # Extract the translation
-            translation = transform.transform.translation
-            translation_vec = np.array([translation.x, translation.y, translation.z])
-
-            # Extract the rotation quaternion and convert it to euler angles (yaw is the Z-axis rotation)
-            rotation = transform.transform.rotation
-            quaternion = [rotation.x, rotation.y, rotation.z, rotation.w]
-            _, _, yaw = euler_from_quaternion(quaternion)
-
-            return translation_vec, yaw
-
-        except Exception as e:
-            self.get_logger().warn(f"Could not get transform for lidar_frame: {str(e)}")
-            return None, None
-
-    def manually_transform_point(self, point, translation_vec, yaw):
-        """Manually transform a point using translation and yaw rotation."""
-        cos_yaw = math.cos(yaw)
-        sin_yaw = math.sin(yaw)
-        rotation_matrix = np.array([[cos_yaw, -sin_yaw],
-                                    [sin_yaw, cos_yaw]])
-
-        # Apply the rotation to the point (assuming z=0, planar motion)
-        point_vec = np.array([point.x, point.y])
-        rotated_point_vec = np.dot(rotation_matrix, point_vec)
-
-        transformed_point = Point(x=rotated_point_vec[0] + translation_vec[0],
-                                  y=rotated_point_vec[1] + translation_vec[1],
-                                  z=0.0)
-        return transformed_point
-
     def scan_callback(self, msg):
-        try:
-            # Get the translation and yaw angle for manual transform
-            translation_vec, yaw = self.get_lidar_frame_transform()
 
-            # If the transform isn't available, skip this callback
-            if translation_vec is None or yaw is None:
-                return
+        # Process the scan data in the lidar_frame
+        ranges = np.array(msg.ranges)
+        angles = msg.angle_min + np.arange(len(ranges)) * msg.angle_increment
 
-            # Create a point for lidar_frame_center
-            lidar_frame_center = Point(x=translation_vec[0], y=translation_vec[1], z=translation_vec[2])
+        # Filter valid ranges
+        valid_indices = np.isfinite(ranges)
+        ranges = ranges[valid_indices]
+        angles = angles[valid_indices]
 
-            # Filters for range limits
-            min_range = 0.1  # Minimum valid range value (ignore too close points)
-            max_range = 10.0  # Maximum valid range value (ignore far points)
+        # Convert ranges and angles to x, y in the lidar_frame
+        x_lidar = ranges * np.cos(angles)
+        y_lidar = ranges * np.sin(angles)
 
-            # Process the scan data and manually transform all points first
-            angle = msg.angle_min
-            transformed_points = []
-            for i in range(len(msg.ranges)):
-                range_value = msg.ranges[i]
+        # Find the closest point in the lidar_frame
+        distances = ranges  # Since ranges are the distances from the lidar
+        min_index = np.argmin(distances)
+        min_dist = distances[min_index]
+        closest_point_lidar = np.array([x_lidar[min_index], y_lidar[min_index], 0.0])
 
-                # Skip invalid points (out of range or zero)
-                if range_value < min_range or range_value > max_range:
-                    angle += msg.angle_increment
-                    continue
+        # Ensure closest_point_lidar is stored as a NumPy array
+        self.min_dist_lidar = min_dist
+        self.closest_point_lidar = Point(x=closest_point_lidar[0], y=closest_point_lidar[1], z=0.0)
 
-                # Calculate the position of the point in the lidar_frame
-                x = range_value * math.cos(angle)
-                y = range_value * math.sin(angle)
-                point = Point(x=x, y=y, z=0.0)
-
-                # Manually transform the point from lidar_frame to map frame
-                transformed_point = self.manually_transform_point(point, translation_vec, yaw)
-
-                transformed_points.append(transformed_point)
-
-                # Increment the angle for the next scan point
-                angle += msg.angle_increment
-
-            # Now calculate the polygon matrix (Ax + By <= C) for the lines through each pair of points
-            self.compute_subshapes_and_plot(lidar_frame_center, transformed_points)
-
-        except Exception as e:
-            self.get_logger().error(f"Error processing scan: {str(e)}")
- 
 
     def dist(self,current,goal):
         return np.sqrt((current[0]-goal[0])**2 + (current[1]-goal[1])**2)
@@ -552,6 +546,11 @@ class NMPCController(Node):
         omega = SX.sym("omega")
         w = SX.sym("w")
 
+        # Define parameters (obstacle positions)
+        p_obs_x = SX.sym("p_obs_x")
+        p_obs_y = SX.sym("p_obs_y")
+        p = vertcat(p_obs_x, p_obs_y)
+
         # Real and artificial states and controls
         states = vertcat(x, y, theta, s)
         controls = vertcat(v, omega, w)
@@ -562,7 +561,6 @@ class NMPCController(Node):
         dtheta = omega
         ds = w
 
-        # Artificial dynamics are free variables (no dynamics for simplicity)
         xdot = vertcat(dx, dy, dtheta, ds)
 
         # Define the model
@@ -570,17 +568,19 @@ class NMPCController(Node):
         model.f_expl_expr = xdot
         model.x = states
         model.u = controls
+        model.p = p  # Ensure parameters are assigned here
         model.name = "mobile_robot"
 
         return model
+
 
     def setup_ocp_with_cost_function(self):
         ocp = AcadosOcp()
         model = self.mobile_robot_ode()
         ocp.model = model
 
-        N = 6
-        Ts = 1
+        N = 18
+        Ts = 0.5
         T = N * Ts
 
         ocp.dims.N = N
@@ -594,19 +594,31 @@ class NMPCController(Node):
         # State variables
         x = ocp.model.x[:3]  # (x, y, theta)
         u = ocp.model.u[:2]  # (v, omega)
-        w = ocp.model.u[2]  # w is the third control input
-        s = ocp.model.x[3]  # s is the path parameter
+        w = ocp.model.u[2]   # w is the third control input
+        s = ocp.model.x[3]   # s is the path parameter
 
         # Reference trajectory
         xi_s = self.reference_traj(s)
         dx = x - xi_s
+        
+        # Define parameters (obstacle positions)
+        p_obs_x = ocp.model.p[0]
+        p_obs_y = ocp.model.p[1]
+        
+        obstacle_weight = 100  # Adjust as needed
+
+        # Calculate the distance to the obstacle
+        distance = sqrt((ocp.model.x[0] - p_obs_x)**2 + (ocp.model.x[1] - p_obs_y)**2)
+
+        # Obstacle penalty
+        obstacle_penalty = if_else(distance <= 0.7, 1e6 , 1 / (distance))
 
         # Define cost function expressions
-        ocp.model.cost_y_expr = vertcat(dx, u, (1 - w))
+        ocp.model.cost_y_expr = vertcat(dx, u, (1 - w), obstacle_penalty)
         ocp.model.cost_y_expr_e = vertcat(dx)
 
-        # Ensure the dimensions match the weights
-        ocp.cost.W = block_diag(Q, R, T_cost)
+        # Update the weight matrix
+        ocp.cost.W = block_diag(Q, R, T_cost, np.array([[obstacle_weight]]))
         ocp.cost.W_e = Q
 
         # Provide an initial reference value for `yref` and `yref_e`
@@ -648,7 +660,12 @@ class NMPCController(Node):
         x0_initial = np.array([4, 0, 0, 0])  # (x, y, theta, s)
         ocp.constraints.x0 = x0_initial
 
+        # **Set `parameter_values` as a list, not a NumPy array**
+        ocp.parameter_values = np.array([1e5, 1e5])  # Initial obstacle position far away
+
         return ocp
+
+
 
     def save_to_csv(self, filename='nmpc_data_log.csv'):
         """Save the logged x, y, theta, s data to a CSV file."""

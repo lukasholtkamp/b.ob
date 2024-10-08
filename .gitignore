@@ -5,3 +5,5 @@ build/
 html/
 latex/
 __pycache__/
+acados_ocp.json
+c_generated_code/

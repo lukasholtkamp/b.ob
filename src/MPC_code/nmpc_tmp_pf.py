@@ -6,14 +6,12 @@ from geometry_msgs.msg import Twist, PoseStamped, Point
 from sensor_msgs.msg import LaserScan
 import numpy as np
 from casadi import *
-from acados_template import AcadosOcp, AcadosOcpSolver, AcadosModel
 import time
 import csv  # Import CSV module
 import tf2_ros
 from tf_transformations import euler_from_quaternion
 import math
 from sklearn.linear_model import LinearRegression
-from scipy.linalg import block_diag
 
 from geometry_msgs.msg import TransformStamped
 from visualization_msgs.msg import Marker
@@ -27,9 +25,10 @@ class NMPCController(Node):
 
         # NMPC Parameters
         self.Ts = 1  # Sampling time
-        self.N = 6  # Prediction horizon
-        self.nx = 4  # State dimension (x, y, theta,s)
-        self.nu = 3  # Input dimension (v, omega, w)
+        self.lmda = 0.05
+        self.N = 10  # Prediction horizon
+        self.nx = 3  # State dimension (x, y, theta)
+        self.nu = 2  # Input dimension (v, w)
 
         self.dt = 0
         self.start = 0
@@ -87,7 +86,7 @@ class NMPCController(Node):
 
         # Control loop initialization
         self.last_time = None
-        self.control_loop_timer = self.create_timer(0.0001, self.control_loop)
+        self.control_loop_timer = self.create_timer(0.001, self.control_loop)
 
         # Create a publisher for the marker
         self.marker_publisher = self.create_publisher(Marker, '/visualization_marker', 10)
@@ -253,9 +252,9 @@ class NMPCController(Node):
         marker.pose.orientation = quat
 
         # Set the scale of the marker
-        marker.scale.x = 0.2  # Adjust the size as needed
-        marker.scale.y = 0.2
-        marker.scale.z = 0.2
+        marker.scale.x = 0.5  # Adjust the size as needed
+        marker.scale.y = 0.5
+        marker.scale.z = 0.5
 
         # Set the color of the marker (RGBA)
         marker.color.r = 1.0
@@ -300,30 +299,25 @@ class NMPCController(Node):
             goal_dist = self.dist(self.current_state, self.goal)
 
             if goal_dist > 0.2:
-
-                self.x0 = np.append(self.current_state,np.array([self.s0]))
-
-                self.solver.set(0, "lbx", self.x0)
-                self.solver.set(0, "ubx", self.x0)
-
-                status = self.solver.solve()
-
-                if status != 0:
-                    print(f"ACADOS returned status {status}")
-                    
-                usol = self.solver.get(0, "u")
-
-                x_opt = np.array([self.solver.get(i, "x") for i in range(self.ocp.dims.N + 1)])
-
-                self.publish_control(usol)
+                x_pred, usol, w, s = self.run_open_loop_mpc(
+                    self.x0, self.s0, self.x_st_0,
+                    self.u_st_0, self.w_st_0, self.s_st_0, self.pisolver
+                )
+                self.publish_control(usol[0])
                 self.publish_reference_path()
-                self.publish_ol_path(x_opt)
-
-                self.w0 = usol[2]
+                self.publish_ol_path(x_pred)
+                self.x0 = self.current_state
+                self.w0 = w[0]
                 self.s0 += self.dt * self.w0
 
+                self.u_st_0 = np.vstack((usol[1:], usol[-1]))
+                self.x_st_0 = np.vstack((x_pred[1:], x_pred[-1]))
+                self.w_st_0 = np.vstack((w[1:], w[-1]))
+                self.s_st_0 = np.vstack((s[1:], s[-1]))
             else:
                 self.stop_robot()
+
+
 
     def stop_robot(self):
         # Publish zero velocity to stop the robot
@@ -331,6 +325,7 @@ class NMPCController(Node):
         twist.linear.x = 0.0
         twist.angular.z = 0.0
         self.cmd_vel_pub.publish(twist)
+        self.get_logger().info("Robot stopped due to transform error")
 
     def update_current_state_from_tf(self):
         try:
@@ -394,13 +389,35 @@ class NMPCController(Node):
         twist_msg.angular.z = control_input[1]
         self.cmd_vel_pub.publish(twist_msg)
 
+    def run_open_loop_mpc(self, x0, s0, x_st_0, u_st_0, w_st_0, s_st_0, solver):
+        args_p = np.append(x0, s0)
+        args_p = vertcat(*args_p)
+
+        args_x0 = np.concatenate([
+            x_st_0.T.reshape(-1),
+            u_st_0.T.reshape(-1),
+            w_st_0.T.reshape(-1),
+            s_st_0.T.reshape(-1),
+        ])
+        sol = solver(x0=args_x0, p=args_p, lbg=self.lbg_vcsd, ubg=self.ubg_vcsd)
+
+        x_pred = np.array(sol["x"][: self.nx * (self.N + 1)]).reshape((self.N + 1, self.nx))
+        usol = np.array(sol["x"][self.nx * (self.N + 1): self.nx * (self.N + 1) + self.nu * self.N]).reshape((self.N, self.nu))
+        w = np.array(sol["x"][self.nx * (self.N + 1) + self.nu * self.N: self.nx * (self.N + 1) + self.nu * self.N + self.N])
+        s = np.array(sol["x"][self.nx * (self.N + 1) + self.nu * self.N + self.N:])
+
+        return x_pred, usol, w, s
+
     def setup_mpc(self, x0):
-        self.x0 = np.append(x0,np.array([self.s0]))
+        self.x0 = x0
+        self.u_st_0 = np.tile(self.u0, (self.N, 1))
+        self.x_st_0 = np.tile(self.x0, (self.N + 1, 1)).T
+        self.w_st_0 = np.tile(self.w0, (self.N, 1))
+        self.s_st_0 = np.tile(self.s0, (self.N + 1, 1))
         self.initialized = True
 
         # Initialize NMPC settings after global path is received and processed
-        self.ocp = self.setup_ocp_with_cost_function()
-        self.solver = AcadosOcpSolver(self.ocp, json_file="acados_ocp.json")
+        self.lbg_vcsd, self.ubg_vcsd, self.G_vcsd, self.pisolver = self.Pi_opt_formulation()
 
     def get_lidar_frame_transform(self):
         """Manually extract the translation and yaw angle from 'lidar_frame' to 'map'."""
@@ -484,6 +501,126 @@ class NMPCController(Node):
 
         except Exception as e:
             self.get_logger().error(f"Error processing scan: {str(e)}")
+
+    # def compute_A_b_matrix_from_triangle(self, triangle_points):
+    #     """Compute the A and b matrix for the triangle formed by the given points."""
+    #     A = np.zeros((3, 2))  # Each row will be [A_i, B_i] for the inequality A_i * x + B_i * y <= b_i
+    #     b = np.zeros(3)
+
+    #     # Loop through each edge of the triangle
+    #     for i in range(3):
+    #         p1 = triangle_points[i]
+    #         p2 = triangle_points[(i + 1) % 3]
+
+    #         # Compute the normal vector to the edge (p1, p2)
+    #         edge_vector = p2 - p1
+    #         normal_vector = np.array([-edge_vector[1], edge_vector[0]])  # Perpendicular vector to the edge
+
+    #         # Ensure the normal vector points inward (toward the triangle's center)
+    #         centroid = np.mean(triangle_points, axis=0)
+    #         if np.dot(normal_vector, centroid - p1) > 0:
+    #             normal_vector = -normal_vector
+
+    #         # Normalize the normal vector
+    #         normal_vector = normal_vector / np.linalg.norm(normal_vector)
+
+    #         # The inequality is: A_i * x + B_i * y <= b_i
+    #         A[i, :] = normal_vector
+    #         b[i] = np.dot(normal_vector, p1)  # Project p1 onto the normal vector to find b_i
+
+    #     return A, b
+
+    # def accumulate_triangle_inequalities(self, A, b, x_grid, y_grid):
+    #     """Accumulate the inequalities for a given triangle."""
+    #     # Initialize an array to store the combined inequalities
+    #     combined_region = np.ones_like(x_grid, dtype=bool)
+
+    #     # Combine the inequalities for each side of the triangle
+    #     for i in range(A.shape[0]):
+    #         inequality_region = (A[i, 0] * x_grid + A[i, 1] * y_grid <= b[i])
+    #         combined_region &= inequality_region
+
+    #     return combined_region
+
+    # def compute_subshapes_and_plot(self,lidar_frame_center, transformed_points, group_size=5):
+    #     """Divide points into overlapping groups (e.g., 1-5, 5-10), form a triangle for each group, compute A and b matrices, and plot."""
+        
+    #     # Convert lidar_frame_center to a numpy array
+    #     center = np.array([float(lidar_frame_center.x), float(lidar_frame_center.y)])
+        
+    #     # Convert transformed_points (ROS Points) to an array of (x, y) coordinates
+    #     points = np.array([[float(p.x), float(p.y)] for p in transformed_points])
+
+    #     # Process points in overlapping groups of `group_size` to form triangles
+    #     num_points = len(points)
+    #     i = 0
+
+    #     # Define plot limits dynamically based on the points
+    #     x_min = min(points[:, 0].min(), center[0]) - 1
+    #     x_max = max(points[:, 0].max(), center[0]) + 1
+    #     y_min = min(points[:, 1].min(), center[1]) - 1
+    #     y_max = max(points[:, 1].max(), center[1]) + 1
+
+    #     # Create a grid of x and y values for plotting inequalities
+    #     x_vals = np.linspace(x_min, x_max, 300)
+    #     y_vals = np.linspace(y_min, y_max, 300)
+    #     x_grid, y_grid = np.meshgrid(x_vals, y_vals)
+
+    #     # Initialize a combined region to accumulate all inequalities
+    #     full_region = np.zeros_like(x_grid, dtype=bool)
+
+    #     # Accumulate A and b matrices
+    #     A_total = []
+    #     b_total = []
+
+    #     while i < num_points - 1:
+    #         # Get the group of consecutive points (for a total of `group_size` points)
+    #         group_end = min(i + group_size, num_points)
+    #         group_points = points[i:group_end]
+
+    #         # Fit a straight line (line of best fit) to the group points
+    #         X = group_points[:, 0].reshape(-1, 1)  # x-values of scan points
+    #         y = group_points[:, 1]  # y-values of scan points
+    #         reg = LinearRegression().fit(X, y)
+    #         slope = reg.coef_[0]
+    #         intercept = reg.intercept_
+
+    #         # Create points for the line of best fit
+    #         x_fit = np.array([group_points[0, 0], group_points[-1, 0]])
+    #         y_fit = slope * x_fit + intercept
+    #         line_of_best_fit = np.column_stack((x_fit, y_fit))
+
+    #         # Define the triangle with the LiDAR center, first scan point, last scan point, and the line of best fit
+    #         triangle_points = np.vstack([center, group_points[0], group_points[-1]])
+
+    #         # Add the line of best fit as the last edge of the triangle
+    #         triangle_points = np.vstack([triangle_points, line_of_best_fit])
+
+    #         # Compute the A and b matrix for the triangle
+    #         A, b = self.compute_A_b_matrix_from_triangle(triangle_points[:3])
+
+    #         # Accumulate the inequalities for this triangle
+    #         full_region |= self.accumulate_triangle_inequalities(A, b, x_grid, y_grid)
+
+    #         # Add A and b for the current triangle to the total list
+    #         A_total.append(A)
+    #         b_total.append(b)
+
+    #         # Move to the next group, starting at the last point of the current group (ensure overlap)
+    #         i += group_size - 1  # Move by group_size - 1 to ensure overlap
+
+    #     current_A = np.vstack(A_total)
+    #     current_b = np.hstack(b_total)
+    #     pad_rows = 270 - current_A.shape[0]
+
+    #     if pad_rows > 0:
+    #         A_padding = np.zeros((pad_rows, 2))
+    #         b_padding = -1 * np.ones(pad_rows)
+    #         self.A = np.vstack((current_A, A_padding))
+    #         self.b = np.hstack((current_b, b_padding))
+    #     else:
+    #         self.A = current_A
+    #         self.b = current_b
  
 
     def dist(self,current,goal):
@@ -539,116 +676,140 @@ class NMPCController(Node):
         twist_msg.angular.z = control_input[1]
         self.cmd_vel_pub.publish(twist_msg)
 
+    def shift(self, T, t0, x0, u, f):
+        st = x0
+        con = u[0, :]
+        st = self.rk4(f, T, st, con)
+        x0 = np.array(st.full()).flatten()
+        t0 = t0 + T
+        u0 = np.vstack([u[1:], u[-1, :]])
+        return t0, x0, u0
 
-    def mobile_robot_ode(self):
-        # Define state variables
-        x = SX.sym("x")
-        y = SX.sym("y")
-        theta = SX.sym("theta")
-        s = SX.sym("s")
+    def rk4(self, ode, h, x, u):
+        k1 = self.mobile_robot_ode(x, u)
+        k2 = self.mobile_robot_ode(x + h / 2 * k1, u)
+        k3 = self.mobile_robot_ode(x + h / 2 * k2, u)
+        k4 = self.mobile_robot_ode(x + h * k3, u)
+        xf = x + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+        return xf
 
-        # Define control inputs
-        v = SX.sym("v")
-        omega = SX.sym("omega")
-        w = SX.sym("w")
+    def mobile_robot_ode(self, x, u):
+        dx1 = u[0] * cos(x[2])
+        dx2 = u[0] * sin(x[2])
+        dx3 = u[1]
+        dx = vertcat(dx1, dx2, dx3)
+        return dx
 
-        # Real and artificial states and controls
-        states = vertcat(x, y, theta, s)
-        controls = vertcat(v, omega, w)
+    def feasibility_cost(self, x_ob, A,b, mu=100):
 
-        # System dynamics
-        dx = v * cos(theta)
-        dy = v * sin(theta)
-        dtheta = omega
-        ds = w
+        V_obs = 1.0
 
-        # Artificial dynamics are free variables (no dynamics for simplicity)
-        xdot = vertcat(dx, dy, dtheta, ds)
+        for i in range(90):
 
-        # Define the model
-        model = AcadosModel()
-        model.f_expl_expr = xdot
-        model.x = states
-        model.u = controls
-        model.name = "mobile_robot"
+            tmp = fmax((A[3*i,0]*x_ob[0] + A[3*i,1]*x_ob[1] - b[3*i]),0)
+            tmp += fmax((A[3*i+1,0]*x_ob[0] + A[3*i+1,1]*x_ob[1] - b[3*i+1]),0)
+            tmp += fmax((A[3*i+2,0]*x_ob[0] + A[3*i+2,1]*x_ob[1] - b[3*i+1]),0)
 
-        return model
+            V_obs *= tmp
 
-    def setup_ocp_with_cost_function(self):
-        ocp = AcadosOcp()
-        model = self.mobile_robot_ode()
-        ocp.model = model
+        return fmin(mu*V_obs, 10000)
+    
+    def bilin(self, M, x):
+        return mtimes(mtimes(x.T, M), x)
 
-        N = 6
-        Ts = 1
-        T = N * Ts
+    def objective_cost(self, X, U, W, S):
+        J = 0.0
+        for i in range(self.N):
+            dx = X[:, i] - self.reference_traj(S[i])
+            du = U[:, i] - self.umax
 
-        ocp.dims.N = N
-        ocp.solver_options.tf = T
+            J += self.bilin(self.Q, dx) + self.bilin(self.R, du) + self.bilin(self.T, (1 - W[i]))
 
-        # Define weights
-        Q = np.diag([100, 100, 0])  # Adjust the weights as needed for state deviation
-        R = np.diag([1, 1])  # Control effort weights
-        T_cost = np.array([15])  # Weight for time dilation cost
+        deta_N = X[:, self.N] - self.reference_traj(S[self.N])
 
-        # State variables
-        x = ocp.model.x[:3]  # (x, y, theta)
-        u = ocp.model.u[:2]  # (v, omega)
-        w = ocp.model.u[2]  # w is the third control input
-        s = ocp.model.x[3]  # s is the path parameter
+        J += self.bilin(self.Q, deta_N)
 
-        # Reference trajectory
-        xi_s = self.reference_traj(s)
-        dx = x - xi_s
+        return J
 
-        # Define cost function expressions
-        ocp.model.cost_y_expr = vertcat(dx, u, (1 - w))
-        ocp.model.cost_y_expr_e = vertcat(dx)
+    def equality_constraints(self, X, U, S, W, P_a):
+        g = []  # Equality constraints initialization
+        g.append(X[:, 0] - P_a[:self.nx])  # Initial state constraint
+        g.append(S[0] - P_a[self.nx:])
+        for i in range(self.N):
+            st = X[:, i]
+            cons = U[:, i]
+            st_next_euler = self.rk4(self.system, self.Ts, st, cons)
+            st_next = X[:, i + 1]
+            g.append(st_next - st_next_euler)
+            g.append(S[i + 1] - S[i] - self.Ts * W[i])
+        return g
 
-        # Ensure the dimensions match the weights
-        ocp.cost.W = block_diag(Q, R, T_cost)
-        ocp.cost.W_e = Q
+    def inequality_constraints(self, X, U, S, W):
+        hu = []  # Box constraints on input
+        hs = []  # Box constraints on s
+        hw = []
+        hx = []
+        for i in range(self.N):
+            hu.append(self.lb_u - U[:, i])
+            hu.append(U[:, i] - self.ub_u)
+            hs.append(self.lb_s - S[i])
+            hs.append(S[i] - self.ub_s)
+            hw.append(self.lb_w - W[i])
+            hw.append(W[i] - self.ub_w)
+        hs.append(S[self.N - 1] - S[self.N] + self.lmda)
+        return hx, hu, hs, hw
 
-        # Provide an initial reference value for `yref` and `yref_e`
-        ny = ocp.model.cost_y_expr.size()[0]
-        ocp.cost.yref = np.zeros((ny,))
-        ocp.cost.yref_e = np.zeros((dx.size()[0],))
+    def Pi_opt_formulation(self):
+        X = SX.sym("X", self.nx, (self.N + 1))  # Decision variables (states)
+        U = SX.sym("U", self.nu, self.N)  # Decision variables (controls))
+        S = SX.sym("S", self.N + 1, 1)  # Decision variable for ref traj
+        W = SX.sym("W", 1, self.N)  # Decision variable
+        P_a = SX.sym("P_a", self.nx + 1)  # Initial state parameter
 
-        # Constraints setup
-        ocp.constraints.lbx = np.array([0])  # Lower bound for `s`
-        ocp.constraints.ubx = np.array([self.ub_s])  # Upper bound for `s`
-        ocp.constraints.idxbx = np.array([3])  # Index of the constrained state (s)
 
-        ocp.constraints.lbu = np.array([0, -0.1, 0])  # Lower bounds for (v, omega, w)
-        ocp.constraints.ubu = np.array([0.1, 0.1, 1])  # Upper bounds for (v, omega, w)
-        ocp.constraints.idxbu = np.array([0, 1, 2])
+        self.system = Function("sys", [X, U], [self.mobile_robot_ode(X, U)])
 
-        # Set the cost type to NONLINEAR_LS
-        ocp.cost.cost_type = "NONLINEAR_LS"
-        ocp.cost.cost_type_e = "NONLINEAR_LS"
+        J = self.objective_cost(X, U, W, S)
+        g = self.equality_constraints(X, U, S, W, P_a)
+        G = vertcat(*g)
 
-        # Solver options
-        ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"
-        ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
-        ocp.solver_options.integrator_type = "ERK"
-        ocp.solver_options.nlp_solver_type = "SQP_RTI"
-        ocp.solver_options.tf = T
+        hx, hu, hs, hw = self.inequality_constraints(X, U, S, W)
+        Hs = vertcat(*hs)
+        Hu = vertcat(*hu)
+        Hw = vertcat(*hw)
+        Hx = vertcat(*hx)
+        G_vcsd = vertcat(*g, *hx, *hu, *hw, *hs)
 
-        # Increase the maximum number of iterations
-        ocp.solver_options.nlp_solver_max_iter = 500
-        ocp.solver_options.qp_solver_iter_max = 500
+        lbg = [0] * G.shape[0] + [-np.inf] * (Hx.shape[0] + Hu.shape[0] + Hs.shape[0] + Hw.shape[0])
+        ubg = [0] * G.shape[0] + [0] * (Hx.shape[0] + Hu.shape[0] + Hs.shape[0] + Hw.shape[0])
 
-        ocp.solver_options.print_level = 0
+        lbg_vcsd = vertcat(*lbg)
+        ubg_vcsd = vertcat(*ubg)
 
-        # Improve convergence
-        ocp.solver_options.regularize_method = "MIRROR"
-        ocp.solver_options.levenberg_marquardt = 1e-4
+        Opt_Vars = vertcat(
+            reshape(X, -1, 1),
+            reshape(U, -1, 1),
+            reshape(W, -1, 1),
+            reshape(S, -1, 1),
+        )
 
-        # Set the initial state directly
-        x0_initial = np.array([4, 0, 0, 0])  # (x, y, theta, s)
-        ocp.constraints.x0 = x0_initial
+        opts_setting = {
+            "ipopt.max_iter": 500,
+            "ipopt.print_level": 4,
+            "print_time": 1,
+            "ipopt.acceptable_tol": 1e-6,
+            "ipopt.acceptable_obj_change_tol": 1e-6,
+        }
 
-        return ocp
+        vnlp_prob = {
+            "f": J,
+            "x": Opt_Vars,
+            "p": vertcat(P_a),
+            "g": G_vcsd,
+        }
+        pisolver = nlpsol("vsolver", "ipopt", vnlp_prob, opts_setting)
+
+        return lbg_vcsd, ubg_vcsd, G_vcsd, pisolver
 
     def save_to_csv(self, filename='nmpc_data_log.csv'):
         """Save the logged x, y, theta, s data to a CSV file."""
