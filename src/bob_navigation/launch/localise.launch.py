@@ -1,73 +1,96 @@
+"""
+Launch file which calls all necessary nodes for running B.ob.
+
+Based on: https://github.com/SteveMacenski/slam_toolbox/blob/ros2/launch/online_async_launch.py
+Date of Retrieval: 23.07.2024
+
+"""
+
 import os
+from pathlib import Path
+
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, LogInfo
+from launch.conditions import UnlessCondition, IfCondition
+from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch.event_handlers import OnProcessExit
+from launch_ros.actions import Node
 
 from ament_index_python.packages import get_package_share_directory
 
-
-from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
-from launch.conditions import IfCondition
-from launch_ros.actions import Node
+from nav2_common.launch import HasNodeParams
 
 from pathlib import Path
 
-
 def generate_launch_description():
-
-    pkg_slam = os.path.join(Path.cwd(), "src", "bob_slam")
-    pkg_sim = os.path.join(Path.cwd(), "src", "bob_simulation")
+    """
+    This function finds all need parameters for starting the SLAM node.
+    return: a Launch Description with all needed arguments and the node
+    """
     pkg_navigation = os.path.join(Path.cwd(),"src","bob_navigation")
+    use_sim_time = LaunchConfiguration("use_sim_time")
+    slam_params_file = LaunchConfiguration("slam_params_file")
 
-    localisation_params_file = os.path.join(pkg_navigation,"config","mapper_params_localisation.yaml")
+    default_params_file = os.path.join(
+        pkg_navigation,
+        "config",
+        "mapper_params_localisation.yaml",
+    )
 
-    # Launch configuration variables specific to simulation
-    rviz = LaunchConfiguration("rviz")
-    slam_params_file = LaunchConfiguration('slam_params_file')
+    declare_use_sim_time_argument = DeclareLaunchArgument(
+        "use_sim_time", default_value="false", description="Use simulation/Gazebo clock"
+    )
 
-    declare_rviz = DeclareLaunchArgument(
-            "rviz",
-            default_value="true",
-            description="Start RViz2 automatically with this launch file.",
-        )
-    
     declare_params_file_cmd = DeclareLaunchArgument(
-        'slam_params_file',
-        default_value=localisation_params_file,
-        description='Full path to the ROS2 parameters file to use for the slam_toolbox node')
-    
-    sim = IncludeLaunchDescription(
-                PythonLaunchDescriptionSource([os.path.join(
-                    pkg_sim,'launch','launch_sim_people.launch.py'
-                )]),
+        "slam_params_file",
+        default_value=default_params_file,
+        description="Full path to the ROS2 parameters file to use for the slam_toolbox node",
     )
 
-    rviz_config_file = os.path.join(pkg_slam, "rviz", "slam_config.rviz")
-
-    rviz_node = Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        output="log",
-        arguments=["-d", rviz_config_file],
-        condition=IfCondition(rviz),
+    # If the provided param file doesn't have slam_toolbox params, we must pass the
+    # default_params_file instead. This could happen due to automatic propagation of
+    # LaunchArguments. See:
+    # https://github.com/ros-planning/navigation2/pull/2243#issuecomment-800479866
+    has_node_params = HasNodeParams(
+        source_file=slam_params_file, node_name="slam_toolbox"
     )
 
-    continue_slam = IncludeLaunchDescription(
-                PythonLaunchDescriptionSource([os.path.join(
-                    pkg_slam,'launch','online_async_launch.py'
-                )]),launch_arguments={'slam_params_file': slam_params_file,}.items()
+    actual_params_file = PythonExpression(
+        [
+            '"',
+            slam_params_file,
+            '" if ',
+            has_node_params,
+            ' else "',
+            default_params_file,
+            '"',
+        ]
+    )
+
+    log_param_change = LogInfo(
+        msg=[
+            "provided params_file ",
+            slam_params_file,
+            " does not contain slam_toolbox parameters. Using default: ",
+            default_params_file,
+        ],
+        condition=UnlessCondition(has_node_params),
+    )
+
+    start_async_slam_toolbox_node = Node(
+        parameters=[actual_params_file, {"use_sim_time": use_sim_time}],
+        package="slam_toolbox",
+        executable="async_slam_toolbox_node",
+        name="slam_toolbox",
+        output="screen",
     )
 
 
-    # Create the launch description and populate
     ld = LaunchDescription()
 
-    # Declare the launch options
+    ld.add_action(declare_use_sim_time_argument)
     ld.add_action(declare_params_file_cmd)
+    ld.add_action(log_param_change)
+    ld.add_action(start_async_slam_toolbox_node)
 
-    # Add any actions
-    ld.add_action(continue_slam)
-
-    # Launch them all!
     return ld
