@@ -49,15 +49,15 @@ class NMPCController(Node):
         self.T = 10
 
         # Other initializations
-        self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
-        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.odom_sub = self.create_subscription(Odometry, '/diffbot_base_controller/odom', self.odom_callback, 10)
+        self.cmd_vel_pub = self.create_publisher(Twist, '/diffbot_base_controller/cmd_vel_unstamped', 10)
         self.ref_path_pub = self.create_publisher(Path, '/ref_path', 10)
         self.ol_path_pub = self.create_publisher(Path, '/ol_path', 10)
 
         self.global_path_sub = self.create_subscription(Path, '/plan', self.path_callback, 10)
         self.goal_pose_sub = self.create_subscription(PoseStamped, '/goal_pose', self.goal_pose_callback, 10)
 
-        self.current_state = []
+        self.current_state = np.array([])
         self.goal = []
 
         self.initialized = False
@@ -272,18 +272,7 @@ class NMPCController(Node):
         # Increment marker ID if needed (useful when adding/removing markers)
         self.marker_id += 1
 
-
-
     def control_loop(self):
-
-        # Compute time difference (dt) for NMPC
-        current_time = time.time()
-        if self.last_time is None:
-            self.last_time = current_time
-            return
-
-        dt = current_time - self.last_time
-        self.last_time = current_time
 
         if self.start == 0:
             self.start = time.perf_counter()
@@ -297,6 +286,8 @@ class NMPCController(Node):
             self.publish_reference_path()  # Publish the reference path once initialized
 
         elif self.initialized:
+            print(self.current_state)
+            print(self.goal)
             goal_dist = self.dist(self.current_state, self.goal)
 
             if goal_dist > 0.2:
