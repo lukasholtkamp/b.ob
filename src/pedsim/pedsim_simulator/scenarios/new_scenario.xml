@@ -3,39 +3,45 @@
     <!-- Waypoints -->
     <!-- Agent 1 waypoints -->
     <waypoint id="wp_agent1_start" x="-3" y="0" r="0.25"/>
-    <waypoint id="wp_agent1_end" x="-3" y="5" r="0.25"/>
-
+    <waypoint id="wp_agent1_mid1" x="-3" y="3" r="0.25"/>
+    <waypoint id="wp_agent1_mid2" x="-1" y="3" r="0.25"/>
+    
     <!-- Agent 2 waypoints -->
     <waypoint id="wp_agent2_start" x="3" y="0" r="0.25"/>
-    <waypoint id="wp_agent2_end" x="3" y="5" r="0.25"/>
-
+    <waypoint id="wp_agent2_mid1" x="3" y="3" r="0.25"/>
+    <waypoint id="wp_agent2_mid2" x="1" y="3" r="0.25"/>
+    
     <!-- Agent 3 waypoints -->
     <waypoint id="wp_agent3_start" x="0" y="3" r="0.25"/>
     <waypoint id="wp_agent3_mid1" x="2" y="4" r="0.25"/>
-    <waypoint id="wp_agent3_top" x="3" y="-4" r="0.25" waittime="3"/> <!-- 3-second pause -->
+    <waypoint id="wp_agent3_top" x="3" y="-4" r="0.25" waittime="2"/> <!-- 2-second pause -->
     <waypoint id="wp_agent3_mid2" x="4" y="4" r="0.25"/>
     <waypoint id="wp_agent3_return" x="0" y="3" r="0.25"/>
 
     <!-- Agents -->
-    <!-- Agent 1: Moves between x=-5, y=0 and x=-5, y=5 -->
-    <agent x="-5" y="0" n="1" dx="0" dy="0" type="0">
+    <!-- Agent 1 -->
+    <agent x="-3" y="0" n="1" dx="0" dy="0" type="0">
         <addwaypoint id="wp_agent1_start"/>
-        <addwaypoint id="wp_agent1_end"/>
+        <addwaypoint id="wp_agent1_mid1"/>
+        <addwaypoint id="wp_agent1_mid2"/>
+        <addwaypoint id="wp_agent1_mid1"/>
         <addwaypoint id="wp_agent1_start"/>
     </agent>
 
-    <!-- Agent 2: Moves between x=5, y=0 and x=5, y=5 -->
-    <agent x="5" y="0" n="1" dx="0" dy="0" type="0">
+    <!-- Agent 2 -->
+    <agent x="3" y="0" n="1" dx="0" dy="0" type="0">
         <addwaypoint id="wp_agent2_start"/>
-        <addwaypoint id="wp_agent2_end"/>
+        <addwaypoint id="wp_agent2_mid1"/>
+        <addwaypoint id="wp_agent2_mid2"/>
+        <addwaypoint id="wp_agent2_mid1"/>
         <addwaypoint id="wp_agent2_start"/>
     </agent>
 
-    <!-- Agent 3: Moves in a loop as described -->
+    <!-- Agent 3 -->
     <agent x="0" y="3" n="1" dx="0" dy="0" type="0">
         <addwaypoint id="wp_agent3_start"/>
         <addwaypoint id="wp_agent3_mid1"/>
-        <addwaypoint id="wp_agent3_top"/>  <!-- 3-second wait here -->
+        <addwaypoint id="wp_agent3_top"/>  <!-- 2-second wait here -->
         <addwaypoint id="wp_agent3_mid2"/>
         <addwaypoint id="wp_agent3_return"/>
         <addwaypoint id="wp_agent3_start"/> <!-- Loop back to start -->

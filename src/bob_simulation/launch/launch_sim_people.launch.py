@@ -44,7 +44,7 @@ def generate_launch_description():
     pedsim_viz_dir = get_package_share_directory("pedsim_visualizer")
 
     world_model_path = os.path.join(
-        pedsim_gazebo_dir, "worlds", "empty_world" + ".world"
+        pedsim_gazebo_dir, "worlds", "ppa_scenario_pedsim" + ".world"
     )
     default_pedsim_scene_path = os.path.join(pedsim_dir, "scenarios", scene + ".xml")
     default_pedsim_config_path = os.path.join(pedsim_dir, "config", "params.yaml")
