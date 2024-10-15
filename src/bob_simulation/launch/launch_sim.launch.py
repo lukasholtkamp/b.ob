@@ -15,7 +15,7 @@ def generate_launch_description():
 
     gazebo_params_file = os.path.join(pkg_path, "config/gazebo_params.yaml")
     ekf_params_file = os.path.join(pkg_navigation, "config/ekf.yaml")
-    world_filename = "ppa_scenario.world"
+    world_filename = "scenario_2.world"
     world_path = os.path.join(pkg_path, "worlds", world_filename)
 
     # Launch configuration variables specific to simulation
