@@ -15,6 +15,8 @@ import math
 from sklearn.linear_model import LinearRegression
 from scipy.linalg import block_diag
 
+from obstacle_detector.msg import Obstacles
+
 from geometry_msgs.msg import TransformStamped
 from visualization_msgs.msg import Marker
 from builtin_interfaces.msg import Duration
@@ -51,11 +53,15 @@ class NMPCController(Node):
         # Other initializations
         self.odom_sub = self.create_subscription(Odometry, '/diffbot_base_controller/odom', self.odom_callback, 10)
         self.cmd_vel_pub = self.create_publisher(Twist, '/diffbot_base_controller/cmd_vel_unstamped', 10)
-        self.ref_path_pub = self.create_publisher(Path, '/ref_path', 10)
+         self.ref_path_pub = self.create_publisher(Path, '/ref_path', 10)
         self.ol_path_pub = self.create_publisher(Path, '/ol_path', 10)
 
         self.global_path_sub = self.create_subscription(Path, '/plan', self.path_callback, 10)
         self.goal_pose_sub = self.create_subscription(PoseStamped, '/goal_pose', self.goal_pose_callback, 10)
+
+        self.obs_sub = self.create_subscription(Obstacles, '/obstacles', self.obs_callback, 10)
+        self.max_obs = 2
+        self.obs_list = np.zeros((self.max_obs, 3))
 
         self.current_state = np.array([])
         self.goal = []
@@ -93,6 +99,31 @@ class NMPCController(Node):
         self.marker_publisher = self.create_publisher(Marker, '/visualization_marker', 10)
         # Initialize a unique ID for the marker
         self.marker_id = 0
+
+
+    def obs_callback(self, msg):
+
+        # Initialize an array to store obstacle information
+        obs = np.zeros((len(msg.circles), 3))
+
+        # Extract the x, y, radius for each circle and store it in the obs array
+        for i in range(len(msg.circles)):
+            obs[i] = [msg.circles[i].center.x, msg.circles[i].center.y, msg.circles[i].radius]
+
+        # Calculate the difference between the obstacle positions and the current position
+        diff = obs[:, :2] - np.tile(self.current_state[:2], (obs[:, :2].shape[0], 1))
+
+        # Calculate the Euclidean distance
+        distances = np.linalg.norm(diff, axis=1)
+
+        # Sort the obs array according to the distances
+        sorted_indices = np.argsort(distances)
+        obs_sorted = obs[sorted_indices]
+
+        if obs_sorted.shape[0] < self.max_obs:
+            obs_sorted = np.vstack((obs_sorted, np.zeros((self.max_obs - obs_sorted.shape[0], 3))))
+
+        self.obs_list = obs_sorted[:self.max_obs, :]
 
     def path_callback(self, msg):
         if self.new_goal_received:
@@ -285,14 +316,14 @@ class NMPCController(Node):
             self.setup_mpc(self.current_state)
             self.publish_reference_path()  # Publish the reference path once initialized
 
-        elif self.initialized:
-            print(self.current_state)
-            print(self.goal)
+        elif self.initialized and self.dt > 0:
             goal_dist = self.dist(self.current_state, self.goal)
 
             if goal_dist > 0.2:
 
                 self.x0 = np.append(self.current_state,np.array([self.s0]))
+
+                self.solver.set(0, "p", np.transpose(self.obs_list).reshape((1, -1))[0].reshape((-1, 1)))
 
                 self.solver.set(0, "lbx", self.x0)
                 self.solver.set(0, "ubx", self.x0)
@@ -322,22 +353,6 @@ class NMPCController(Node):
         twist.linear.x = 0.0
         twist.angular.z = 0.0
         self.cmd_vel_pub.publish(twist)
-
-    def update_current_state_from_tf(self):
-        try:
-            # Set a timeout for the transform lookup
-            timeout = rclpy.time.Duration(seconds=2.0)  # Set a 2-second timeout
-
-            # Get the transformation between 'map' and 'odom'
-            transform = self.tf_buffer.lookup_transform('map', 'base_footprint', rclpy.time.Time(), timeout)
-
-
-        except tf2_ros.LookupException:
-            self.get_logger().warn("Transform not found from 'map' to 'base_footprint'. Waiting for it...")
-        except tf2_ros.ExtrapolationException as e:
-            self.get_logger().warn(f"Extrapolation error: {str(e)}")
-        except Exception as e:
-            self.get_logger().warn(f"Error in transform from 'map' to 'base_footprint': {str(e)}")
 
 
     def dist(self, current, goal):
@@ -391,7 +406,15 @@ class NMPCController(Node):
 
         # Initialize NMPC settings after global path is received and processed
         self.ocp = self.setup_ocp_with_cost_function()
+
+        # Make sure coeff_x and coeff_y are properly flattened and concatenated
+        parameter_values = np.transpose(self.obs_list).reshape((1, -1))[0].reshape((-1, 1))
+
+        # Initialize the solver
         self.solver = AcadosOcpSolver(self.ocp, json_file="acados_ocp.json")
+
+        # Set the parameter values in the solver
+        self.solver.set(0, "p", parameter_values)
 
     def get_lidar_frame_transform(self):
         """Manually extract the translation and yaw angle from 'lidar_frame' to 'map'."""
@@ -502,34 +525,18 @@ class NMPCController(Node):
 
         self.ol_path_pub.publish(ol_path)
 
-    def publish_reference_path(self):
-        ref_path = Path()
-        ref_path.header.stamp = self.get_clock().now().to_msg()
-        ref_path.header.frame_id = "map"  # Adjust frame_id to your setup
-
-        for s in np.linspace(self.lb_s, self.ub_s, num=100):
-            eta_val = self.reference_traj(s)
-            pose = PoseStamped()
-            pose.header.stamp = ref_path.header.stamp
-            pose.header.frame_id = ref_path.header.frame_id
-            pose.pose.position.x = float(eta_val[0])
-            pose.pose.position.y = float(eta_val[1])
-            pose.pose.position.z = 0.0
-            # Assume no orientation or flat trajectory, set quaternion accordingly
-            pose.pose.orientation.x = 0.0
-            pose.pose.orientation.y = 0.0
-            pose.pose.orientation.z = 0.0
-            pose.pose.orientation.w = 1.0
-            ref_path.poses.append(pose)
-
-        self.ref_path_pub.publish(ref_path)
-
     def publish_control(self, control_input):
         twist_msg = Twist()
         twist_msg.linear.x = control_input[0]
         twist_msg.angular.z = control_input[1]
         self.cmd_vel_pub.publish(twist_msg)
 
+
+    def obstacle(self, x, obs):
+
+        h = if_else(obs[2] > 0,fmax(obs[2]**2 - (x[0]-obs[0]) ** 2 - (x[1]-obs[1]) ** 2, 0),0)
+
+        return h
 
     def mobile_robot_ode(self):
         # Define state variables
@@ -547,6 +554,8 @@ class NMPCController(Node):
         states = vertcat(x, y, theta, s)
         controls = vertcat(v, omega, w)
 
+        obs_list = SX.sym("obs", self.max_obs, 3)
+
         # System dynamics
         dx = v * cos(theta)
         dy = v * sin(theta)
@@ -561,6 +570,8 @@ class NMPCController(Node):
         model.f_expl_expr = xdot
         model.x = states
         model.u = controls
+
+        model.p = reshape(obs_list, -1, 1)
         model.name = "mobile_robot"
 
         return model
@@ -573,6 +584,8 @@ class NMPCController(Node):
         N = 6
         Ts = 1
         T = N * Ts
+
+        mu=10
 
         ocp.dims.N = N
         ocp.solver_options.tf = T
@@ -588,15 +601,22 @@ class NMPCController(Node):
         w = ocp.model.u[2]  # w is the third control input
         s = ocp.model.x[3]  # s is the path parameter
 
+        obs_list = reshape(ocp.model.p, self.max_obs, 3)
+
         # Reference trajectory
         xi_s = self.reference_traj(s)
         dx = x - xi_s
 
         # Define cost function expressions
         ocp.model.cost_y_expr = vertcat(dx, u, (1 - w))
+
+        # for i in range(self.max_obs):
+        #     ocp.model.cost_y_expr = vertcat(ocp.model.cost_y_expr,self.obstacle(x, obs_list[i, :]))
+
         ocp.model.cost_y_expr_e = vertcat(dx)
 
         # Ensure the dimensions match the weights
+        # ocp.cost.W = block_diag(Q, R, T_cost,0.5*mu*np.diag([1]*self.max_obs))
         ocp.cost.W = block_diag(Q, R, T_cost)
         ocp.cost.W_e = Q
 
@@ -604,6 +624,9 @@ class NMPCController(Node):
         ny = ocp.model.cost_y_expr.size()[0]
         ocp.cost.yref = np.zeros((ny,))
         ocp.cost.yref_e = np.zeros((dx.size()[0],))
+
+        # Set parameter values (initialize as zeros, these will be updated during execution)
+        ocp.parameter_values = np.zeros((self.max_obs*3, 1))
 
         # Constraints setup
         ocp.constraints.lbx = np.array([0])  # Lower bound for `s`
@@ -636,7 +659,7 @@ class NMPCController(Node):
         ocp.solver_options.levenberg_marquardt = 1e-4
 
         # Set the initial state directly
-        x0_initial = np.array([4, 0, 0, 0])  # (x, y, theta, s)
+        x0_initial = np.array([0, 0, 0, 0])  # (x, y, theta, s)
         ocp.constraints.x0 = x0_initial
 
         return ocp

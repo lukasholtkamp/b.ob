@@ -37,7 +37,7 @@ class NMPCController(Node):
 
         # Bounds
         self.umax = np.array([0.1, 0.1])    # Upper bounds on controls
-        self.lb_u = np.array([0, -0.1])   # Lower bounds on controls
+        self.lb_u = np.array([0.0, -0.1])   # Lower bounds on controls
         self.ub_u = np.array([0.1, 0.1])    # Upper bounds on controls
         self.lb_w = 0                   # Lower bound for w
         self.ub_w = 1                   # Upper bound for w
@@ -83,7 +83,7 @@ class NMPCController(Node):
         self.b = None
 
         self.global_path_length = 0
-        self.segment_length = 10
+        self.segment_length = 50
 
         self.new_goal_received = False  # Flag to track new goal pose
 
@@ -96,6 +96,8 @@ class NMPCController(Node):
         # Initialize a unique ID for the marker
         self.marker_id = 0
 
+        self.counter = 0
+
     def path_callback(self, msg):
         """
         Process the incoming path message, fit segments, and determine the best fit (quadratic or linear).
@@ -104,44 +106,49 @@ class NMPCController(Node):
             msg (nav_msgs.msg.Path): The incoming path message.
         """
 
-        # Extract the first 20 path points from the message
-        path_points = [(pose.pose.position.x, pose.pose.position.y) for pose in msg.poses[:20]]
+        self.counter +=1
+        print(self.counter)
 
-        if self.global_path_length == 0:
-            self.global_path_length = len(msg.poses)
-        
-        if len(path_points) < 2:
-            # Not enough points to fit a curve
-            return
+        if self.counter%3 ==0 or self.counter==1:
 
-        x_points = [p[0] for p in path_points]
-        y_points = [p[1] for p in path_points]
+            # Extract the first 20 path points from the message
+            path_points = [(pose.pose.position.x, pose.pose.position.y) for pose in msg.poses[:self.segment_length]]
 
-        # Fit a quadratic polynomial to x and y
-        quadratic_coeff_x = np.polyfit(np.linspace(0, 1, len(x_points)), x_points, 2)
-        quadratic_coeff_y = np.polyfit(np.linspace(0, 1, len(y_points)), y_points, 2)
+            if self.global_path_length == 0:
+                self.global_path_length = len(msg.poses)
+            
+            if len(path_points) < 2:
+                # Not enough points to fit a curve
+                return
 
-        # Fit a linear polynomial to x and y
-        linear_coeff_x = np.polyfit(np.linspace(0, 1, len(x_points)), x_points, 1)
-        linear_coeff_y = np.polyfit(np.linspace(0, 1, len(y_points)), y_points, 1)
+            x_points = [p[0] for p in path_points]
+            y_points = [p[1] for p in path_points]
 
-        # Calculate residuals for quadratic and linear fits
-        quadratic_residual_x = np.sum((np.polyval(quadratic_coeff_x, np.linspace(0, 1, len(x_points))) - x_points) ** 2)
-        quadratic_residual_y = np.sum((np.polyval(quadratic_coeff_y, np.linspace(0, 1, len(y_points))) - y_points) ** 2)
-        linear_residual_x = np.sum((np.polyval(linear_coeff_x, np.linspace(0, 1, len(x_points))) - x_points) ** 2)
-        linear_residual_y = np.sum((np.polyval(linear_coeff_y, np.linspace(0, 1, len(y_points))) - y_points) ** 2)
+            # Fit a quadratic polynomial to x and y
+            quadratic_coeff_x = np.polyfit(np.linspace(0, 1, len(x_points)), x_points, 2)
+            quadratic_coeff_y = np.polyfit(np.linspace(0, 1, len(y_points)), y_points, 2)
 
-        # Choose the best fit (quadratic or linear) based on the residuals
-        if quadratic_residual_x + quadratic_residual_y < linear_residual_x + linear_residual_y:
-            best_fit_coeff_x = quadratic_coeff_x
-            best_fit_coeff_y = quadratic_coeff_y
-        else:
-            best_fit_coeff_x = np.append([0], linear_coeff_x)  # Pad with zero to match quadratic format
-            best_fit_coeff_y = np.append([0], linear_coeff_y)
+            # Fit a linear polynomial to x and y
+            linear_coeff_x = np.polyfit(np.linspace(0, 1, len(x_points)), x_points, 1)
+            linear_coeff_y = np.polyfit(np.linspace(0, 1, len(y_points)), y_points, 1)
 
-        # Create parametric functions x(s) and y(s) with s starting at self.s0
-        self.coeff_x = best_fit_coeff_x
-        self.coeff_y = best_fit_coeff_y
+            # Calculate residuals for quadratic and linear fits
+            quadratic_residual_x = np.sum((np.polyval(quadratic_coeff_x, np.linspace(0, 1, len(x_points))) - x_points) ** 2)
+            quadratic_residual_y = np.sum((np.polyval(quadratic_coeff_y, np.linspace(0, 1, len(y_points))) - y_points) ** 2)
+            linear_residual_x = np.sum((np.polyval(linear_coeff_x, np.linspace(0, 1, len(x_points))) - x_points) ** 2)
+            linear_residual_y = np.sum((np.polyval(linear_coeff_y, np.linspace(0, 1, len(y_points))) - y_points) ** 2)
+
+            # Choose the best fit (quadratic or linear) based on the residuals
+            if quadratic_residual_x + quadratic_residual_y < linear_residual_x + linear_residual_y:
+                best_fit_coeff_x = quadratic_coeff_x
+                best_fit_coeff_y = quadratic_coeff_y
+            else:
+                best_fit_coeff_x = np.append([0], linear_coeff_x)  # Pad with zero to match quadratic format
+                best_fit_coeff_y = np.append([0], linear_coeff_y)
+
+            # Create parametric functions x(s) and y(s) with s starting at self.s0
+            self.coeff_x = best_fit_coeff_x
+            self.coeff_y = best_fit_coeff_y
 
     def goal_pose_callback(self, msg):
         self.new_goal_received = True
@@ -294,17 +301,17 @@ class NMPCController(Node):
             self.start = self.end
 
         if not self.initialized and self.new_goal_received:
-            
             self.ub_s = self.global_path_length / 18
             self.setup_mpc(self.current_state)
-            # self.publish_reference_path()  # Publish the reference path once initialized
 
         elif self.initialized and self.dt > 0:
             goal_dist = self.dist(self.current_state, self.goal)
 
             if goal_dist > 0.2:
                 # Update the parameters for Acados
-                self.solver.set(0, "p", np.concatenate((self.coeff_x.flatten(), self.coeff_y.flatten(), np.array([self.s0]))))
+                
+                for i in range(self.N):
+                    self.solver.set(i, "p", np.concatenate((self.coeff_x.flatten(), self.coeff_y.flatten(), np.array([self.s0]))))
 
                 self.x0 = np.append(self.current_state, np.array([self.s0]))
 
@@ -321,7 +328,8 @@ class NMPCController(Node):
                 x_opt = np.array([self.solver.get(i, "x") for i in range(self.ocp.dims.N + 1)])
 
                 self.publish_control(usol)
-                # self.publish_reference_path()
+                # print(usol)
+                self.publish_reference_path()
                 self.publish_ol_path(x_opt)
 
                 self.w0 = usol[2]
@@ -364,8 +372,8 @@ class NMPCController(Node):
         ref_path.header.stamp = self.get_clock().now().to_msg()
         ref_path.header.frame_id = "map"  # Adjust frame_id to your setup
 
-        for s in np.linspace(self.lb_s, self.ub_s, num=100):
-            eta_val = self.reference_traj(s)
+        for s in np.linspace(self.s0, self.s0+1, num=100):
+            eta_val = self.reference_traj(s, self.coeff_x, self.coeff_y, self.s0)
             pose = PoseStamped()
             pose.header.stamp = ref_path.header.stamp
             pose.header.frame_id = ref_path.header.frame_id
@@ -391,7 +399,7 @@ class NMPCController(Node):
         self.ocp = self.setup_ocp_with_cost_function()
 
         # Make sure coeff_x and coeff_y are properly flattened and concatenated
-        parameter_values = np.concatenate((self.coeff_x.flatten(), self.coeff_y.flatten(), [self.s0]))
+        parameter_values = np.concatenate((self.coeff_x.flatten(), self.coeff_y.flatten(), np.array([self.s0])))
 
         # Verify the size of parameter_values
         if parameter_values.shape[0] != 7:
@@ -513,28 +521,6 @@ class NMPCController(Node):
 
         self.ol_path_pub.publish(ol_path)
 
-    def publish_reference_path(self):
-        ref_path = Path()
-        ref_path.header.stamp = self.get_clock().now().to_msg()
-        ref_path.header.frame_id = "map"  # Adjust frame_id to your setup
-
-        for s in np.linspace(self.lb_s, self.ub_s, num=100):
-            eta_val = self.reference_traj(s)
-            pose = PoseStamped()
-            pose.header.stamp = ref_path.header.stamp
-            pose.header.frame_id = ref_path.header.frame_id
-            pose.pose.position.x = float(eta_val[0])
-            pose.pose.position.y = float(eta_val[1])
-            pose.pose.position.z = 0.0
-            # Assume no orientation or flat trajectory, set quaternion accordingly
-            pose.pose.orientation.x = 0.0
-            pose.pose.orientation.y = 0.0
-            pose.pose.orientation.z = 0.0
-            pose.pose.orientation.w = 1.0
-            ref_path.poses.append(pose)
-
-        self.ref_path_pub.publish(ref_path)
-
     def publish_control(self, control_input):
         twist_msg = Twist()
         twist_msg.linear.x = control_input[0]
@@ -605,12 +591,13 @@ class NMPCController(Node):
 
         # Define weights
         Q = np.diag([100, 100, 0])  # Adjust the weights as needed for state deviation
-        R = np.diag([1, 1, 0.5])  # Control effort weights (including w)
+        R = np.diag([1, 1])  # Control effort weights (including w)
         T_cost = np.array([15])  # Weight for time dilation cost
 
         # State variables
         x = ocp.model.x[:3]  # (x, y, theta)
-        u = ocp.model.u[:3]  # (v, omega, w)
+        u = ocp.model.u[:2]  # (v, omega, w)
+        w = ocp.model.u[2]
         s = ocp.model.x[3]  # s is the path parameter
 
         # Reference trajectory
@@ -618,11 +605,11 @@ class NMPCController(Node):
         dx = x - xi_s
 
         # Define cost function expressions
-        ocp.model.cost_y_expr = vertcat(dx, u)
+        ocp.model.cost_y_expr = vertcat(dx, u,(1-w))
         ocp.model.cost_y_expr_e = vertcat(dx)
 
         # Ensure the dimensions match the weights
-        ocp.cost.W = block_diag(Q, R)
+        ocp.cost.W = block_diag(Q, R,T_cost)
         ocp.cost.W_e = Q
 
         # Provide an initial reference value for `yref` and `yref_e`
@@ -638,7 +625,7 @@ class NMPCController(Node):
         ocp.constraints.ubx = np.array([self.ub_s])  # Upper bound for `s`
         ocp.constraints.idxbx = np.array([3])  # Index of the constrained state (s)
 
-        ocp.constraints.lbu = np.array([0, -0.1, 0])  # Lower bounds for (v, omega, w)
+        ocp.constraints.lbu = np.array([0.0, -0.1, 0.0])  # Lower bounds for (v, omega, w)
         ocp.constraints.ubu = np.array([0.1, 0.1, 1])  # Upper bounds for (v, omega, w)
         ocp.constraints.idxbu = np.array([0, 1, 2])
 
