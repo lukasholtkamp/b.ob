@@ -97,10 +97,10 @@
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
     <state world_name='default'>
-      <sim_time>1913 795000000</sim_time>
-      <real_time>1594 349221391</real_time>
-      <wall_time>1729585133 584655101</wall_time>
-      <iterations>1590270</iterations>
+      <sim_time>2348 886000000</sim_time>
+      <real_time>437 863483601</real_time>
+      <wall_time>1729675189 213276464</wall_time>
+      <iterations>435091</iterations>
       <model name='grey_wall_0_clone'>
         <pose>-6.99495 -6.36801 0 0 0 -1.57</pose>
         <scale>1 1 1</scale>
@@ -291,13 +291,23 @@
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
+      <model name='person_standing'>
+        <pose>-1.67098 3.24707 -0 0 -1e-06 1.15536</pose>
+        <scale>1 1 1</scale>
+        <link name='link'>
+          <pose>-1.67098 3.24707 -0 0 -1e-06 1.15536</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>-1.67243 -1.00781 -1.57898 -2.14425 -1.33601 -3.09721</acceleration>
+          <wrench>-133.794 -80.6245 -126.318 0 -0 0</wrench>
+        </link>
+      </model>
       <light name='sun'>
         <pose>0 0 10 0 -0 0</pose>
       </light>
     </state>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose>-4.8266 3.51548 29.1344 0 1.3938 0.028284</pose>
+        <pose>6.7564 6.93762 9.40282 -0 0.737801 -2.6349</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>
@@ -1111,6 +1121,76 @@
         <kinematic>0</kinematic>
       </link>
       <pose>-7.0085 11.6688 0 0 0 -1.57</pose>
+    </model>
+    <model name='person_standing'>
+      <link name='link'>
+        <inertial>
+          <pose>0 -0.1 0.95 0 -0 0</pose>
+          <mass>80</mass>
+          <inertia>
+            <ixx>24.88</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>25.73</iyy>
+            <iyz>0</iyz>
+            <izz>2.48</izz>
+          </inertia>
+        </inertial>
+        <collision name='bottom'>
+          <pose>0 -0.1 0.01 0 -0 0</pose>
+          <geometry>
+            <box>
+              <size>0.5 0.35 0.02</size>
+            </box>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <collision name='person'>
+          <pose>0 0 0.02 0.04 -0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>model://person_standing/meshes/standing.dae</uri>
+            </mesh>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <pose>0 0 0.02 0.04 -0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>model://person_standing/meshes/standing.dae</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+      </link>
+      <pose>-1.15121 2.88375 0 0 -0 0</pose>
     </model>
   </world>
 </sdf>
