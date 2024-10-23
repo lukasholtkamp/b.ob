@@ -48,7 +48,7 @@ def generate_launch_description():
     )
 
     declare_use_sim_time_argument = DeclareLaunchArgument(
-        "use_sim_time", default_value="false", description="Use simulation/Gazebo clock"
+        "use_sim_time", default_value="true", description="Use simulation/Gazebo clock"
     )
 
     declare_params_file_cmd = DeclareLaunchArgument(
@@ -95,13 +95,13 @@ def generate_launch_description():
         output="screen",
     )
 
-    rviz_node = Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        arguments=["-d", rviz_config_file],
-        condition=IfCondition(gui),
-    )
+    # rviz_node = Node(
+    #     package="rviz2",
+    #     executable="rviz2",
+    #     name="rviz2",
+    #     arguments=["-d", rviz_config_file],
+    #     condition=IfCondition(gui),
+    # )
 
     ld = LaunchDescription()
 
@@ -110,6 +110,6 @@ def generate_launch_description():
     ld.add_action(declare_gui)
     ld.add_action(log_param_change)
     ld.add_action(start_async_slam_toolbox_node)
-    ld.add_action(rviz_node)
+    # ld.add_action(rviz_node)
 
     return ld
