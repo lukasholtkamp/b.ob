@@ -11,7 +11,7 @@ ekf_filter_node:
     base_link_frame: base_footprint
     world_frame: odom
 
-    odom0: diffbot_base_controller/odom
+    odom0: odom # odom  or diffbot_base_controller/odom
     imu0: imu_broadcaster/imu
 
     #        [x_pos   , y_pos    , z_pos,
