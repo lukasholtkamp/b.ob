@@ -389,7 +389,7 @@ class Detection(Node):
                 # Calculate movement as Euclidean distance
                 movement = math.hypot(mean_x - prev_x, mean_y - prev_y)
 
-                movement_threshold = 0.025  # Adjust as needed
+                movement_threshold = 0.035  # Adjust as needed
 
                 if movement > movement_threshold:
                     dynamic_obstacle = True
