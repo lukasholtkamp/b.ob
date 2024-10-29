@@ -21,8 +21,6 @@ from geometry_msgs.msg import TransformStamped
 from visualization_msgs.msg import Marker
 from builtin_interfaces.msg import Duration
 
-from .functions.path_planner import *
-
 
 class NMPCController(Node):
 
@@ -87,9 +85,8 @@ class NMPCController(Node):
         self.A = None
         self.b = None
 
-        self.segment_length = 20
-        self.epsilon = 0.15
-        self.v_max = 0.1
+        self.global_path = []
+        self.segment_length = 10
 
         self.new_goal_received = False  # Flag to track new goal pose
 
@@ -103,8 +100,6 @@ class NMPCController(Node):
         self.marker_id = 0
 
         self.last_transform_update_time = None
-
-        self.ref_path = None
 
 
     def obs_callback(self, msg):
@@ -138,7 +133,6 @@ class NMPCController(Node):
     def path_callback(self, msg):
         if self.new_goal_received:
             path_points = []
-            self.data_log = []
             for pose in msg.poses:
                 x = pose.pose.position.x
                 y = pose.pose.position.y
@@ -149,76 +143,10 @@ class NMPCController(Node):
                 self.data_log.append([x,y])
 
             # self.save_to_csv()
-
-            self.global_path = LSPB_fit(np.array(path_points),self.segment_length,self.epsilon,self.v_max)
-
-            self.ub_s = self.global_path[-1].end_time
-
-            # Define the CasADi variable for s
-            s = ca.MX.sym('s')
-
-            # Define a CasADi function to evaluate the selected (x, y) for a given s
-            self.ref_path = ca.Function('f_s', [s], [f(self.global_path, s)])
-
-            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-
-            for i, segment in enumerate(self.global_path):
-
-                if segment.segment_type == 'line':
-                    s = np.linspace(segment.start_time, segment.end_time-0.01, 1000)
-                    x_vals = []
-                    y_vals = []
-
-                    for s_value in s:
-                        result = self.ref_path(s_value)
-                        x_vals.append(float(result[0]))
-                        y_vals.append(float(result[1]))
-
-                    ax1.plot(x_vals, y_vals, 'r-', label="Full Path using f_s")
-                    ax1.set_title(f"Original Segment and Input Positions")
-                    ax1.set_xlabel('x')
-                    ax1.set_ylabel('y')
-                    ax1.grid(True)
-
-                    tfx = []
-                    tfy = []
-
-                    for i in range(len(x_vals)):
-                        point = segment.inv_transform_p((x_vals[i],y_vals[i]))
-                        tfx.append(point[0])
-                        tfy.append(point[1])
-
-                    ax2.plot(tfx,tfy,'g-')
-
-
-                if segment.segment_type == 'parabola':
-                    
-                    s = np.linspace(segment.start_time, segment.end_time-0.01, 1000)
-                    x_vals = []
-                    y_vals = []
-
-                    for s_value in s:
-                        result = self.ref_path(s_value)
-                        x_vals.append(float(result[0]))
-                        y_vals.append(float(result[1]))
-
-                    ax1.plot(x_vals, y_vals, 'b-', label="Full Path using f_s")
-                    ax1.set_title(f"Original Segment and Input Positions")
-                    ax1.set_xlabel('x')
-                    ax1.set_ylabel('y')
-                    ax1.grid(True)
-
-                    tfx = []
-                    tfy = []
-
-                    for i in range(len(x_vals)):
-                        point = segment.inv_transform_p((x_vals[i],y_vals[i]))
-                        tfx.append(point[0])
-                        tfy.append(point[1])
-
-                    ax2.plot(tfx,tfy,'g-')
-
-            plt.show()
+            self.global_path = np.array(path_points)
+            self.ub_s = len(self.global_path) / 18
+            self.fit_path_segments()
+            self.new_goal_received = False
 
     def goal_pose_callback(self, msg):
         self.new_goal_received = True
@@ -229,6 +157,67 @@ class NMPCController(Node):
         _, _, theta = euler_from_quaternion(quaternion)
         
         self.goal = [x, y, theta]
+
+    def fit_path_segments(self):
+        x = self.global_path[:, 0]
+        y = self.global_path[:, 1]
+
+        segments = []
+        prev_end = None
+
+        # Loop advances by self.segment_length each iteration
+        for i in range(0, len(x) - self.segment_length + 1, self.segment_length):
+            x_seg = x[i:i + self.segment_length]
+            y_seg = y[i:i + self.segment_length]
+
+            if prev_end is not None:
+                # Add the last end point to the start of the current segment
+                x_seg = np.insert(x_seg, 0, prev_end[0])
+                y_seg = np.insert(y_seg, 0, prev_end[1])
+
+            if len(x_seg) > 2:
+                # Fit a 2nd-degree polynomial for segments with more than 2 points
+                coeff_x = np.polyfit(np.linspace(0, 1, len(x_seg)), x_seg, 2)
+                coeff_y = np.polyfit(np.linspace(0, 1, len(y_seg)), y_seg, 2)
+                degree = 2
+            else:
+                # Fit a linear polynomial if there are only 2 points
+                coeff_x = np.polyfit([0, 1], x_seg, 1)
+                coeff_y = np.polyfit([0, 1], y_seg, 1)
+                degree = 1
+
+            s = SX.sym('s')
+            x_s = sum([coeff_x[j] * s**(degree - j) for j in range(degree + 1)])
+            y_s = sum([coeff_y[j] * s**(degree - j) for j in range(degree + 1)])
+
+            f_x = Function('f_x', [s], [x_s])
+            f_y = Function('f_y', [s], [y_s])
+
+            segments.append((f_x, f_y))
+
+            # Update prev_end with the final point of the current segment
+            prev_end = (f_x(1).full().flatten()[0], f_y(1).full().flatten()[0])
+
+        # Now add the final segment from the last fitted point to the final goal
+        final_goal = (x[-1], y[-1])
+        if prev_end is not None and (prev_end[0] != final_goal[0] or prev_end[1] != final_goal[1]):
+            x_seg = np.array([prev_end[0], final_goal[0]])
+            y_seg = np.array([prev_end[1], final_goal[1]])
+
+            # Fit a linear segment for the final connection
+            coeff_x = np.polyfit([0, 1], x_seg, 1)
+            coeff_y = np.polyfit([0, 1], y_seg, 1)
+            degree = 1
+
+            x_s = coeff_x[0] * s + coeff_x[1]
+            y_s = coeff_y[0] * s + coeff_y[1]
+
+            f_x = Function('f_x', [s], [x_s])
+            f_y = Function('f_y', [s], [y_s])
+
+            segments.append((f_x, f_y))
+
+        self.fitted_segments = segments
 
     def get_base_footprint_transform(self):
         """Get the current transform of 'base_footprint' with respect to 'map'."""
@@ -247,6 +236,7 @@ class NMPCController(Node):
             _, _, theta = euler_from_quaternion(quaternion)
 
             
+
             return np.array([x, y, theta])
 
         except Exception as e:
@@ -318,7 +308,7 @@ class NMPCController(Node):
 
     def reference_traj(self, s):
 
-        scaled_s = s * (len(self.self.global_path)/self.ub_s) * 1.1
+        scaled_s = s * (len(self.global_path)/self.ub_s) * 1.1
 
         num_segments = len(self.fitted_segments)
         threshold = 0.5  # Threshold for large changes
