@@ -220,7 +220,7 @@ global_costmap:
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
-        observation_sources: scan
+        observation_sources: scan obstacle_pointcloud
         scan:
           topic: /scan
           max_obstacle_height: 2.0
@@ -231,6 +231,15 @@ global_costmap:
           raytrace_min_range: 0.0
           obstacle_max_range: 3.0 # Range for detecting
           obstacle_min_range: 0.0
+          inf_is_valid: true # For Tracking
+        obstacle_pointcloud:
+          topic: /obstacle_pointcloud
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+          data_type: "PointCloud2"
+          raytrace_max_range: 10.0 # Adjusted to support up to 4.0 meters
+          obstacle_max_range: 5.0 # Adjusted to support up to 4.0 meters
           inf_is_valid: true # For Tracking
 
       inflation_layer:

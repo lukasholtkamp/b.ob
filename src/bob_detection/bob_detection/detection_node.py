@@ -2,7 +2,8 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import LaserScan, PointCloud2, PointField
+from std_msgs.msg import Header
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import PoseStamped
 import math
@@ -29,6 +30,14 @@ class Detection(Node):
         # Publisher for the marker array (to visualize clusters as circles)
         self.marker_publisher = self.create_publisher(
             MarkerArray, "cluster_markers", 10
+        )
+
+        # Publisher for the marker array (to visualize the velocities as an arrow)
+        self.marker_publisher = self.create_publisher(MarkerArray, "/arrow_markers", 10)
+
+        # Publisher for PointCloud (to convert the arrows into PointCloud for the cost map)
+        self.pointcloud_publisher = self.create_publisher(
+            PointCloud2, "/obstacle_pointcloud", 10
         )
 
         # TF Buffer and listener
@@ -425,6 +434,7 @@ class Detection(Node):
                         marker.color.g = 0.0
                         marker.color.b = 0.0
                         marker.color.a = 1.0  # Fully opaque
+                        self.arrow_marker(prev_x, prev_y, mean_x, mean_y)
                     else:
                         marker.color.r = 0.0  # Green for static obstacles
                         marker.color.g = 1.0
@@ -474,6 +484,115 @@ class Detection(Node):
 
         # Publish the filtered scan
         self.filtered_scan_publisher.publish(filtered_scan)
+
+    def arrow_marker(self, prev_x, prev_y, mean_x, mean_y):
+        # length = velocities
+
+        # Create MarkerArray with a single arrow marker
+        marker_array = MarkerArray()
+        marker = Marker()
+        marker.header.frame_id = "odom"
+        marker.type = Marker.ARROW  # Arrow marker type
+        marker.id = 0
+
+        # Set the visibility of the marker by setting action to ADD
+        marker.action = Marker.ADD
+
+        # Set the position and orientation of the marker
+        marker.pose.position.x = mean_x
+        marker.pose.position.y = mean_y
+        marker.pose.position.z = 0.0
+
+        # Get quaternion direction from start to end point
+        qx, qy, qz, qw = self.calculate_quaternion_direction(
+            prev_x, prev_y, mean_x, mean_y
+        )
+        marker.pose.orientation.x = qx
+        marker.pose.orientation.y = qy
+        marker.pose.orientation.z = qz
+        marker.pose.orientation.w = qw
+
+        # Set the scale of the marker (length, width, height for arrow)
+        marker.scale.x = 2.0  # Arrow length
+        marker.scale.y = 0.1  # Arrow width
+        marker.scale.z = 0.1  # Arrow height
+
+        # Set color (RGBA)
+        marker.color.r = 0.0
+        marker.color.g = 0.0
+        marker.color.b = 1.0
+        marker.color.a = 1.0
+
+        # Add the marker to the MarkerArray
+        marker_array.markers.append(marker)
+
+        # Publish the MarkerArray
+        self.marker_publisher.publish(marker_array)
+
+        # Publish the corresponding point cloud to represent the arrow as an obstacle in the cost map
+        self.publish_arrow_as_pointcloud(prev_x, prev_y, 2.0)
+
+    def calculate_quaternion_direction(self, prev_x, prev_y, mean_x, mean_y):
+        # Calculate the angle in radians for the rotation in the 2D plane
+        delta_x = mean_x - prev_x
+        delta_y = mean_y - prev_y
+        angle = math.atan2(delta_y, delta_x)  # Angle in radians
+
+        # Convert this angle to a quaternion for a rotation around the z-axis
+        half_angle = angle / 2
+        qx = 0.0
+        qy = 0.0
+        qz = math.sin(half_angle)
+        qw = math.cos(half_angle)
+
+        return qx, qy, qz, qw
+
+    def publish_arrow_as_pointcloud(self, center_x, center_y, length):
+        # Parameters for the arrow as a line of points
+        num_points = 15  # Number of points along the arrow's length
+
+        # Calculate the points along the length of the arrow
+        points = np.array(
+            [
+                (
+                    center_x + i * (length / num_points),
+                    center_y,
+                    0.0,
+                )
+                for i in range(num_points + 1)  # Including both start and end points
+            ],
+            dtype=np.float32,
+        )
+
+        # Define the fields for x, y, z in the PointCloud2 message
+        fields = [
+            PointField(name="x", offset=0, datatype=PointField.FLOAT32, count=1),
+            PointField(name="y", offset=4, datatype=PointField.FLOAT32, count=1),
+            PointField(name="z", offset=8, datatype=PointField.FLOAT32, count=1),
+        ]
+
+        # Pack the points into binary data for the PointCloud2 message
+        data = points.tobytes()
+
+        # Create the PointCloud2 message
+        header = Header()
+        header.stamp = self.get_clock().now().to_msg()
+        header.frame_id = "map"  # Frame for the cost map
+
+        pointcloud_msg = PointCloud2(
+            header=header,
+            height=1,
+            width=points.shape[0],
+            fields=fields,
+            is_bigendian=False,
+            point_step=12,
+            row_step=12 * points.shape[0],
+            data=data,
+            is_dense=True,
+        )
+
+        # Publish the PointCloud2 to represent the obstacle in the cost map
+        self.pointcloud_publisher.publish(pointcloud_msg)
 
 
 def main(args=None):
