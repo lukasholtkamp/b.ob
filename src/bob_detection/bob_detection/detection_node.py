@@ -530,7 +530,7 @@ class Detection(Node):
         self.marker_publisher.publish(marker_array)
 
         # Publish the corresponding point cloud to represent the arrow as an obstacle in the cost map
-        self.publish_arrow_as_pointcloud(prev_x, prev_y, 2.0)
+        self.publish_arrow_as_pointcloud(prev_x, prev_y, mean_x, mean_y, 2.0)
 
     def calculate_quaternion_direction(self, prev_x, prev_y, mean_x, mean_y):
         # Calculate the angle in radians for the rotation in the 2D plane
@@ -547,16 +547,21 @@ class Detection(Node):
 
         return qx, qy, qz, qw
 
-    def publish_arrow_as_pointcloud(self, center_x, center_y, length):
+    def publish_arrow_as_pointcloud(self, prev_x, prev_y, mean_x, mean_y, length):
         # Parameters for the arrow as a line of points
         num_points = 15  # Number of points along the arrow's length
 
-        # Calculate the points along the length of the arrow
+        # Calculate the angle from start to end point for orientation
+        delta_x = mean_x - prev_x
+        delta_y = mean_y - prev_y
+        angle = math.atan2(delta_y, delta_x)
+
+        # Calculate the points along the direction of the arrow
         points = np.array(
             [
                 (
-                    center_x + i * (length / num_points),
-                    center_y,
+                    mean_x + i * (length / num_points) * math.cos(angle),
+                    mean_y + i * (length / num_points) * math.sin(angle),
                     0.0,
                 )
                 for i in range(num_points + 1)  # Including both start and end points
