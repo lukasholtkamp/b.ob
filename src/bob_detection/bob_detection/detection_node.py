@@ -63,9 +63,21 @@ class Detection(Node):
         # Minimum age for clusters to be considered
         self.min_cluster_age = 1  # Reduced from 3 for testing
 
+        # Initialize variables to store the previous position and time
+        self.prev_time = None
+
+        # Boolean variable to initialize prev x and prev y
+        self.points_initialize = True
+
     def scan_callback(self, scan_msg: LaserScan):
         # Increment frame counter
         self.frame_counter += 1
+
+        # Initialize prev x and prev y for velocity calculation
+        if self.points_initialize:
+            prev_x = None
+            prev_y = None
+            self.points_initialize = False
 
         # Since the robot is stationary, set deltas to zero
         delta_x = delta_y = delta_theta = 0.0
@@ -434,7 +446,23 @@ class Detection(Node):
                         marker.color.g = 0.0
                         marker.color.b = 0.0
                         marker.color.a = 1.0  # Fully opaque
-                        self.arrow_marker(prev_x, prev_y, mean_x, mean_y)
+
+                        # Check if we have a previous position
+                        if prev_x is not None and prev_y is not None:
+                            # Calculate the time difference
+                            current_time = self.get_clock().now()
+                            time_diff = (
+                                current_time - self.prev_time
+                            ).nanoseconds / 1e9  # seconds
+
+                            # Calculate velocity (movement (distance) / time)
+                            if time_diff > 0:
+                                velocity = movement / time_diff
+                                self.get_logger().info(
+                                    f"Cluster ID: {cluster_id}, Velocity: {velocity:.2f} m/s"
+                                )
+
+                        self.arrow_marker(prev_x, prev_y, mean_x, mean_y, velocity)
                     else:
                         marker.color.r = 0.0  # Green for static obstacles
                         marker.color.g = 1.0
@@ -467,6 +495,9 @@ class Detection(Node):
         # Store current robot pose for next frame (set to None since robot is stationary)
         self.prev_robot_pose = None
 
+        # Update the previous time
+        self.prev_time = self.get_clock().now()
+
     def publish_filtered_scan(self, original_scan_msg, filtered_ranges):
         # Create a new LaserScan message with filtered ranges
         filtered_scan = LaserScan()
@@ -485,7 +516,7 @@ class Detection(Node):
         # Publish the filtered scan
         self.filtered_scan_publisher.publish(filtered_scan)
 
-    def arrow_marker(self, prev_x, prev_y, mean_x, mean_y):
+    def arrow_marker(self, prev_x, prev_y, mean_x, mean_y, velocity):
         # length = velocities
 
         # Create MarkerArray with a single arrow marker
@@ -513,7 +544,7 @@ class Detection(Node):
         marker.pose.orientation.w = qw
 
         # Set the scale of the marker (length, width, height for arrow)
-        marker.scale.x = 2.0  # Arrow length
+        marker.scale.x = velocity * 2  # Arrow length
         marker.scale.y = 0.1  # Arrow width
         marker.scale.z = 0.1  # Arrow height
 
