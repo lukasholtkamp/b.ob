@@ -11,25 +11,20 @@
     <waypoint id="wp_agent2_mid1" x="6" y="9" r="0.25"/>
     <waypoint id="wp_agent2_mid2" x="6" y="6" r="0.25"/>
     
-    <!-- Agent 3 waypoints -->
-    <waypoint id="wp_agent3_start" x="0" y="-9" r="0.25"/>
-    <waypoint id="wp_agent3_mid1" x="7" y="-9" r="0.25"/>
-    <waypoint id="wp_agent3_mid2" x="7" y="-1" r="0.25"/>
-    <waypoint id="wp_agent3_mid3" x="0" y="-1" r="0.25"/>
+    <!-- Agent 3 waypoints (modified) -->
+    <waypoint id="wp_agent3_start" x="-1" y="5" r="0.25"/>
+    <waypoint id="wp_agent3_mid1" x="7" y="5" r="0.25"/>
+    <waypoint id="wp_agent3_end" x="-1" y="5" r="0.25"/>
 
-    <!-- Random waypoints for Agent 4 (avoiding (0,0)) -->
-    <waypoint id="wp_agent4_1" x="2" y="-7" r="0.25"/>
-    <waypoint id="wp_agent4_2" x="5" y="-4" r="0.25"/>
-    <waypoint id="wp_agent4_3" x="-1" y="-3" r="0.25"/>
-    <waypoint id="wp_agent4_4" x="3" y="2" r="0.25"/>
-    <waypoint id="wp_agent4_5" x="6" y="1" r="0.25"/>
-    
-    <!-- Random waypoints for Agent 5 (avoiding (0,0)) -->
-    <waypoint id="wp_agent5_1" x="4" y="-8" r="0.25"/>
-    <waypoint id="wp_agent5_2" x="1" y="-5" r="0.25"/>
-    <waypoint id="wp_agent5_3" x="6" y="-2" r="0.25"/>
-    <waypoint id="wp_agent5_4" x="2" y="4" r="0.25"/>
-    <waypoint id="wp_agent5_5" x="-1" y="8" r="0.25"/>
+    <!-- Agent 4 waypoints (modified) -->
+    <waypoint id="wp_agent4_start" x="3" y="-3" r="0.25"/>
+    <waypoint id="wp_agent4_mid1" x="7" y="-3" r="0.25"/>
+    <waypoint id="wp_agent4_end" x="-1" y="-3" r="0.25"/>
+
+    <!-- Agent 5 waypoints (modified) -->
+    <waypoint id="wp_agent5_start" x="7" y="-6" r="0.25"/>
+    <waypoint id="wp_agent5_mid1" x="7" y="-6" r="0.25"/>
+    <waypoint id="wp_agent5_end" x="-1" y="-6" r="0.25"/>
 
     <!-- Agents -->
     <!-- Agent 1 -->
@@ -50,32 +45,24 @@
         <addwaypoint id="wp_agent2_start"/>
     </agent>
 
-    <!-- Agent 3 -->
-    <agent x="0" y="-9" n="1" dx="0" dy="0" type="0">
+    <!-- Agent 3 (Modified) -->
+    <agent x="-1" y="5" n="1" dx="0" dy="0" type="0">
         <addwaypoint id="wp_agent3_start"/>
         <addwaypoint id="wp_agent3_mid1"/>
-        <addwaypoint id="wp_agent3_mid2"/>
-        <addwaypoint id="wp_agent3_mid3"/>
-        <addwaypoint id="wp_agent3_start"/> <!-- Loop back to start -->
+        <addwaypoint id="wp_agent3_end"/>
     </agent>
 
-    <!-- Agent 4 (Random movement) -->
-    <agent x="2" y="-7" n="1" dx="0" dy="0" type="0">
-        <addwaypoint id="wp_agent4_1"/>
-        <addwaypoint id="wp_agent4_2"/>
-        <addwaypoint id="wp_agent4_3"/>
-        <addwaypoint id="wp_agent4_4"/>
-        <addwaypoint id="wp_agent4_5"/>
-        <addwaypoint id="wp_agent4_1"/> <!-- Loop back to start -->
+    <!-- Agent 4 (Modified) -->
+    <agent x="3" y="-3" n="1" dx="0" dy="0" type="0">
+        <addwaypoint id="wp_agent4_start"/>
+        <addwaypoint id="wp_agent4_mid1"/>
+        <addwaypoint id="wp_agent4_end"/>
     </agent>
 
-    <!-- Agent 5 (Random movement) -->
-    <agent x="4" y="-8" n="1" dx="0" dy="0" type="0">
-        <addwaypoint id="wp_agent5_1"/>
-        <addwaypoint id="wp_agent5_2"/>
-        <addwaypoint id="wp_agent5_3"/>
-        <addwaypoint id="wp_agent5_4"/>
-        <addwaypoint id="wp_agent5_5"/>
-        <addwaypoint id="wp_agent5_1"/> <!-- Loop back to start -->
+    <!-- Agent 5 (Modified) -->
+    <agent x="7" y="-6" n="1" dx="0" dy="0" type="0">
+        <addwaypoint id="wp_agent5_start"/>
+        <addwaypoint id="wp_agent5_mid1"/>
+        <addwaypoint id="wp_agent5_end"/>
     </agent>
 </scenario>

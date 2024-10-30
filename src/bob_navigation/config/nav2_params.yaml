@@ -134,11 +134,11 @@ controller_server:
       primary_controller: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
       angular_dist_threshold: 0.785
       forward_sampling_distance: 0.5
-      rotate_to_heading_angular_vel: 1.8
       simulate_ahead_time: 1.0
       rotate_to_goal_heading: false
-      desired_linear_vel: 0.8 # Linear velocity by path following
-      max_angular_accel: 5.0 # Angular acceleration
+      desired_linear_vel: 1.5 # Linear velocity by path following
+      rotate_to_heading_angular_vel: 3.0 # Angular velocity rad/s
+      max_angular_accel: 6.0 # Angular acceleration
       lookahead_dist: 0.6
       min_lookahead_dist: 0.3
       max_lookahead_dist: 0.9
@@ -207,8 +207,8 @@ local_costmap:
 global_costmap:
   global_costmap:
     ros__parameters:
-      update_frequency: 50.0
-      publish_frequency: 20.0
+      update_frequency: 15.0
+      publish_frequency: 5.0
       global_frame: map
       robot_base_frame: base_footprint
       use_sim_time: True
@@ -234,18 +234,20 @@ global_costmap:
           inf_is_valid: true # For Tracking
         obstacle_pointcloud:
           topic: /obstacle_pointcloud
-          max_obstacle_height: 2.0
+          max_obstacle_height: 5.0
           clearing: True
           marking: True
           data_type: "PointCloud2"
-          raytrace_max_range: 10.0 # Adjusted to support up to 4.0 meters
-          obstacle_max_range: 5.0 # Adjusted to support up to 4.0 meters
+          raytrace_max_range: 10.0 # Adjusted to support up to 12 meters
+          raytrace_min_range: 0.0
+          obstacle_max_range: 8.0 # Adjusted to support up to 12 meters
+          obstacle_min_range: 0.0
           inf_is_valid: true # For Tracking
 
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        inflation_radius: 0.80
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
@@ -333,10 +335,10 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [0.8, 0.0, 1.0]
-    min_velocity: [-0.8, 0.0, -1.0]
-    max_accel: [3.0, 0.0, 3.2]
-    max_decel: [-3.0, 0.0, -3.2]
+    max_velocity: [1.0, 0.0, 1.0]
+    min_velocity: [-1.0, 0.0, -1.0]
+    max_accel: [6.0, 0.0, 6.0]
+    max_decel: [-6.0, 0.0, -6.0]
     odom_topic: "odometry/filtered"
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]

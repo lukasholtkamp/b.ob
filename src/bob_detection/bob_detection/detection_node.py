@@ -458,9 +458,9 @@ class Detection(Node):
                             # Calculate velocity (movement (distance) / time)
                             if time_diff > 0:
                                 velocity = movement / time_diff
-                                self.get_logger().info(
-                                    f"Cluster ID: {cluster_id}, Velocity: {velocity:.2f} m/s"
-                                )
+                                # self.get_logger().info(
+                                #     f"Cluster ID: {cluster_id}, Velocity: {velocity:.2f} m/s"
+                                # )
 
                         self.arrow_marker(prev_x, prev_y, mean_x, mean_y, velocity)
                     else:
@@ -544,7 +544,7 @@ class Detection(Node):
         marker.pose.orientation.w = qw
 
         # Set the scale of the marker (length, width, height for arrow)
-        marker.scale.x = velocity * 2  # Arrow length
+        marker.scale.x = velocity * 3  # Arrow length
         marker.scale.y = 0.1  # Arrow width
         marker.scale.z = 0.1  # Arrow height
 
@@ -561,7 +561,7 @@ class Detection(Node):
         self.marker_publisher.publish(marker_array)
 
         # Publish the corresponding point cloud to represent the arrow as an obstacle in the cost map
-        self.publish_arrow_as_pointcloud(prev_x, prev_y, mean_x, mean_y, 2.0)
+        self.publish_arrow_as_pointcloud(prev_x, prev_y, mean_x, mean_y, marker.scale.x)
 
     def calculate_quaternion_direction(self, prev_x, prev_y, mean_x, mean_y):
         # Calculate the angle in radians for the rotation in the 2D plane
@@ -580,7 +580,7 @@ class Detection(Node):
 
     def publish_arrow_as_pointcloud(self, prev_x, prev_y, mean_x, mean_y, length):
         # Parameters for the arrow as a line of points
-        num_points = 15  # Number of points along the arrow's length
+        num_points = 30  # Number of points along the arrow's length
 
         # Calculate the angle from start to end point for orientation
         delta_x = mean_x - prev_x
