@@ -207,8 +207,8 @@ local_costmap:
 global_costmap:
   global_costmap:
     ros__parameters:
-      update_frequency: 15.0
-      publish_frequency: 5.0
+      update_frequency: 30.0
+      publish_frequency: 20.0
       global_frame: map
       robot_base_frame: base_footprint
       use_sim_time: True
@@ -234,15 +234,15 @@ global_costmap:
           inf_is_valid: true # For Tracking
         obstacle_pointcloud:
           topic: /obstacle_pointcloud
-          max_obstacle_height: 5.0
+          max_obstacle_height: 2.0
           clearing: True
           marking: True
           data_type: "PointCloud2"
-          raytrace_max_range: 10.0 # Adjusted to support up to 12 meters
+          raytrace_max_range: 5.0
           raytrace_min_range: 0.0
-          obstacle_max_range: 8.0 # Adjusted to support up to 12 meters
+          obstacle_max_range: 10.0
           obstacle_min_range: 0.0
-          inf_is_valid: true # For Tracking
+          inf_is_valid: True # For Tracking
 
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"

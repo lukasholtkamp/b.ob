@@ -73,6 +73,9 @@ class Detection(Node):
         # Increment frame counter
         self.frame_counter += 1
 
+        # Initialize list to accumulate points for all arrows
+        all_arrow_points = []
+
         # Initialize prev x and prev y for velocity calculation
         if self.points_initialize:
             prev_x = None
@@ -116,7 +119,7 @@ class Detection(Node):
         polar_data = np.vstack((valid_angles, valid_ranges)).T
 
         # Perform DBSCAN clustering on the polar coordinates (theta, ranges)
-        db = DBSCAN(eps=0.50, min_samples=3).fit(polar_data)
+        db = DBSCAN(eps=0.25, min_samples=1).fit(polar_data)
         labels = db.labels_
 
         # Initialize filtered ranges array with zeros (same size as original)
@@ -151,7 +154,7 @@ class Detection(Node):
             cluster_ranges = valid_ranges[cluster_mask]
 
             # Filter clusters based on size (e.g., between 2 and 15 points)
-            if 2 <= len(cluster_ranges) < 15:
+            if 2 <= len(cluster_ranges) < 25:
                 # Convert polar coordinates to Cartesian coordinates
                 cluster_x = cluster_ranges * np.cos(cluster_angles)
                 cluster_y = cluster_ranges * np.sin(cluster_angles)
@@ -458,11 +461,19 @@ class Detection(Node):
                             # Calculate velocity (movement (distance) / time)
                             if time_diff > 0:
                                 velocity = movement / time_diff
+                                # Accumulate arrow points for all obstacles
+                                self.arrow_marker(
+                                    prev_x,
+                                    prev_y,
+                                    mean_x,
+                                    mean_y,
+                                    velocity,
+                                    all_arrow_points,
+                                )
                                 # self.get_logger().info(
                                 #     f"Cluster ID: {cluster_id}, Velocity: {velocity:.2f} m/s"
                                 # )
 
-                        self.arrow_marker(prev_x, prev_y, mean_x, mean_y, velocity)
                     else:
                         marker.color.r = 0.0  # Green for static obstacles
                         marker.color.g = 1.0
@@ -492,6 +503,9 @@ class Detection(Node):
         # Publish the marker array
         self.marker_publisher.publish(marker_array)
 
+        # Publish all arrow points as a single point cloud for the cost map
+        self.publish_all_arrows_as_pointcloud(all_arrow_points)
+
         # Store current robot pose for next frame (set to None since robot is stationary)
         self.prev_robot_pose = None
 
@@ -516,25 +530,19 @@ class Detection(Node):
         # Publish the filtered scan
         self.filtered_scan_publisher.publish(filtered_scan)
 
-    def arrow_marker(self, prev_x, prev_y, mean_x, mean_y, velocity):
-        # length = velocities
-
-        # Create MarkerArray with a single arrow marker
-        marker_array = MarkerArray()
+    def arrow_marker(self, prev_x, prev_y, mean_x, mean_y, velocity, all_arrow_points):
+        # Create a single arrow marker
         marker = Marker()
         marker.header.frame_id = "odom"
         marker.type = Marker.ARROW  # Arrow marker type
-        marker.id = 0
+        marker.id = 0  # Each arrow should have a unique ID, adjust as needed
 
-        # Set the visibility of the marker by setting action to ADD
-        marker.action = Marker.ADD
-
-        # Set the position and orientation of the marker
+        # Set position and orientation
         marker.pose.position.x = mean_x
         marker.pose.position.y = mean_y
         marker.pose.position.z = 0.0
 
-        # Get quaternion direction from start to end point
+        # Quaternion direction from start to end point
         qx, qy, qz, qw = self.calculate_quaternion_direction(
             prev_x, prev_y, mean_x, mean_y
         )
@@ -543,25 +551,23 @@ class Detection(Node):
         marker.pose.orientation.z = qz
         marker.pose.orientation.w = qw
 
-        # Set the scale of the marker (length, width, height for arrow)
+        # Set scale and color
         marker.scale.x = velocity * 3  # Arrow length
         marker.scale.y = 0.1  # Arrow width
         marker.scale.z = 0.1  # Arrow height
-
-        # Set color (RGBA)
         marker.color.r = 0.0
         marker.color.g = 0.0
         marker.color.b = 1.0
         marker.color.a = 1.0
 
-        # Add the marker to the MarkerArray
-        marker_array.markers.append(marker)
+        # Add points for this arrow to the list
+        arrow_points = self.generate_arrow_points(
+            prev_x, prev_y, mean_x, mean_y, marker.scale.x
+        )
+        all_arrow_points.extend(arrow_points)
 
-        # Publish the MarkerArray
-        self.marker_publisher.publish(marker_array)
-
-        # Publish the corresponding point cloud to represent the arrow as an obstacle in the cost map
-        self.publish_arrow_as_pointcloud(prev_x, prev_y, mean_x, mean_y, marker.scale.x)
+        # Optionally publish the marker for visualization
+        self.marker_publisher.publish(MarkerArray(markers=[marker]))
 
     def calculate_quaternion_direction(self, prev_x, prev_y, mean_x, mean_y):
         # Calculate the angle in radians for the rotation in the 2D plane
@@ -578,7 +584,24 @@ class Detection(Node):
 
         return qx, qy, qz, qw
 
-    def publish_arrow_as_pointcloud(self, prev_x, prev_y, mean_x, mean_y, length):
+    def generate_arrow_points(self, prev_x, prev_y, mean_x, mean_y, length):
+        num_points = 30
+        angle = math.atan2(mean_y - prev_y, mean_x - prev_x)
+
+        # Generate points along arrow direction
+        points = [
+            (
+                mean_x + i * (length / num_points) * math.cos(angle),
+                mean_y + i * (length / num_points) * math.sin(angle),
+                0.0,
+            )
+            for i in range(num_points + 1)
+        ]
+        return points
+
+    def publish_arrow_as_pointcloud(
+        self, prev_x, prev_y, mean_x, mean_y, length, all_arrow_points
+    ):
         # Parameters for the arrow as a line of points
         num_points = 30  # Number of points along the arrow's length
 
@@ -600,6 +623,10 @@ class Detection(Node):
             dtype=np.float32,
         )
 
+        # Append points for this arrow to the main list of all points
+        all_arrow_points.extend(points)
+
+    def publish_all_arrows_as_pointcloud(self, all_arrow_points):
         # Define the fields for x, y, z in the PointCloud2 message
         fields = [
             PointField(name="x", offset=0, datatype=PointField.FLOAT32, count=1),
@@ -607,8 +634,9 @@ class Detection(Node):
             PointField(name="z", offset=8, datatype=PointField.FLOAT32, count=1),
         ]
 
-        # Pack the points into binary data for the PointCloud2 message
-        data = points.tobytes()
+        # Flatten points array
+        points_flat = np.array(all_arrow_points, dtype=np.float32)
+        data = points_flat.tobytes()
 
         # Create the PointCloud2 message
         header = Header()
@@ -618,16 +646,16 @@ class Detection(Node):
         pointcloud_msg = PointCloud2(
             header=header,
             height=1,
-            width=points.shape[0],
+            width=points_flat.shape[0],
             fields=fields,
             is_bigendian=False,
             point_step=12,
-            row_step=12 * points.shape[0],
+            row_step=12 * points_flat.shape[0],
             data=data,
             is_dense=True,
         )
 
-        # Publish the PointCloud2 to represent the obstacle in the cost map
+        # Publish the aggregated point cloud
         self.pointcloud_publisher.publish(pointcloud_msg)
 
 
