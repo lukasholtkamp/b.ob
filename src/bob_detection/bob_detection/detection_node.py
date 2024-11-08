@@ -119,7 +119,9 @@ class Detection(Node):
         polar_data = np.vstack((valid_angles, valid_ranges)).T
 
         # Perform DBSCAN clustering on the polar coordinates (theta, ranges)
-        db = DBSCAN(eps=0.25, min_samples=1).fit(polar_data)
+        db = DBSCAN(eps=0.25, min_samples=1).fit(
+            polar_data
+        )  # sim: eps=0.25 , min_samples=1 | real: eps=0.50, min_samples=3
         labels = db.labels_
 
         # Initialize filtered ranges array with zeros (same size as original)
@@ -154,7 +156,7 @@ class Detection(Node):
             cluster_ranges = valid_ranges[cluster_mask]
 
             # Filter clusters based on size (e.g., between 2 and 15 points)
-            if 2 <= len(cluster_ranges) < 25:
+            if 2 <= len(cluster_ranges) < 25:  # sim: 2, 25 | real: 2, 15
                 # Convert polar coordinates to Cartesian coordinates
                 cluster_x = cluster_ranges * np.cos(cluster_angles)
                 cluster_y = cluster_ranges * np.sin(cluster_angles)
