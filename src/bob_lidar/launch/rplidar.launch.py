@@ -31,7 +31,7 @@ def generate_launch_description():
     frame_id = LaunchConfiguration("frame_id", default="lidar_frame")
     inverted = LaunchConfiguration("inverted", default="false")
     angle_compensate = LaunchConfiguration("angle_compensate", default="true")
-    scan_mode = LaunchConfiguration("scan_mode", default="Standard")
+    scan_mode = LaunchConfiguration("scan_mode", default="Stability")
 
     # Get config path of the PID settings
     pid_config_filepath = os.path.join(
