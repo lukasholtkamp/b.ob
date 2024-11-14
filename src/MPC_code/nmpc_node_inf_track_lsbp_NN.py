@@ -14,6 +14,7 @@ from tf_transformations import euler_from_quaternion
 import math
 from sklearn.linear_model import LinearRegression
 from scipy.linalg import block_diag
+from scipy.linalg import eigvals
 
 from obstacle_detector.msg import Obstacles
 
@@ -40,8 +41,8 @@ class NMPCController(Node):
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.ref_path_pub = self.create_publisher(Path, '/ref_path', 10)
         self.ol_path_pub = self.create_publisher(Path, '/ol_path', 10)
+        self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
 
-        self.global_path_sub = self.create_subscription(Path, '/plan', self.path_callback, 10)
         self.goal_pose_sub = self.create_subscription(PoseStamped, '/goal_pose', self.goal_pose_callback, 10)
 
         self.obs_sub = self.create_subscription(Obstacles, '/obstacles', self.obs_callback, 10)
@@ -119,89 +120,92 @@ class NMPCController(Node):
             
         except:
             self.obs_list = np.zeros((self.max_obs, 3))
+    
+    def inf_path(self, s):
+        T = 90
+        etat1 = 6 * np.cos((2 * np.pi / T) * s)
+        etat2 = 3 * np.sin((4 * np.pi / T) * s)
+        eta = (etat1, etat2, 0)
+        return eta
 
-    def path_callback(self, msg):
-        if self.new_goal_received:
-            path_points = []
-            self.data_log = []
-            for pose in msg.poses:
-                x = pose.pose.position.x
-                y = pose.pose.position.y
-                quaternion = [pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w]
-                _, _, theta = euler_from_quaternion(quaternion)
-
-                path_points.append((x, y, theta))
-                self.data_log.append([x,y])
-
-            self.global_path, points = LSPB_fit(np.array(path_points),self.segment_length,self.epsilon,self.v_max)
-            # self.save_to_csv()
-            s = ca.MX.sym('s')
-            self.reference_traj = ca.Function('f_s', [s], [f(self.global_path, s)])
-            self.new_goal_received = False
-
-            # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-
-            # ax1.plot(points[:,0],points[:,1],'ko')
-
-            # for i, segment in enumerate(self.global_path):
-
-            #     if segment.segment_type == 'line':
-            #         s = np.linspace(segment.start_time, segment.end_time-0.01, 1000)
-            #         x_vals = []
-            #         y_vals = []
-
-            #         for s_value in s:
-            #             result = self.reference_traj(s_value)
-            #             x_vals.append(float(result[0]))
-            #             y_vals.append(float(result[1]))
-
-            #         ax1.plot(x_vals, y_vals, 'r-', label="Full Path using f_s")
-            #         ax1.set_title(f"Original Segment and Input Positions")
-            #         ax1.set_xlabel('x')
-            #         ax1.set_ylabel('y')
-            #         ax1.grid(True)
-
-            #         tfx = []
-            #         tfy = []
-
-            #         for i in range(len(x_vals)):
-            #             point = segment.inv_transform_p((x_vals[i],y_vals[i]))
-            #             tfx.append(point[0])
-            #             tfy.append(point[1])
-
-            #         ax2.plot(tfx,tfy,'g-')
-
-
-            #     if segment.segment_type == 'parabola':
-                    
-            #         s = np.linspace(segment.start_time, segment.end_time-0.01, 1000)
-            #         x_vals = []
-            #         y_vals = []
-
-            #         for s_value in s:
-            #             result = self.reference_traj(s_value)
-            #             x_vals.append(float(result[0]))
-            #             y_vals.append(float(result[1]))
-
-            #         ax1.plot(x_vals, y_vals, 'b-', label="Full Path using f_s")
-            #         ax1.set_title(f"Original Segment and Input Positions")
-            #         ax1.set_xlabel('x')
-            #         ax1.set_ylabel('y')
-            #         ax1.grid(True)
-
-            #         tfx = []
-            #         tfy = []
-
-            #         for i in range(len(x_vals)):
-            #             point = segment.inv_transform_p((x_vals[i],y_vals[i]))
-            #             tfx.append(point[0])
-            #             tfy.append(point[1])
-
-            #         ax2.plot(tfx,tfy,'g-')
-
-            # plt.show()
 
     def goal_pose_callback(self, msg):
+
+        path_points = []
+        n= 1000
+        for i in range(n):
+
+            path_points.append(self.inf_path((i/n)*90))
+            # self.data_log.append([x,y])
+
+        self.global_path, points = LSPB_fit(np.array(path_points),self.segment_length,self.epsilon,self.v_max)
+        # self.save_to_csv()
+        s = ca.MX.sym('s')
+        self.reference_traj = ca.Function('f_s', [s], [f(self.global_path, s)])
+        self.new_goal_received = False
+
+        # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+
+        # ax1.plot(points[:,0],points[:,1],'ko')
+
+        # for i, segment in enumerate(self.global_path):
+
+        #     if segment.segment_type == 'line':
+        #         s = np.linspace(segment.start_time, segment.end_time-0.01, 1000)
+        #         x_vals = []
+        #         y_vals = []
+
+        #         for s_value in s:
+        #             result = self.reference_traj(s_value)
+        #             x_vals.append(float(result[0]))
+        #             y_vals.append(float(result[1]))
+
+        #         ax1.plot(x_vals, y_vals, 'r-', label="Full Path using f_s")
+        #         ax1.set_title(f"Original Segment and Input Positions")
+        #         ax1.set_xlabel('x')
+        #         ax1.set_ylabel('y')
+        #         ax1.grid(True)
+
+        #         tfx = []
+        #         tfy = []
+
+        #         for i in range(len(x_vals)):
+        #             point = segment.inv_transform_p((x_vals[i],y_vals[i]))
+        #             tfx.append(point[0])
+        #             tfy.append(point[1])
+
+        #         ax2.plot(tfx,tfy,'g-')
+
+
+        #     if segment.segment_type == 'parabola':
+                
+        #         s = np.linspace(segment.start_time, segment.end_time-0.01, 1000)
+        #         x_vals = []
+        #         y_vals = []
+
+        #         for s_value in s:
+        #             result = self.reference_traj(s_value)
+        #             x_vals.append(float(result[0]))
+        #             y_vals.append(float(result[1]))
+
+        #         ax1.plot(x_vals, y_vals, 'b-', label="Full Path using f_s")
+        #         ax1.set_title(f"Original Segment and Input Positions")
+        #         ax1.set_xlabel('x')
+        #         ax1.set_ylabel('y')
+        #         ax1.grid(True)
+
+        #         tfx = []
+        #         tfy = []
+
+        #         for i in range(len(x_vals)):
+        #             point = segment.inv_transform_p((x_vals[i],y_vals[i]))
+        #             tfx.append(point[0])
+        #             tfy.append(point[1])
+
+        #         ax2.plot(tfx,tfy,'g-')
+
+        # plt.show()
+        
         self.new_goal_received = True
 
         x = msg.pose.position.x
@@ -211,93 +215,55 @@ class NMPCController(Node):
         
         self.goal = [x, y, theta]
 
-    def get_base_footprint_transform(self):
-        """Get the current transform of 'base_footprint' with respect to 'map'."""
-        try:
-            # Get the transform between 'map' and 'base_footprint'
-            transform = self.tf_buffer.lookup_transform('map', 'base_footprint', rclpy.time.Time())
+    def odom_callback(self, msg):
+        now = rclpy.time.Time()
+        x = msg.pose.pose.position.x
+        y = msg.pose.pose.position.y
+        quat = msg.pose.pose.orientation
 
-            # Extract the translation
-            translation = transform.transform.translation
-            x = translation.x
-            y = translation.y
+        quaternion = [quat.x, quat.y, quat.z, quat.w]
 
-            # Extract the rotation quaternion and convert it to euler angles (yaw is the Z-axis rotation)
-            rotation = transform.transform.rotation
-            quaternion = [rotation.x, rotation.y, rotation.z, rotation.w]
-            _, _, theta = euler_from_quaternion(quaternion)
+        if len(quaternion) != 4:
+            raise Exception("Invalid quaternion received")
+        # Convert quaternion to Euler angles (yaw)
+        _, _, theta = euler_from_quaternion(quaternion)
 
-            
-            return np.array([x, y, theta])
+        self.current_state = np.array([x, y, theta])
 
-        except Exception as e:
-            self.get_logger().warn(f"Could not get transform for base_footprint: {str(e)}")
+        # Create and publish the marker
+        marker = Marker()
+        marker.header.frame_id = 'odom'
+        marker.header.stamp = now.to_msg()
+        marker.ns = 'robot_pose_marker'
+        marker.id = self.marker_id
+        marker.type = Marker.SPHERE  # Choose the shape you prefer
+        marker.action = Marker.ADD
 
-            return None
-        
-    def get_base_footprint_transform(self):
-        """Get the current transform of 'base_footprint' with respect to 'map'."""
-        current_time = self.get_clock().now()
-        
-        try:
-            transform = self.tf_buffer.lookup_transform('map', 'base_footprint', rclpy.time.Time(), timeout=rclpy.time.Duration(seconds=0.1))
-            self.last_transform_update_time = current_time
+        # Set the pose of the marker to the robot's global position
+        marker.pose.position.x = x
+        marker.pose.position.y = y
+        # marker.pose.position.z = position.z  # Adjust if you want the marker above the robot
+        marker.pose.orientation = quat
 
-            # Extract the translation and rotation
-            translation = transform.transform.translation
-            x = translation.x
-            y = translation.y
-            rotation = transform.transform.rotation
-            quaternion = [rotation.x, rotation.y, rotation.z, rotation.w]
-            _, _, theta = euler_from_quaternion(quaternion)
+        # Set the scale of the marker
+        marker.scale.x = 0.2  # Adjust the size as needed
+        marker.scale.y = 0.2
+        marker.scale.z = 0.2
 
-            # Create and publish the marker
-            marker = Marker()
-            marker.header.frame_id = 'map'
-            marker.header.stamp = rclpy.time.Time().to_msg()
-            marker.ns = 'robot_pose_marker'
-            marker.id = self.marker_id
-            marker.type = Marker.SPHERE  # Choose the shape you prefer
-            marker.action = Marker.ADD
+        # Set the color of the marker (RGBA)
+        marker.color.r = 1.0
+        marker.color.g = 0.0
+        marker.color.b = 0.0
+        marker.color.a = 1.0  # Don't forget to set alpha to non-zero!
 
-            # Set the pose of the marker to the robot's global position
-            marker.pose.position.x = x
-            marker.pose.position.y = y
-            # marker.pose.position.z = position.z  # Adjust if you want the marker above the robot
-            marker.pose.orientation = transform.transform.rotation
+        # Set the lifetime of the marker
+        marker.lifetime = Duration(nanosec=1_000_000_000)  # Marker lasts for 0.1 second
 
-            # Set the scale of the marker
-            marker.scale.x = 0.2  # Adjust the size as needed
-            marker.scale.y = 0.2
-            marker.scale.z = 0.2
+        # Publish the marker
+        self.marker_publisher.publish(marker)
 
-            # Set the color of the marker (RGBA)
-            marker.color.r = 1.0
-            marker.color.g = 0.0
-            marker.color.b = 0.0
-            marker.color.a = 1.0  # Don't forget to set alpha to non-zero!
-
-            # Set the lifetime of the marker
-            marker.lifetime = Duration(nanosec=1_000_000_000)  # Marker lasts for 1 second
-
-            # Publish the marker
-            self.marker_publisher.publish(marker)
-
-            # Increment marker ID if needed (useful when adding/removing markers)
-            self.marker_id += 1
-
-            self.current_state = np.array([x, y, theta])
-
-            if (current_time - self.last_transform_update_time).nanoseconds > 100000000:
-                self.stop_robot()
-            else:
-                return self.current_state
-
-        except Exception as e:
-            # self.get_logger().warn(f"Could not get transform for base_footprint: {str(e)}")
-            self.stop_robot()
-    
-            
+        # Increment marker ID if needed (useful when adding/removing markers)
+        self.marker_id += 1
 
 
     def control_loop(self):
@@ -310,9 +276,6 @@ class NMPCController(Node):
             self.end = time.perf_counter()
             self.dt = self.end - self.start
             self.start = self.end
-
-            # Get the current state from the transform of 'base_footprint'
-        self.current_state = self.get_base_footprint_transform()
 
         if self.current_state is None:
             self.stop_robot()
@@ -330,28 +293,14 @@ class NMPCController(Node):
 
             x_hat, y_hat, theta_hat, s_hat, eta = T_z(self.global_path, self.current_state[0], self.current_state[1], self.current_state[2], self.s0)
 
-            if eta>=0:
-                input = np.array([[x_hat, y_hat, theta_hat, s_hat, eta]])  # Shape: (1, 5)
-            else:
-                input = np.array([[x_hat, -y_hat, -theta_hat, s_hat, -eta]])  # Shape: (1, 5)
+            input = np.array([[x_hat, y_hat, theta_hat, s_hat, eta]])  # Shape: (1, 5)
 
             # Make predictions using the model
             usol = self.model.predict(input)
 
-            Pt = 1
-            Pn = 1
-
-            en,et,phi = error(self.global_path,self.current_state,self.s0)
-            
-            usol[0][0]-= Pt*et
-            usol[0][1]-= Pn*en
-
             usol = self.convert_u(usol[0])
 
-            if eta<0:
-                usol[1] *= -1
-
-            self.publish_control(usol)
+            # self.publish_control(usol)
             # print(usol)
             self.publish_reference_path()
 
@@ -376,7 +325,7 @@ class NMPCController(Node):
     def publish_ol_path(self, path):
         ol_path = Path()
         ol_path.header.stamp = self.get_clock().now().to_msg()
-        ol_path.header.frame_id = "map"  # Adjust frame_id to your setup
+        ol_path.header.frame_id = "odom"  # Adjust frame_id to your setup
 
         for i in range(path.shape[0]):
             val = path[i, :]
@@ -394,7 +343,7 @@ class NMPCController(Node):
     def publish_reference_path(self):
         ref_path = Path()
         ref_path.header.stamp = self.get_clock().now().to_msg()
-        ref_path.header.frame_id = "map"  # Adjust frame_id to your setup
+        ref_path.header.frame_id = "odom"  # Adjust frame_id to your setup
 
         for s in np.linspace(0, self.global_path[-1].end_time, num=100):
             eta_val = self.reference_traj(s)
@@ -425,10 +374,10 @@ class NMPCController(Node):
         return u
 
     def get_lidar_frame_transform(self):
-        """Manually extract the translation and yaw angle from 'lidar_frame' to 'map'."""
+        """Manually extract the translation and yaw angle from 'lidar_frame' to 'odom'."""
         try:
-            # Get the transform between 'map' and 'lidar_frame'
-            transform = self.tf_buffer.lookup_transform('map', 'lidar_frame', rclpy.time.Time())
+            # Get the transform between 'odom' and 'lidar_frame'
+            transform = self.tf_buffer.lookup_transform('odom', 'lidar_frame', rclpy.time.Time())
 
             # Extract the translation
             translation = transform.transform.translation
@@ -493,7 +442,7 @@ class NMPCController(Node):
                 y = range_value * math.sin(angle)
                 point = Point(x=x, y=y, z=0.0)
 
-                # Manually transform the point from lidar_frame to map frame
+                # Manually transform the point from lidar_frame to odom frame
                 transformed_point = self.manually_transform_point(point, translation_vec, yaw)
 
                 transformed_points.append(transformed_point)
@@ -514,7 +463,7 @@ class NMPCController(Node):
     def publish_ol_path(self, path):
         ol_path = Path()
         ol_path.header.stamp = self.get_clock().now().to_msg()
-        ol_path.header.frame_id = "map"  # Adjust frame_id to your setup
+        ol_path.header.frame_id = "odom"  # Adjust frame_id to your setup
 
         for i in range(path.shape[0]):
             val = path[i, :]
@@ -540,7 +489,7 @@ class NMPCController(Node):
         self.cmd_vel_pub.publish(twist_msg)
 
     def save_to_csv(self, filename='path_data_log.csv'):
-        """Save the logged x, y, theta, s data to a CSV file."""
+        """Save the logged x, y, theta, s"""
         with open(filename, mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(['x', 'y'])  # Header

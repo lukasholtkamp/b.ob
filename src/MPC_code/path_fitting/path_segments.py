@@ -39,14 +39,24 @@ class PathSegment:
         self.end_time = (self.distance/g(v_max,0))+s0
 
         ax=0
-        bx = ((p2[0] - p1[0])/(self.end_time-s0))
-        cx = p1[0] - s0*((p2[0] - p1[0])/(self.end_time-s0))
+
+        if (self.end_time-s0)==0:
+            bx = 10**6
+        else:
+            bx = ((p2[0] - p1[0])/(self.end_time-s0))
+
+        cx = p1[0] - s0*(bx)
  
         self.x_coefficients = [ax,bx,cx]
 
         ay=0
-        by = (p2[1]-p1[1])/(self.end_time-s0)
-        cy = p1[1] - s0*((p2[1] - p1[1])/(self.end_time-s0))
+
+        if (self.end_time-s0)==0:
+            by = 10**6
+        else:
+            by = (p2[1]-p1[1])/(self.end_time-s0)
+        
+        cy = p1[1] - s0*(by)
 
         self.y_coefficients = [ay,by,cy]
 
@@ -119,6 +129,7 @@ class PathSegment:
 
         s3 = -((1/np.cos(theta))*(np.sqrt(-8*a*k*np.cos(theta) + 8*a*p1[1]*np.cos(theta) - np.cos(2*theta) + 1) / np.sqrt(2) - 2*a*r*s0*np.cos(theta) + np.sin(theta)))/(2*a)
         s4 = (((1/np.cos(theta))*np.sqrt(-8*a*k*np.cos(theta) + 8*a*p1[1]*np.cos(theta) - np.cos(2*theta) + 1))/np.sqrt(2) + 2*a*r*s0 - np.tan(theta))/(2*a)
+
 
         if (np.abs(s1-s3)<0.0001) or (np.abs(s1-s4)<0.0001):
             shift = s1
@@ -199,9 +210,6 @@ class PathSegment:
 
         self.x_coefficients = [ax,bx,cx]
         self.y_coefficients = [ay,by,cy]
-        
-
-
 
     # Function to set the transformation matrix later
     def set_transformation_matrix(self, matrix):

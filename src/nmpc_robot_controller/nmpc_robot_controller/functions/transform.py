@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.linalg import expm
+import control as ct
 from sympy import *
 
 def rotation_angle(A, B, C):
@@ -103,6 +105,124 @@ def apply_transformation(point, M):
     # Convert back from homogeneous coordinates
     return transformed_point_h[:2]
 
+def find_grad(segment):
+    p1 = segment.start_point
+    p2 = segment.end_point
+
+    return (p2[1]-p1[1])/(p2[0]-p1[0])
+
+def get_orientation(segment, x, y):
+    if segment.segment_type == 'line':
+        if find_grad(segment) > 0:
+            return np.arctan(find_grad(segment))
+        else:
+            return np.arctan(find_grad(segment)) + np.pi
+        
+    elif segment.segment_type == 'parabola':
+        tf_points = segment.inv_transform_p((x, y))
+        return np.arctan(2 * segment.eta * tf_points[0]) + segment.rotation
+
+def visualize_errors(path_segments, current_state, s, en, et):
+    """
+    Visualize the current position, path point at f(s), and error vectors.
+
+    Parameters:
+    - path_segments: List of path segment objects representing the global path.
+    - current_state: Current state of the robot as (x, y, theta).
+    - s: Current path parameter value.
+    - en: Normal error.
+    - et: Tangent error.
+    - reference_traj_func: Function that returns the (x, y) position on the path at a given s.
+    """
+    # Calculate tangent and normal vectors for visualization
+    current_segment = None
+
+    for segment in path_segments:
+        if segment.start_time <= s <= segment.end_time:
+            current_segment = segment
+            break
+
+    if s>path_segments[-1].end_time:
+        current_segment = path_segments[-1]
+    
+
+    # Get the point on the path at f(s)
+    path_point = current_segment.f(s)
+    path_x, path_y = float(path_point[0]), float(path_point[1])
+
+    # Plot the path points for visualization (optional)
+    for segment in path_segments:
+        s_vals = np.linspace(segment.start_time, segment.end_time, 100)
+        segment_points = [segment.f(s_val) for s_val in s_vals]
+        segment_points = np.array(segment_points, dtype=float)
+        plt.plot(segment_points[:, 0], segment_points[:, 1], 'k-', alpha=0.5)  # Plot the path
+
+    # Plot the current position and path point
+    plt.plot(current_state[0], current_state[1], 'ro', label="Current Position")  # Red dot for current position
+    plt.plot(path_x, path_y, 'go', label="Path Point at f(s)")  # Green dot for path point
+
+    if current_segment:
+        tangent_orientation = get_orientation(current_segment, path_x, path_y)
+        tangent_vector = np.array([np.cos(tangent_orientation), np.sin(tangent_orientation)])
+        normal_vector = np.array([-tangent_vector[1], tangent_vector[0]])
+
+        # Normalize the vectors for scaling
+        tangent_vector = tangent_vector / np.linalg.norm(tangent_vector)
+        normal_vector = normal_vector / np.linalg.norm(normal_vector)
+
+        # Scale vectors for visualization
+        et_vector = et * tangent_vector
+        en_vector = en * normal_vector
+
+        # Plot tangent and normal error vectors
+        plt.arrow(path_x, path_y, et_vector[0], et_vector[1], color='b', head_width=0.05, label="Tangent Error (e_t)")
+        plt.arrow(path_x, path_y, en_vector[0], en_vector[1], color='c', head_width=0.05, label="Normal Error (e_n)")
+
+    # Add labels and legends
+    plt.xlabel("X")
+    plt.ylabel("Y")
+    plt.title("Visualization of Tangent and Normal Errors")
+    plt.legend()
+    plt.grid(True)
+    plt.axis('equal')  # Ensure equal scaling for x and y axes
+    plt.show()
+
+def error(path_segments,current_state,s):
+
+    current_segment = None
+
+    for segment in path_segments:
+        if segment.start_time <= s <= segment.end_time:
+            current_segment = segment
+            break
+    
+    if s>path_segments[-1].end_time:
+        current_segment = path_segments[-1]
+
+    # Get the point on the path at f(s)
+    path_point = current_segment.f(s)
+    path_x, path_y = float(path_point[0]), float(path_point[1])
+
+    # Calculate the position error vector
+    error_vector = np.array([current_state[0] - path_x, current_state[1] - path_y])
+
+        # Calculate the orientation of the tangent at (path_x, path_y)
+    tangent_orientation = get_orientation(current_segment, path_x, path_y)
+
+    # Create the tangent vector from the orientation
+    tangent_vector = np.array([np.cos(tangent_orientation), np.sin(tangent_orientation)])
+
+    # Normalize the tangent vector
+    tangent_vector = tangent_vector / np.linalg.norm(tangent_vector)
+
+    # Calculate the normal vector as perpendicular to the tangent vector
+    normal_vector = np.array([-tangent_vector[1], tangent_vector[0]])
+
+    # Project the error vector onto the tangent and normal vectors
+    et = np.dot(error_vector, tangent_vector)
+    en = np.dot(error_vector, normal_vector)
+
+    return en,et,tangent_orientation
 
 def T_z(path_segments, x, y, current_orientation, s):
     """
@@ -126,6 +246,9 @@ def T_z(path_segments, x, y, current_orientation, s):
         if segment.start_time <= s <= segment.end_time:
             current_segment = segment
             break
+
+    if s > path_segments[-1].end_time:
+        current_segment = path_segments[-1]
     
     if current_segment is None:
         raise ValueError(f"s={s} does not fall within any segment's time bounds.")
@@ -142,7 +265,7 @@ def T_z(path_segments, x, y, current_orientation, s):
 
     s_transformed = s - segment.start_time - mid
 
-    return transformed_x, transformed_y, transformed_orientation, s_transformed
+    return transformed_x, transformed_y, transformed_orientation, s_transformed, current_segment.eta
 
 def gamma(eta):
     if eta==0:

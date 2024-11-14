@@ -330,26 +330,12 @@ class NMPCController(Node):
 
             x_hat, y_hat, theta_hat, s_hat, eta = T_z(self.global_path, self.current_state[0], self.current_state[1], self.current_state[2], self.s0)
 
-            if eta>=0:
-                input = np.array([[x_hat, y_hat, theta_hat, s_hat, eta]])  # Shape: (1, 5)
-            else:
-                input = np.array([[x_hat, -y_hat, -theta_hat, s_hat, -eta]])  # Shape: (1, 5)
+            input = np.array([[x_hat, y_hat, theta_hat, s_hat, eta]])  # Shape: (1, 5)
 
             # Make predictions using the model
             usol = self.model.predict(input)
 
-            Pt = 1
-            Pn = 1
-
-            en,et,phi = error(self.global_path,self.current_state,self.s0)
-            
-            usol[0][0]-= Pt*et
-            usol[0][1]-= Pn*en
-
             usol = self.convert_u(usol[0])
-
-            if eta<0:
-                usol[1] *= -1
 
             self.publish_control(usol)
             # print(usol)

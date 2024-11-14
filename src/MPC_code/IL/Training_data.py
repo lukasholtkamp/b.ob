@@ -1,11 +1,17 @@
 import numpy as np
+import matplotlib.pyplot as plt
+
+from NMPC_solver import *
 
 # Define constants and parameters
-curvatures = np.linspace(0, 3, 11)      # Curvature values η_k from 0 to 3
-d_k = 0.3                                  # Controls the length of the path segment
+curvatures = np.linspace(0, 2, 11)      # Curvature values η_k from 0 to 3
+d_k = 0.2                                  # Controls the length of the path segment
 theta_steps = 10                         # Number of discrete points along θ for each path
+# grid_resolution = 2                     # Number of samples along each axis (tangential, normal, orientation)
 grid_resolution = 10                     # Number of samples along each axis (tangential, normal, orientation)
-Delta_t = 0.1                            # Time step for discrete dynamics
+
+width= 0.3
+length = 0.5
 
 v_max = 0.1
 
@@ -21,7 +27,7 @@ def g(v_max,eta):
 # Function to generate a parabolic path given η
 def generate_path(eta):
     g_eta = g(v_max,eta)
-    theta_vals = np.linspace(-g_eta*d_k, -g_eta*d_k, theta_steps)  # Adjusted theta range
+    theta_vals = np.linspace(-d_k/g_eta, d_k/g_eta, theta_steps)  # Adjusted theta range
     path_points = [(g_eta * theta, eta * (g_eta * theta)**2) for theta in theta_vals]
     return theta_vals, np.array(path_points)
 
@@ -33,51 +39,117 @@ def compute_optimal_control(state, path_segment):
     omega = np.random.uniform(-0.5, 0.5)
     v = np.random.uniform(0, 1)
     return s, omega, v
-
+        
 # Lists to store training data
 states = []
 controls = []
 
-# Loop over each curvature value η_k to create the training data
-for eta in curvatures:
-    theta_vals, path_points = generate_path(eta)
+m_normal = lambda s: -1/(2*curvature*s*g(v_max,curvature))
+y_normal = lambda s,x: m_normal(s)*x - m_normal(s)*s*g(v_max,curvature) + curvature*(s*g(v_max,curvature))**2
 
-    # For each point θ_k,i on the path, create an orthogonal cuboid of poses
-    for theta, (px, py) in zip(theta_vals, path_points):
-        # Sample poses around each point (px, py) within the cuboid
-        tangential_range = np.linspace(-0.5, 0.5, grid_resolution)  # Tangential offsets
-        normal_range = np.linspace(-0.5, 0.5, grid_resolution)      # Normal offsets
-        orientation_range = np.linspace(-0.1, 0.1, grid_resolution) # Orientation offsets
+m_tangent = lambda s: (2*curvature*s*g(v_max,curvature))
+y_tangent = lambda s,x: m_tangent(s)*x - m_tangent(s)*s*g(v_max,curvature) + curvature*(s*g(v_max,curvature))**2
 
-        for dx in tangential_range:
-            for dy in normal_range:
-                for dphi in orientation_range:
-                    # Compute tangential and normal adjustments
-                    tangent_adjustment = np.array([dx, 0])         # Tangential direction along x-axis
-                    normal_adjustment = np.array([0, dy])          # Normal direction along y-axis
+for curvature in curvatures:
 
-                    # Adjust the base point (px, py) by tangential and normal offsets
-                    adjusted_px, adjusted_py = px + tangent_adjustment[0], py + normal_adjustment[1]
+    th,zeta = generate_path(curvature)
 
-                    # Define the current state in the transformed frame
-                    state = [
-                        adjusted_px,     # Transformed x-position (with tangential adjustment)
-                        adjusted_py,     # Transformed y-position (with normal adjustment)
-                        dphi,            # Orientation offset
-                        theta,           # Path progress
-                        eta              # Curvature parameter
-                    ]
+    for k in range(len(th)):
+        tangent_axis = np.linspace(th[k]-length/2,th[k]+length/2,grid_resolution)
 
-                    # Solve the optimal control problem to find control actions
-                    s, omega, v = compute_optimal_control(state, (px, py))
+        if grid_resolution%2==0:
+            normal_axis = np.linspace((width)/(2*(grid_resolution-1)),width/2,int(grid_resolution/2))
+        else:
+            normal_axis = np.linspace(0,width/2,int(grid_resolution/2)+1)
 
-                    # Store the state and control pairs in the dataset
-                    states.append(state)
-                    controls.append([s, omega, v])
+        # states = []
+        # controls = []
 
-# Convert to numpy arrays for training
-states = np.array(states)
-controls = np.array(controls)
+        for i in range(len(tangent_axis)):
+            for j in range(len(normal_axis)):
+
+                start_angle = np.arctan(2 * curvature * (tangent_axis[i])*g(v_max,curvature))
+                
+                # Generate 10 angles around the circle, starting from the start_angle
+                angles = np.linspace(start_angle, start_angle + 2 * np.pi,grid_resolution, endpoint=False)
+
+                # Apply modulus to ensure all angles are within [0, 2*pi)
+                angles = angles % (2 * np.pi)
+
+                for orientation in angles:
+
+                    if curvature>0:
+                        dx = np.abs(normal_axis[j]*np.cos(np.arctan(m_normal(tangent_axis[i]))))
+
+                        x_l = (tangent_axis[i])*g(v_max,curvature)-dx
+                        x_r = (tangent_axis[i])*g(v_max,curvature)+dx
+
+                        if normal_axis[j]!=0:
+                            states.append([x_l,y_normal(tangent_axis[i],x_l),orientation,th[k],curvature])
+                            states.append([x_r,y_normal(tangent_axis[i],x_r),orientation,th[k],curvature])
+
+                            x_pred,u = run_open_loop_mpc(v_max, [x_l,y_normal(tangent_axis[i],x_l),orientation], th[k],curvature)
+                            controls.append(u[0,:])
+                            plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
+
+                            x_pred,u = run_open_loop_mpc(v_max, [x_r,y_normal(tangent_axis[i],x_r),orientation], th[k],curvature)
+                            controls.append(u[0,:])
+                            plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
+
+                        else:
+                            states.append([x_l,y_normal(tangent_axis[i],x_l),orientation,th[k],curvature])
+
+                            x_pred,u = run_open_loop_mpc(v_max, [x_l,y_normal(tangent_axis[i],x_l),orientation], th[k],curvature)
+                            controls.append(u[0,:])
+                            plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
+
+
+                    else:
+                        dx = normal_axis[j]
+
+                        x_l = (tangent_axis[i])*g(v_max,curvature)
+                        x_r = (tangent_axis[i])*g(v_max,curvature)
+
+                        if normal_axis[j]!=0:
+                            states.append([x_l,-dx,orientation,th[k],curvature])
+                            states.append([x_r,dx,orientation,th[k],curvature])
+
+                            x_pred,u = run_open_loop_mpc(v_max, [x_l,-dx,orientation], th[k],curvature)
+                            controls.append(u[0,:])
+                            plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
+
+                            x_pred,u = run_open_loop_mpc(v_max, [x_r,dx,orientation], th[k],curvature)
+                            controls.append(u[0,:])
+                            plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
+                        else:
+                            states.append([x_l,0,orientation,th[k],curvature])
+
+                            x_pred,u = run_open_loop_mpc(v_max, [x_l,0,orientation], th[k],curvature)
+                            controls.append(u[0,:])
+                            plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
+        
+    #     states = np.array(states)
+    #     controls = np.array(controls)
+
+    #     # Loop through each point
+    #     for x, y, orientation,_,_ in states:
+    #         # Plot the point
+    #         plt.plot(x, y, 'bo')  # 'bo' for blue dots
+
+    #         # Plot the smaller arrow for orientation
+    #         scale = 0.0001  # Scale factor for arrow size
+    #         dx = scale * np.cos(orientation)  # x-component of the arrow
+    #         dy = scale * np.sin(orientation)  # y-component of the arrow
+    #         plt.arrow(x, y, dx, dy, head_width=0.0001, head_length=0.005, fc='r', ec='r')  # Smaller red arrow
+
+    #     # plt.plot(states[:,0],states[:,1],'r*')
+    #     plt.plot(zeta[k,0],zeta[k,1],'ko')
+    #     plt.plot(zeta[:,0],zeta[:,1])
+
+    # ax = plt.gca()
+    # ax.set_aspect('equal', adjustable='box')
+
+    # plt.show()
 
 # Save the data or use it directly for training
 np.save("train_states.npy", states)

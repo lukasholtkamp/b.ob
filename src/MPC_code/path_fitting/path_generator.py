@@ -5,19 +5,22 @@ import pandas as pd
 import casadi as ca
 import random
 import control as ct
+import csv
 
-from .waypoint_filter import *
-from .line_fitting import *
-from .transform import *
-from .path_segments import *
-from .plotting import *
+from waypoint_filter import *
+from line_fitting import *
+from transform import *
+from path_segments import *
+from plotting import *
 
+def LSPB_fit(n,epsilon):
+    v_max = 0.1
 
-def LSPB_fit(waypoints,n,epsilon,v_max):
+    file_path = '/home/bertrandt/b.ob/src/MPC_code/path_fitting/path_points.csv'
 
     # Get the selected waypoints and their original indices
-    original_indices, selected_waypoints = select_waypoints_with_indices(waypoints, n)
-    
+    original_indices, selected_waypoints, waypoints = select_waypoints_with_indices(file_path, n)
+
     # Get the indices and the processed waypoints
     processed_indices, processed_waypoints = preprocess_segments_by_deviation(selected_waypoints, original_indices)
 
@@ -301,10 +304,10 @@ def LSPB_fit(waypoints,n,epsilon,v_max):
 
         prev_end_time = segment.end_time
 
-    return path_segments, selected_waypoints
+    return path_segments
     
 def f(segments, s):
-    result = ca.MX.zeros(3)  # Initialize a CasADi variable to store the selected (x, y) result
+    result = ca.SX.zeros(3)  # Initialize a CasADi variable to store the selected (x, y) result
 
     for segment in segments:
         # Use ca.logic_and to check if s falls within the current segment's time bounds
@@ -323,103 +326,127 @@ def f(segments, s):
     
     return result
 
-# # Define the CasADi variable for s
-# s = ca.MX.sym('s')
 
-# # Select the correct segment and calculate (x, y) for the given value of s
-# selected_result = f(path_segments, s)
+def inf_path(s):
 
-# # Define a CasADi function to evaluate the selected (x, y) for a given s
-# f_s = ca.Function('f_s', [s], [selected_result])
+    T = 90
 
-# T_z_with_random_s_per_segment_with_transform_plot(path_segments, f_s,v_max,epsilon)
+    etat1 = 5.7 * np.cos((2 * np.pi / T) * s)
 
-# s = 1.0          # Example value for forward speed (adjust based on your control inputs)
-# phi_hat = 0.5    # Example orientation angle in radians (adjust as necessary)
-# Delta_t = 0.1    # Discrete time step in seconds (adjust as needed)
+    etat2 = 3.8 * np.sin((4 * np.pi / T) * s)
 
-# # State transition matrix A
-# A = np.array([
-#     [1, 0, -s * np.sin(phi_hat) * Delta_t, 0],
-#     [0, 1,  s * np.cos(phi_hat) * Delta_t, 0],
-#     [0, 0, 1, 0],
-#     [0, 0, 0, 1]
-# ])
+    eta = (etat1, etat2, 0)
 
-# # Control matrix B
-# B = np.array([
-#     [np.cos(phi_hat) * Delta_t, 0, 0],
-#     [np.sin(phi_hat) * Delta_t, 0, 0],
-#     [0, Delta_t, 0],
-#     [0, 0, Delta_t]
-# ])
-
-# Q=0
-# R=0
-
-# P,L,K = ct.dare(A,B,Q,R)
-
-# K = -np.array(K)
-
-# fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-
-# for i, segment in enumerate(path_segments):
-
-#     if segment.segment_type == 'line':
-#         s = np.linspace(segment.start_time, segment.end_time-0.01, 1000)
-#         x_vals = []
-#         y_vals = []
-
-#         for s_value in s:
-#             result = f_s(s_value)
-#             x_vals.append(float(result[0]))
-#             y_vals.append(float(result[1]))
-
-#         ax1.plot(x_vals, y_vals, 'r-', label="Full Path using f_s")
-#         ax1.set_title(f"Original Segment and Input Positions")
-#         ax1.set_xlabel('x')
-#         ax1.set_ylabel('y')
-#         ax1.grid(True)
-
-#         tfx = []
-#         tfy = []
-
-#         for i in range(len(x_vals)):
-#             point = segment.inv_transform_p((x_vals[i],y_vals[i]))
-#             tfx.append(point[0])
-#             tfy.append(point[1])
-
-#         ax2.plot(tfx,tfy,'g-')
+    return eta
 
 
-#     if segment.segment_type == 'parabola':
-        
-#         s = np.linspace(segment.start_time, segment.end_time-0.01, 1000)
-#         x_vals = []
-#         y_vals = []
+def generate_path_and_save(filename="path_points.csv"):
 
-#         for s_value in s:
-#             result = f_s(s_value)
-#             x_vals.append(float(result[0]))
-#             y_vals.append(float(result[1]))
+    path_points = []
+    n= 1000
+    for i in range(n):
 
-#         ax1.plot(x_vals, y_vals, 'b-', label="Full Path using f_s")
-#         ax1.set_title(f"Original Segment and Input Positions")
-#         ax1.set_xlabel('x')
-#         ax1.set_ylabel('y')
-#         ax1.grid(True)
+        path_points.append(inf_path((i/n)*90))
 
-#         tfx = []
-#         tfy = []
+    # Save path points to CSV
 
-#         for i in range(len(x_vals)):
-#             point = segment.inv_transform_p((x_vals[i],y_vals[i]))
-#             tfx.append(point[0])
-#             tfy.append(point[1])
+    with open(filename, mode='w', newline='') as file:
 
-#         ax2.plot(tfx,tfy,'g-')
+        writer = csv.writer(file)
 
-#     print(segment.eta)
+        writer.writerow(['x', 'y'])
 
-# plt.show()
+        for point in path_points:
+
+            writer.writerow(point[:2])  # Only save x and y coordinates
+    return path_points
+
+points = np.array(generate_path_and_save())
+
+path_segments = LSPB_fit(55,0.6)
+# path_segments = LSPB_fit(20,0.15)
+
+# Define the CasADi variable for s
+s = ca.SX.sym('s')
+
+# Select the correct segment and calculate (x, y) for the given value of s
+selected_result = f(path_segments, s)
+
+# Define a CasADi function to evaluate the selected (x, y) for a given s
+f_s = ca.Function('f_s', [s], [selected_result])
+
+# T_z_with_random_s_per_segment_with_transform_plot(path_segments, f_s,v_max=0.1,eps=0.15)
+
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+
+circle = plt.Circle((4, 3.5), 0.5, color='blue', fill=False)
+ax1.plot(points[:,0], points[:,1], 'r-', label="Full Path using f_s")
+
+ax1.add_patch(circle)
+
+
+for i, segment in enumerate(path_segments):
+
+    if i>=0:
+        if segment.segment_type == 'line':
+            s = np.linspace(segment.start_time, segment.end_time-0.01, 1000)
+            x_vals = []
+            y_vals = []
+
+            for s_value in s:
+                result = f_s(s_value)
+                x_vals.append(float(result[0]))
+                y_vals.append(float(result[1]))
+
+            ax1.plot(x_vals, y_vals, 'r-', label="Full Path using f_s")
+            ax1.set_title(f"Original Segment and Input Positions")
+            ax1.set_xlabel('x')
+            ax1.set_ylabel('y')
+            ax1.grid(True)
+
+            ax1.plot(segment.start_point[0],segment.start_point[1],'ko')
+            ax1.plot(segment.end_point[0],segment.end_point[1],'ko')
+
+            tfx = []
+            tfy = []
+
+            for i in range(len(x_vals)):
+                point = segment.inv_transform_p((x_vals[i],y_vals[i]))
+                tfx.append(point[0])
+                tfy.append(point[1])
+
+            ax2.plot(tfx,tfy,'g-')
+
+
+        if segment.segment_type == 'parabola':
+            
+            s = np.linspace(segment.start_time, segment.end_time-0.01, 1000)
+            x_vals = []
+            y_vals = []
+
+            for s_value in s:
+                result = f_s(s_value)
+                x_vals.append(float(result[0]))
+                y_vals.append(float(result[1]))
+
+            ax1.plot(x_vals, y_vals, 'b-', label="Full Path using f_s")
+            ax1.set_title(f"Original Segment and Input Positions")
+            ax1.set_xlabel('x')
+            ax1.set_ylabel('y')
+            ax1.grid(True)
+
+            tfx = []
+            tfy = []
+
+            for i in range(len(x_vals)):
+                point = segment.inv_transform_p((x_vals[i],y_vals[i]))
+                tfx.append(point[0])
+                tfy.append(point[1])
+
+            ax2.plot(tfx,tfy,'g-')
+
+            # print(segment.eta)
+
+plt.show()
 

@@ -167,4 +167,7 @@ def find_grad(segment):
     p1 = segment.start_point
     p2 = segment.end_point
 
-    return (p2[1]-p1[1])/(p2[0]-p1[0])
+    if (p2[0]-p1[0]) == 0:
+        return 10**6
+    else:
+        return (p2[1]-p1[1])/(p2[0]-p1[0])

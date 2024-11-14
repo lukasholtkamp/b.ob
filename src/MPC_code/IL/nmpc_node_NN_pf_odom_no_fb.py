@@ -40,6 +40,7 @@ class NMPCController(Node):
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.ref_path_pub = self.create_publisher(Path, '/ref_path', 10)
         self.ol_path_pub = self.create_publisher(Path, '/ol_path', 10)
+        self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
 
         self.global_path_sub = self.create_subscription(Path, '/plan', self.path_callback, 10)
         self.goal_pose_sub = self.create_subscription(PoseStamped, '/goal_pose', self.goal_pose_callback, 10)
@@ -211,93 +212,55 @@ class NMPCController(Node):
         
         self.goal = [x, y, theta]
 
-    def get_base_footprint_transform(self):
-        """Get the current transform of 'base_footprint' with respect to 'map'."""
-        try:
-            # Get the transform between 'map' and 'base_footprint'
-            transform = self.tf_buffer.lookup_transform('map', 'base_footprint', rclpy.time.Time())
+    def odom_callback(self, msg):
+        now = rclpy.time.Time()
+        x = msg.pose.pose.position.x
+        y = msg.pose.pose.position.y
+        quat = msg.pose.pose.orientation
 
-            # Extract the translation
-            translation = transform.transform.translation
-            x = translation.x
-            y = translation.y
+        quaternion = [quat.x, quat.y, quat.z, quat.w]
 
-            # Extract the rotation quaternion and convert it to euler angles (yaw is the Z-axis rotation)
-            rotation = transform.transform.rotation
-            quaternion = [rotation.x, rotation.y, rotation.z, rotation.w]
-            _, _, theta = euler_from_quaternion(quaternion)
+        if len(quaternion) != 4:
+            raise Exception("Invalid quaternion received")
+        # Convert quaternion to Euler angles (yaw)
+        _, _, theta = euler_from_quaternion(quaternion)
 
-            
-            return np.array([x, y, theta])
+        self.current_state = np.array([x, y, theta])
 
-        except Exception as e:
-            self.get_logger().warn(f"Could not get transform for base_footprint: {str(e)}")
+        # Create and publish the marker
+        marker = Marker()
+        marker.header.frame_id = 'map'
+        marker.header.stamp = now.to_msg()
+        marker.ns = 'robot_pose_marker'
+        marker.id = self.marker_id
+        marker.type = Marker.SPHERE  # Choose the shape you prefer
+        marker.action = Marker.ADD
 
-            return None
-        
-    def get_base_footprint_transform(self):
-        """Get the current transform of 'base_footprint' with respect to 'map'."""
-        current_time = self.get_clock().now()
-        
-        try:
-            transform = self.tf_buffer.lookup_transform('map', 'base_footprint', rclpy.time.Time(), timeout=rclpy.time.Duration(seconds=0.1))
-            self.last_transform_update_time = current_time
+        # Set the pose of the marker to the robot's global position
+        marker.pose.position.x = x
+        marker.pose.position.y = y
+        # marker.pose.position.z = position.z  # Adjust if you want the marker above the robot
+        marker.pose.orientation = quat
 
-            # Extract the translation and rotation
-            translation = transform.transform.translation
-            x = translation.x
-            y = translation.y
-            rotation = transform.transform.rotation
-            quaternion = [rotation.x, rotation.y, rotation.z, rotation.w]
-            _, _, theta = euler_from_quaternion(quaternion)
+        # Set the scale of the marker
+        marker.scale.x = 0.2  # Adjust the size as needed
+        marker.scale.y = 0.2
+        marker.scale.z = 0.2
 
-            # Create and publish the marker
-            marker = Marker()
-            marker.header.frame_id = 'map'
-            marker.header.stamp = rclpy.time.Time().to_msg()
-            marker.ns = 'robot_pose_marker'
-            marker.id = self.marker_id
-            marker.type = Marker.SPHERE  # Choose the shape you prefer
-            marker.action = Marker.ADD
+        # Set the color of the marker (RGBA)
+        marker.color.r = 1.0
+        marker.color.g = 0.0
+        marker.color.b = 0.0
+        marker.color.a = 1.0  # Don't forget to set alpha to non-zero!
 
-            # Set the pose of the marker to the robot's global position
-            marker.pose.position.x = x
-            marker.pose.position.y = y
-            # marker.pose.position.z = position.z  # Adjust if you want the marker above the robot
-            marker.pose.orientation = transform.transform.rotation
+        # Set the lifetime of the marker
+        marker.lifetime = Duration(nanosec=1_000_000_000)  # Marker lasts for 0.1 second
 
-            # Set the scale of the marker
-            marker.scale.x = 0.2  # Adjust the size as needed
-            marker.scale.y = 0.2
-            marker.scale.z = 0.2
+        # Publish the marker
+        self.marker_publisher.publish(marker)
 
-            # Set the color of the marker (RGBA)
-            marker.color.r = 1.0
-            marker.color.g = 0.0
-            marker.color.b = 0.0
-            marker.color.a = 1.0  # Don't forget to set alpha to non-zero!
-
-            # Set the lifetime of the marker
-            marker.lifetime = Duration(nanosec=1_000_000_000)  # Marker lasts for 1 second
-
-            # Publish the marker
-            self.marker_publisher.publish(marker)
-
-            # Increment marker ID if needed (useful when adding/removing markers)
-            self.marker_id += 1
-
-            self.current_state = np.array([x, y, theta])
-
-            if (current_time - self.last_transform_update_time).nanoseconds > 100000000:
-                self.stop_robot()
-            else:
-                return self.current_state
-
-        except Exception as e:
-            # self.get_logger().warn(f"Could not get transform for base_footprint: {str(e)}")
-            self.stop_robot()
-    
-            
+        # Increment marker ID if needed (useful when adding/removing markers)
+        self.marker_id += 1
 
 
     def control_loop(self):
@@ -310,9 +273,6 @@ class NMPCController(Node):
             self.end = time.perf_counter()
             self.dt = self.end - self.start
             self.start = self.end
-
-            # Get the current state from the transform of 'base_footprint'
-        self.current_state = self.get_base_footprint_transform()
 
         if self.current_state is None:
             self.stop_robot()
@@ -337,14 +297,6 @@ class NMPCController(Node):
 
             # Make predictions using the model
             usol = self.model.predict(input)
-
-            Pt = 1
-            Pn = 1
-
-            en,et,phi = error(self.global_path,self.current_state,self.s0)
-            
-            usol[0][0]-= Pt*et
-            usol[0][1]-= Pn*en
 
             usol = self.convert_u(usol[0])
 
