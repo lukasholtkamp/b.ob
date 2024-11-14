@@ -3,8 +3,13 @@ ekf_filter_node:
   ros__parameters:
     use_sim_time: false
 
-    frequency: 30.0
+    frequency: 10.0
+    sensor_timeout: 0.1
     two_d_mode: true
+    transform_time_offset: 0.0
+    transform_timeout: 0.0
+    print_diagnostics: false
+    debug: false
 
     # map_frame: map
     odom_frame: odom
@@ -12,7 +17,21 @@ ekf_filter_node:
     world_frame: odom
 
     odom0: diffbot_base_controller/odom
+    odom0_queue_size: 10
+    odom0_nodelay: true
+    odom0_differential: false
+    odom0_relative: false
+
     imu0: imu_broadcaster/imu
+    imu0_nodelay: false
+    imu0_differential: false
+    imu0_relative: false
+    imu0_queue_size: 10
+    imu0_remove_gravitational_acceleration: true
+
+    use_control: false
+
+    publish_tf: true
 
     #        [x_pos   , y_pos    , z_pos,
     #         roll    , pitch    , yaw,

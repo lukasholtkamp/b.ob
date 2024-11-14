@@ -14,7 +14,7 @@ def generate_launch_description():
 
     gazebo_params_file = os.path.join(pkg_path, "config/gazebo_params.yaml")
     ekf_params_file = os.path.join(pkg_navigation, "config/ekf.yaml")
-    world_filename = "inf.world"
+    world_filename = "creative_room.world"
     world_path = os.path.join(pkg_path, "worlds", world_filename)
 
     # Launch configuration variables specific to simulation
@@ -39,7 +39,7 @@ def generate_launch_description():
 
     declare_use_ros2_control_cmd = DeclareLaunchArgument(
         name="use_ros2_control",
-        default_value="False",
+        default_value="True",
         description="Use ros2_control if true",
     )
 
@@ -51,7 +51,7 @@ def generate_launch_description():
 
     declare_use_robot_localization_cmd = DeclareLaunchArgument(
         name="use_robot_localization",
-        default_value="False",
+        default_value="True",
         description="Use robot_localization package if true",
     )
 
@@ -89,8 +89,8 @@ def generate_launch_description():
         arguments=[
             "-topic", "robot_description",
             "-entity", "bob",
-            "-x", "4.0",  # x position
-            "-y", "-1.0",  # y position
+            "-x", "0.0",  # x position
+            "-y", "0.0",  # y position
             "-z", "0.0",  # z position
             "-Y", "0.0"   # yaw orientation
         ],
