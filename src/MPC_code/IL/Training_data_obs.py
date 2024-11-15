@@ -53,14 +53,21 @@ y_tangent = lambda s,x: m_tangent(s)*x - m_tangent(s)*s*g(v_max,curvature) + cur
 
 cir_r = 0.03
 bot_r = 0
-outside_region = 0.05 # test 
-cases = [None,0.1,0,-0.1]
+
+impact_region = 0.05 # test
+
+cases = [None,cir_r+bot_r,0,-(cir_r+bot_r)]
+
+segments = 15
+layers = 4
+outer_radius = cir_r + impact_region
+eps = 0.01
 
 def in_circle(xc,yc,rc,x,y,r):
     distance = math.sqrt((xc - x) ** 2 + (yc - y) ** 2)
     
     # Check if the distance is less than or equal to the sum of their radii
-    if distance <= (rc + r) or distance > (rc+outside_region):
+    if distance <= (rc + r) or distance > (rc+impact_region):
         return True  # Circles collide
     else:
         return False  # Circles do not collide
@@ -70,28 +77,26 @@ for curvature in curvatures:
 
     th,zeta = generate_path(curvature)
 
-    for k in range(1): #len(th)
+    for case in cases:
 
-        tangent_axis = np.linspace(th[k]-length/2,th[k]+length/2,grid_resolution)
+        fig, ax = plt.subplots()
 
-        if grid_resolution%2==0:
-            normal_axis = np.linspace((width)/(2*(grid_resolution-1)),width/2,int(grid_resolution/2))
-        else:
-            normal_axis = np.linspace(0,width/2,int(grid_resolution/2)+1)
+        states = []
+        controls = []
 
-        for case in cases:
-
-            fig, ax = plt.subplots()
-
-            states = []
-            controls = []
+        for k in range(1):
 
             if case!= None:
 
                 if curvature>0:
-                    dx = case*np.cos(np.arctan(m_normal(th[k])))
-                    xc = zeta[k,0] - dx
-                    yc = y_normal(th[k],xc)
+                    if zeta[k,0]<0:
+                        dx = case*np.cos(np.arctan(m_normal(th[k])))
+                        xc = zeta[k,0] - dx
+                        yc = y_normal(th[k],xc)
+                    else:
+                        dx = -case*np.cos(np.arctan(m_normal(th[k])))
+                        xc = zeta[k,0] - dx
+                        yc = y_normal(th[k],xc)
                 else:
                     dx = case
                     xc = zeta[k,0]
@@ -104,134 +109,128 @@ for curvature in curvatures:
 
                 ax.plot(xc,yc,'g*')
             
+            if case == None:
 
-            for i in range(len(tangent_axis)):
+                tangent_axis = np.linspace(th[k]-length/2,th[k]+length/2,grid_resolution)
 
-                for j in range(len(normal_axis)):
+                if grid_resolution%2==0:
+                    normal_axis = np.linspace((width)/(2*(grid_resolution-1)),width/2,int(grid_resolution/2))
+                else:
+                    normal_axis = np.linspace(0,width/2,int(grid_resolution/2)+1)
 
-                    start_angle = np.arctan(2 * curvature * (tangent_axis[i])*g(v_max,curvature))
-                    
-                    # Generate 10 angles around the circle, starting from the start_angle
-                    angles = np.linspace(start_angle, start_angle + 2 * np.pi,grid_resolution, endpoint=False)
 
-                    # Apply modulus to ensure all angles are within [0, 2*pi)
-                    angles = angles % (2 * np.pi)
+                for i in range(len(tangent_axis)):
 
-                    for orientation in angles:
+                    for j in range(len(normal_axis)):
 
-                        if curvature>0:
-                            dx = np.abs(normal_axis[j]*np.cos(np.arctan(m_normal(tangent_axis[i]))))
+                        start_angle = np.arctan(2 * curvature * (tangent_axis[i])*g(v_max,curvature))
+                        
+                        # Generate 10 angles around the circle, starting from the start_angle
+                        angles = np.linspace(start_angle, start_angle + 2 * np.pi,grid_resolution, endpoint=False)
 
-                            x_l = (tangent_axis[i])*g(v_max,curvature) - dx
-                            x_r = (tangent_axis[i])*g(v_max,curvature) + dx
+                        # Apply modulus to ensure all angles are within [0, 2*pi)
+                        angles = angles % (2 * np.pi)
 
-                            if normal_axis[j]!=0:
-                                if case== None:
+                        for orientation in angles:
+
+                            if curvature>0:
+                                dx = np.abs(normal_axis[j]*np.cos(np.arctan(m_normal(tangent_axis[i]))))
+
+                                x_l = (tangent_axis[i])*g(v_max,curvature) - dx
+                                x_r = (tangent_axis[i])*g(v_max,curvature) + dx
+
+                                if normal_axis[j]!=0:
                                     states.append([x_l,y_normal(tangent_axis[i],x_l),orientation,th[k],curvature])
                                     states.append([x_r,y_normal(tangent_axis[i],x_r),orientation,th[k],curvature])
-                                    
-                                elif case==0:
-                                    
-                                    if not in_circle(xc,yc,cir_r,x_l,y_normal(tangent_axis[i],x_l),bot_r):
-                                        states.append([x_l,y_normal(tangent_axis[i],x_l),orientation,th[k],curvature])
+                                        
+                                    # x_pred,u = run_open_loop_mpc(v_max, [x_l,y_normal(tangent_axis[i],x_l),orientation], th[k],curvature)
+                                    # controls.append(u[0,:])
+                                    # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
 
-                                    if not in_circle(xc,yc,cir_r,x_r,y_normal(tangent_axis[i],x_r),bot_r):
-                                        states.append([x_r,y_normal(tangent_axis[i],x_r),orientation,th[k],curvature])
+                                    # x_pred,u = run_open_loop_mpc(v_max, [x_r,y_normal(tangent_axis[i],x_r),orientation], th[k],curvature)
+                                    # controls.append(u[0,:])
+                                    # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
 
-                                elif case>0:
-                                    
-                                    if not in_circle(xc,yc,cir_r,x_l,y_normal(tangent_axis[i],x_l),bot_r):
-                                        states.append([x_l,y_normal(tangent_axis[i],x_l),orientation,th[k],curvature])
                                 else:
-                                    if not in_circle(xc,yc,cir_r,x_r,y_normal(tangent_axis[i],x_r),bot_r):
-                                        states.append([x_r,y_normal(tangent_axis[i],x_r),orientation,th[k],curvature])
-                                    
-                                # x_pred,u = run_open_loop_mpc(v_max, [x_l,y_normal(tangent_axis[i],x_l),orientation], th[k],curvature)
-                                # controls.append(u[0,:])
-                                # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
+                                    states.append([x_l,y_normal(tangent_axis[i],x_l),orientation,th[k],curvature])
 
-                                # x_pred,u = run_open_loop_mpc(v_max, [x_r,y_normal(tangent_axis[i],x_r),orientation], th[k],curvature)
-                                # controls.append(u[0,:])
-                                # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
+                                    # x_pred,u = run_open_loop_mpc(v_max, [x_l,y_normal(tangent_axis[i],x_l),orientation], th[k],curvature)
+                                    # controls.append(u[0,:])
+                                    # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
+
 
                             else:
-                                if case== None:
-                                    states.append([x_l,y_normal(tangent_axis[i],x_l),orientation,th[k],curvature])
-                                else:
-                                    if not in_circle(xc,yc,cir_r,x_l,y_normal(tangent_axis[i],x_l),bot_r):
-                                        states.append([x_l,y_normal(tangent_axis[i],x_l),orientation,th[k],curvature])
+                                dx = normal_axis[j]
 
-                                # x_pred,u = run_open_loop_mpc(v_max, [x_l,y_normal(tangent_axis[i],x_l),orientation], th[k],curvature)
-                                # controls.append(u[0,:])
-                                # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
+                                x_l = (tangent_axis[i])*g(v_max,curvature)
+                                x_r = (tangent_axis[i])*g(v_max,curvature)
 
-
-                        else:
-                            dx = normal_axis[j]
-
-                            x_l = (tangent_axis[i])*g(v_max,curvature)
-                            x_r = (tangent_axis[i])*g(v_max,curvature)
-
-                            if normal_axis[j]!=0:
-                                if case== None:
+                                if normal_axis[j]!=0:
                                     states.append([x_l,-dx,orientation,th[k],curvature])
                                     states.append([x_r,dx,orientation,th[k],curvature])
-                                
-                                elif case==0:
 
-                                    if not in_circle(xc,yc,cir_r,x_l,-dx,bot_r):
-                                        states.append([x_l,-dx,orientation,th[k],curvature])
+                                    # x_pred,u = run_open_loop_mpc(v_max, [x_l,-dx,orientation], th[k],curvature)
+                                    # controls.append(u[0,:])
+                                    # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
 
-                                    if not in_circle(xc,yc,cir_r,x_r,dx,bot_r):
-                                        states.append([x_r,dx,orientation,th[k],curvature])
-
-                                elif case>0:
-                                    if not in_circle(xc,yc,cir_r,x_l,-dx,bot_r):
-                                        states.append([x_l,-dx,orientation,th[k],curvature])
+                                    # x_pred,u = run_open_loop_mpc(v_max, [x_r,dx,orientation], th[k],curvature)
+                                    # controls.append(u[0,:])
+                                    # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
                                 else:
-                                    if not in_circle(xc,yc,cir_r,x_r,dx,bot_r):
-                                        states.append([x_r,dx,orientation,th[k],curvature])
-
-                                # x_pred,u = run_open_loop_mpc(v_max, [x_l,-dx,orientation], th[k],curvature)
-                                # controls.append(u[0,:])
-                                # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
-
-                                # x_pred,u = run_open_loop_mpc(v_max, [x_r,dx,orientation], th[k],curvature)
-                                # controls.append(u[0,:])
-                                # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
-                            else:
-                                if case== None:
                                     states.append([x_l,0,orientation,th[k],curvature])
-                                else:
-                                    if not in_circle(xc,yc,cir_r,x_l,0,bot_r):
-                                        states.append([x_l,0,orientation,th[k],curvature])
 
-                                # x_pred,u = run_open_loop_mpc(v_max, [x_l,0,orientation], th[k],curvature)
-                                # controls.append(u[0,:])
-                                # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
+                                    # x_pred,u = run_open_loop_mpc(v_max, [x_l,0,orientation], th[k],curvature)
+                                    # controls.append(u[0,:])
+                                    # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
+            else:
+                angles = np.linspace(0, 2 * np.pi, segments, endpoint=False)
+
+                radii = np.linspace(cir_r + eps, outer_radius, layers)
+
+                points = []
+
+                for r in radii:
+                    for angle in angles:
+
+                        x = xc + r * np.cos(angle)
+                        y = yc + r * np.sin(angle)
+
+                        start_angle = np.arctan(2 * curvature * (th[k])*g(v_max,curvature))
+                        
+                        # Generate 10 angles around the circle, starting from the start_angle
+                        angles = np.linspace(start_angle, start_angle + 2 * np.pi,grid_resolution, endpoint=False)
+
+                        # Apply modulus to ensure all angles are within [0, 2*pi)
+                        angles = angles % (2 * np.pi)
+
+                        for orientation in angles:
+                            states.append([x,y,orientation,th[k],curvature])
+                            
+
+
             
-            # states = np.array(states)
-            # controls = np.array(controls)
+        # states = np.array(states)
+        # controls = np.array(controls)
 
-            # Loop through each point
-            for x, y, orientation,_,_ in states:
-                # Plot the point
-                ax.plot(x, y, 'bo')  # 'bo' for blue dots
+        # Loop through each point
+        for x, y, orientation,_,_ in states:
+            # Plot the point
+            ax.plot(x, y, 'bo')  # 'bo' for blue dots
 
-                # Plot the smaller arrow for orientation
-                scale = 0.0001  # Scale factor for arrow size
-                dx = scale * np.cos(orientation)  # x-component of the arrow
-                dy = scale * np.sin(orientation)  # y-component of the arrow
-                ax.arrow(x, y, dx, dy, head_width=0.0001, head_length=0.005, fc='r', ec='r')  # Smaller red arrow
+            # Plot the smaller arrow for orientation
+            scale = 0.0001  # Scale factor for arrow size
+            dx = scale * np.cos(orientation)  # x-component of the arrow
+            dy = scale * np.sin(orientation)  # y-component of the arrow
+            ax.arrow(x, y, dx, dy, head_width=0.0001, head_length=0.005, fc='r', ec='r')  # Smaller red arrow
 
-            # plt.plot(states[:,0],states[:,1],'r*')
-            # ax.plot(zeta[k,0],zeta[k,1],'ko')
-            ax.plot(zeta[:,0],zeta[:,1])
+        # plt.plot(states[:,0],states[:,1],'r*')
+        # ax.plot(zeta[k,0],zeta[k,1],'ko')
+        ax.plot(zeta[:,0],zeta[:,1])
 
-            ax = plt.gca()
-            ax.set_aspect('equal', adjustable='box')
+        ax = plt.gca()
+        ax.set_aspect('equal', adjustable='box')
 
-            plt.show()
+        plt.show()
 
 # Save the data or use it directly for training
 np.save("train_states.npy", states)
