@@ -37,9 +37,11 @@ class NMPCController(Node):
         self.end = 0
 
         # Other initializations
-        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.cmd_vel_pub = self.create_publisher(Twist, '/diffbot_base_controller/cmd_vel_unstamped', 10)
         self.ref_path_pub = self.create_publisher(Path, '/ref_path', 10)
         self.ol_path_pub = self.create_publisher(Path, '/ol_path', 10)
+        self.odom_sub = self.create_subscription(Odometry, '/odometry/filtered', self.odom_callback, 10)
+
 
         self.global_path_sub = self.create_subscription(Path, '/plan', self.path_callback, 10)
         self.goal_pose_sub = self.create_subscription(PoseStamped, '/goal_pose', self.goal_pose_callback, 10)
@@ -90,8 +92,48 @@ class NMPCController(Node):
         self.global_path = None
 
         self.model = load_model("/home/bertrandt/b.ob/src/nmpc_robot_controller/nmpc_robot_controller/functions/path_following_model.h5")
+        # self.model = load_model("/home/ubuntu/b.ob/src/nmpc_robot_controller/nmpc_robot_controller/functions/path_following_model.h5")
 
 
+    def odom_callback(self, msg):
+        # Extract position and orientation from odometry
+        x = msg.pose.pose.position.x
+        y = msg.pose.pose.position.y
+        z = msg.pose.pose.position.z  # Adjust if needed
+        quat = msg.pose.pose.orientation
+
+        # Create and publish the marker
+        marker = Marker()
+        marker.header.frame_id = msg.header.frame_id  # Use the same frame as the odometry
+        marker.header.stamp = msg.header.stamp
+        marker.ns = 'robot_pose_marker'
+        marker.id = self.marker_id
+        marker.type = Marker.ARROW  # Better visualization for alignment
+        marker.action = Marker.ADD
+
+        # Set the pose of the marker to match the odometry
+        marker.pose.position.x = x
+        marker.pose.position.y = y
+        marker.pose.position.z = z
+        marker.pose.orientation = quat
+
+        # Set the scale and color of the marker
+        marker.scale.x = 0.5
+        marker.scale.y = 0.1
+        marker.scale.z = 0.1
+        marker.color.r = 1.0
+        marker.color.g = 0.0
+        marker.color.b = 0.0
+        marker.color.a = 1.0
+
+        # Publish the marker
+        self.marker_publisher.publish(marker)
+
+        # Increment marker ID
+        self.marker_id += 1
+
+
+        
     def obs_callback(self, msg):
 
         # Initialize an array to store obstacle information
@@ -251,54 +293,52 @@ class NMPCController(Node):
             quaternion = [rotation.x, rotation.y, rotation.z, rotation.w]
             _, _, theta = euler_from_quaternion(quaternion)
 
-            # Create and publish the marker
-            marker = Marker()
-            marker.header.frame_id = 'map'
-            marker.header.stamp = rclpy.time.Time().to_msg()
-            marker.ns = 'robot_pose_marker'
-            marker.id = self.marker_id
-            marker.type = Marker.SPHERE  # Choose the shape you prefer
-            marker.action = Marker.ADD
+            # # Create and publish the marker
+            # marker = Marker()
+            # marker.header.frame_id = 'map'
+            # marker.header.stamp = rclpy.time.Time().to_msg()
+            # marker.ns = 'robot_pose_marker'
+            # marker.id = self.marker_id
+            # marker.type = Marker.SPHERE  # Choose the shape you prefer
+            # marker.action = Marker.ADD
 
-            # Set the pose of the marker to the robot's global position
-            marker.pose.position.x = x
-            marker.pose.position.y = y
-            # marker.pose.position.z = position.z  # Adjust if you want the marker above the robot
-            marker.pose.orientation = transform.transform.rotation
+            # # Set the pose of the marker to the robot's global position
+            # marker.pose.position.x = x
+            # marker.pose.position.y = y
+            # # marker.pose.position.z = position.z  # Adjust if you want the marker above the robot
+            # marker.pose.orientation = transform.transform.rotation
 
-            # Set the scale of the marker
-            marker.scale.x = 0.2  # Adjust the size as needed
-            marker.scale.y = 0.2
-            marker.scale.z = 0.2
+            # # Set the scale of the marker
+            # marker.scale.x = 0.2  # Adjust the size as needed
+            # marker.scale.y = 0.2
+            # marker.scale.z = 0.2
 
-            # Set the color of the marker (RGBA)
-            marker.color.r = 1.0
-            marker.color.g = 0.0
-            marker.color.b = 0.0
-            marker.color.a = 1.0  # Don't forget to set alpha to non-zero!
+            # # Set the color of the marker (RGBA)
+            # marker.color.r = 1.0
+            # marker.color.g = 0.0
+            # marker.color.b = 0.0
+            # marker.color.a = 1.0  # Don't forget to set alpha to non-zero!
 
-            # Set the lifetime of the marker
-            marker.lifetime = Duration(nanosec=1_000_000_000)  # Marker lasts for 1 second
+            # # Set the lifetime of the marker
+            # marker.lifetime = Duration(nanosec=1_000_000_000)  # Marker lasts for 1 second
 
-            # Publish the marker
-            self.marker_publisher.publish(marker)
+            # # Publish the marker
+            # self.marker_publisher.publish(marker)
 
-            # Increment marker ID if needed (useful when adding/removing markers)
-            self.marker_id += 1
+            # # Increment marker ID if needed (useful when adding/removing markers)
+            # self.marker_id += 1
 
             self.current_state = np.array([x, y, theta])
 
             if (current_time - self.last_transform_update_time).nanoseconds > 100000000:
-                self.stop_robot()
+                return None
             else:
                 return self.current_state
 
         except Exception as e:
             # self.get_logger().warn(f"Could not get transform for base_footprint: {str(e)}")
-            self.stop_robot()
+            return None
     
-            
-
 
     def control_loop(self):
 
@@ -337,21 +377,26 @@ class NMPCController(Node):
 
             # Make predictions using the model
             usol = self.model.predict(input)
-
-            Pt = 1
-            Pn = 1
+            
+            if eta<0:
+                usol[0][1] *= -1
+                
+            Pt = 0.1
+            Pn = 0.1
 
             en,et,phi = error(self.global_path,self.current_state,self.s0)
             
+            # print(en)
+            # print(et)
+                
             usol[0][0]-= Pt*et
             usol[0][1]-= Pn*en
 
             usol = self.convert_u(usol[0])
 
-            if eta<0:
-                usol[1] *= -1
+            print(usol)
 
-            self.publish_control(usol)
+            # self.publish_control(usol)
             # print(usol)
             self.publish_reference_path()
 
@@ -366,7 +411,7 @@ class NMPCController(Node):
         twist = Twist()
         twist.linear.x = 0.0
         twist.angular.z = 0.0
-        self.cmd_vel_pub.publish(twist)
+        # self.cmd_vel_pub.publish(twist)
         print("stopped")
 
 
@@ -418,9 +463,9 @@ class NMPCController(Node):
     def convert_u(self,usol):
         u = [0,0,0]
 
-        u[0] = 0.02 + usol[0]*(0.15-0.02)
-        u[1] = 0.05 + usol[1]*(0.15-0.05)
-        u[2] = 0.5 * usol[2]
+        u[0] = np.clip(0.02 + usol[0]*(0.15-0.02), 0.02, 0.15)
+        u[1] = np.sign(usol[1])*np.clip(0.05 + np.abs(usol[1])*(0.1-0.05), 0.05, 0.1) 
+        u[2] = 0.5 * np.clip(usol[2],0,1)
 
         return u
 

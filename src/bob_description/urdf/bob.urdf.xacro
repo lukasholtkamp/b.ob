@@ -2,7 +2,7 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro"  name="robot">
 
     <xacro:arg name="use_ros2_control" default="True"/>
-    <xacro:arg name="sim_mode" default="False"/>
+    <xacro:arg name="sim_mode" default="True"/>
 
     <xacro:include filename="bob_core.xacro" />
 
