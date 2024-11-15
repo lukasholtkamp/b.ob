@@ -2,7 +2,7 @@
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry, Path
-from geometry_msgs.msg import Twist, PoseStamped, Point
+from geometry_msgs.msg import Twist, PoseStamped, Point, PoseWithCovarianceStamped
 from sensor_msgs.msg import LaserScan
 import numpy as np
 from casadi import *
@@ -25,22 +25,40 @@ from .functions.path_planner import *
 
 from tensorflow.keras.models import load_model
 
-
 class NMPCController(Node):
 
     def __init__(self):
         super().__init__('nmpc_controller')
 
+        # NMPC Parameters
+        self.Ts = 0.3  # Sampling time
+        self.N = 20  # Prediction horizon
+        self.nx = 4  # State dimension (x, y, theta,s)
+        self.nu = 3  # Input dimension (v, omega, w)
 
         self.dt = 0
         self.start = 0
         self.end = 0
 
+        # Bounds
+        self.umax = np.array([1, 1])    # Upper bounds on controls
+        self.lb_u = np.array([0, -1])   # Lower bounds on controls
+        self.ub_u = np.array([1, 1])    # Upper bounds on controls
+        self.lb_w = 0                   # Lower bound for w
+        self.ub_w = 1                   # Upper bound for w
+        self.lb_s = 0                   # Lower bound for s (reference trajectory variable)
+        self.ub_s = None
+
+        # Weight matrices for cost function
+        self.Q = np.diag([1000, 1000, 0])   # State weight
+        self.R = np.diag([0.01, 0.01])        # Control input weight
+        self.T = 10
+
         # Other initializations
-        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.cmd_vel_pub = self.create_publisher(Twist, '/diffbot_base_controller/cmd_vel_unstamped', 10)
         self.ref_path_pub = self.create_publisher(Path, '/ref_path', 10)
         self.ol_path_pub = self.create_publisher(Path, '/ol_path', 10)
-        self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
+        self.amcl_pose_sub = self.create_subscription(PoseWithCovarianceStamped,'/amcl_pose',self.amcl_pose_callback,10)
 
         self.global_path_sub = self.create_subscription(Path, '/plan', self.path_callback, 10)
         self.goal_pose_sub = self.create_subscription(PoseStamped, '/goal_pose', self.goal_pose_callback, 10)
@@ -50,29 +68,19 @@ class NMPCController(Node):
         self.obs_list = np.zeros((self.max_obs, 3))
 
         self.current_state = np.array([])
-        self.goal = None
+        self.goal = np.array([])
 
         self.initialized = False
+        self.u0 = np.array([1, 0])
+        self.w0 = 1
+        self.s0 = 0
 
         # Array to store x, y, theta, s values
         self.data_log = []
 
-        # LiDAR scan subscriber
-        self.scan_sub = self.create_subscription(LaserScan, '/altered_scan', self.scan_callback, 10)
-
-        # Setup TF2 listener to transform LiDAR frame coordinates
-        self.tf_buffer = tf2_ros.Buffer(cache_time=rclpy.time.Duration(seconds=5.0))
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
-
-        # To store the dynamic LiDAR frame center
-        self.lidar_frame_center = None
-        self.A = None
-        self.b = None
-
         self.segment_length = 20
         self.epsilon = 0.15
         self.v_max = 0.1
-        self.s0 = 0
 
         self.new_goal_received = False  # Flag to track new goal pose
 
@@ -91,6 +99,23 @@ class NMPCController(Node):
         self.global_path = None
 
         self.model = load_model("/home/bertrandt/b.ob/src/nmpc_robot_controller/nmpc_robot_controller/functions/path_following_model.h5")
+        # self.model = load_model("/home/ubuntu/b.ob/src/nmpc_robot_controller/nmpc_robot_controller/functions/path_following_model.h5")
+
+
+    def amcl_pose_callback(self, msg):
+        # Extract position and orientation from the AMCL pose
+        x = msg.pose.pose.position.x
+        y = msg.pose.pose.position.y
+        quat = msg.pose.pose.orientation
+
+        # Convert the quaternion to a list or tuple
+        quaternion = [quat.x, quat.y, quat.z, quat.w]
+
+        # Convert quaternion to Euler angles
+        _, _, theta = euler_from_quaternion(quaternion)
+
+        # Update the current state
+        self.current_state = np.array([x, y, theta])
 
 
     def obs_callback(self, msg):
@@ -210,57 +235,23 @@ class NMPCController(Node):
         quaternion = [msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
         _, _, theta = euler_from_quaternion(quaternion)
         
-        self.goal = [x, y, theta]
+        self.goal = np.array([x, y, theta])
+    
 
-    def odom_callback(self, msg):
-        now = rclpy.time.Time()
-        x = msg.pose.pose.position.x
-        y = msg.pose.pose.position.y
-        quat = msg.pose.pose.orientation
+    def gamma(self,eta):
+        # Define a small threshold to prevent division by zero
+        eta_safe = ca.fmax(eta, 1e-10)  # Prevents eta from being exactly zero
 
-        quaternion = [quat.x, quat.y, quat.z, quat.w]
+        # Calculate non-zero eta case safely
+        sqrt_term = ca.sqrt(1 + (2 * eta_safe) ** 2)
+        arcsinh_term = ca.arcsinh(2 * eta_safe) / (2 * eta_safe)
+        
+        # Combine with if_else, guaranteeing no division by zero
+        result = ca.if_else(eta != 1e-10, 0.5 * (sqrt_term + arcsinh_term), 1)
+        return result
 
-        if len(quaternion) != 4:
-            raise Exception("Invalid quaternion received")
-        # Convert quaternion to Euler angles (yaw)
-        _, _, theta = euler_from_quaternion(quaternion)
-
-        self.current_state = np.array([x, y, theta])
-
-        # Create and publish the marker
-        marker = Marker()
-        marker.header.frame_id = 'map'
-        marker.header.stamp = now.to_msg()
-        marker.ns = 'robot_pose_marker'
-        marker.id = self.marker_id
-        marker.type = Marker.SPHERE  # Choose the shape you prefer
-        marker.action = Marker.ADD
-
-        # Set the pose of the marker to the robot's global position
-        marker.pose.position.x = x
-        marker.pose.position.y = y
-        # marker.pose.position.z = position.z  # Adjust if you want the marker above the robot
-        marker.pose.orientation = quat
-
-        # Set the scale of the marker
-        marker.scale.x = 0.2  # Adjust the size as needed
-        marker.scale.y = 0.2
-        marker.scale.z = 0.2
-
-        # Set the color of the marker (RGBA)
-        marker.color.r = 1.0
-        marker.color.g = 0.0
-        marker.color.b = 0.0
-        marker.color.a = 1.0  # Don't forget to set alpha to non-zero!
-
-        # Set the lifetime of the marker
-        marker.lifetime = Duration(nanosec=1_000_000_000)  # Marker lasts for 0.1 second
-
-        # Publish the marker
-        self.marker_publisher.publish(marker)
-
-        # Increment marker ID if needed (useful when adding/removing markers)
-        self.marker_id += 1
+    def g(self,v_max,eta):
+        return v_max/self.gamma(eta)
 
 
     def control_loop(self):
@@ -274,11 +265,11 @@ class NMPCController(Node):
             self.dt = self.end - self.start
             self.start = self.end
 
-        if self.current_state is None:
+        if self.current_state.shape[0]<=0:
             self.stop_robot()
             return  # If the transform is unavailable, skip this control loop iteration
 
-        if self.goal != None and self.current_state.shape[0]>0:
+        if self.goal.shape[0]>0:
             goal_dist = self.dist(self.current_state,self.goal)
         else:
             goal_dist = 0
@@ -297,11 +288,24 @@ class NMPCController(Node):
 
             # Make predictions using the model
             usol = self.model.predict(input)
+            
+            if eta<0:
+                usol[0][1] *= -1
+                
+            Pt = 0.1
+            Pn = 0.1
+
+            en,et,phi = error(self.global_path,self.current_state,self.s0)
+            
+            # print(en)
+            # print(et)
+                
+            # usol[0][0]-= Pt*et
+            # usol[0][1]-= Pn*en
 
             usol = self.convert_u(usol[0])
 
-            if eta<0:
-                usol[1] *= -1
+            print(usol)
 
             self.publish_control(usol)
             # print(usol)
@@ -371,94 +375,10 @@ class NMPCController(Node):
         u = [0,0,0]
 
         u[0] = 0.02 + usol[0]*(0.15-0.02)
-        u[1] = 0.05 + usol[1]*(0.15-0.05)
-        u[2] = 0.5 * usol[2]
+        u[1] = np.sign(usol[1])*0.05 + usol[1]*(0.15-0.05)
+        u[2] = 0.8 * usol[2]
 
         return u
-
-    def get_lidar_frame_transform(self):
-        """Manually extract the translation and yaw angle from 'lidar_frame' to 'map'."""
-        try:
-            # Get the transform between 'map' and 'lidar_frame'
-            transform = self.tf_buffer.lookup_transform('map', 'lidar_frame', rclpy.time.Time())
-
-            # Extract the translation
-            translation = transform.transform.translation
-            translation_vec = np.array([translation.x, translation.y, translation.z])
-
-            # Extract the rotation quaternion and convert it to euler angles (yaw is the Z-axis rotation)
-            rotation = transform.transform.rotation
-            quaternion = [rotation.x, rotation.y, rotation.z, rotation.w]
-            _, _, yaw = euler_from_quaternion(quaternion)
-
-            return translation_vec, yaw
-
-        except Exception as e:
-            self.get_logger().warn(f"Could not get transform for lidar_frame: {str(e)}")
-            return None, None
-
-    def manually_transform_point(self, point, translation_vec, yaw):
-        """Manually transform a point using translation and yaw rotation."""
-        cos_yaw = math.cos(yaw)
-        sin_yaw = math.sin(yaw)
-        rotation_matrix = np.array([[cos_yaw, -sin_yaw],
-                                    [sin_yaw, cos_yaw]])
-
-        # Apply the rotation to the point (assuming z=0, planar motion)
-        point_vec = np.array([point.x, point.y])
-        rotated_point_vec = np.dot(rotation_matrix, point_vec)
-
-        transformed_point = Point(x=rotated_point_vec[0] + translation_vec[0],
-                                  y=rotated_point_vec[1] + translation_vec[1],
-                                  z=0.0)
-        return transformed_point
-
-    def scan_callback(self, msg):
-        try:
-            # Get the translation and yaw angle for manual transform
-            translation_vec, yaw = self.get_lidar_frame_transform()
-
-            # If the transform isn't available, skip this callback
-            if translation_vec is None or yaw is None:
-                return
-
-            # Create a point for lidar_frame_center
-            lidar_frame_center = Point(x=translation_vec[0], y=translation_vec[1], z=translation_vec[2])
-
-            # Filters for range limits
-            min_range = 0.1  # Minimum valid range value (ignore too close points)
-            max_range = 10.0  # Maximum valid range value (ignore far points)
-
-            # Process the scan data and manually transform all points first
-            angle = msg.angle_min
-            transformed_points = []
-            for i in range(len(msg.ranges)):
-                range_value = msg.ranges[i]
-
-                # Skip invalid points (out of range or zero)
-                if range_value < min_range or range_value > max_range:
-                    angle += msg.angle_increment
-                    continue
-
-                # Calculate the position of the point in the lidar_frame
-                x = range_value * math.cos(angle)
-                y = range_value * math.sin(angle)
-                point = Point(x=x, y=y, z=0.0)
-
-                # Manually transform the point from lidar_frame to map frame
-                transformed_point = self.manually_transform_point(point, translation_vec, yaw)
-
-                transformed_points.append(transformed_point)
-
-                # Increment the angle for the next scan point
-                angle += msg.angle_increment
-
-            # Now calculate the polygon matrix (Ax + By <= C) for the lines through each pair of points
-            self.compute_subshapes_and_plot(lidar_frame_center, transformed_points)
-
-        except Exception as e:
-            self.get_logger().error(f"Error processing scan: {str(e)}")
- 
 
     def dist(self,current,goal):
         return np.sqrt((current[0]-goal[0])**2 + (current[1]-goal[1])**2)

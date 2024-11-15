@@ -3,7 +3,7 @@ amcl:
     use_sim_time: false
     min_particles: 3000
     max_particles: 10000
-    update_min_d: 0.02
+    update_min_d: 0.01
     update_min_a: 0.05
     alpha1: 0.5
     alpha2: 0.7
@@ -21,7 +21,7 @@ amcl:
     max_beams: 150
     recovery_alpha_slow: 0.0001
     recovery_alpha_fast: 0.2
-    transform_tolerance: 0.5
+    transform_tolerance: 0.4
     resample_interval: 0
     odom_frame_id: "odom"
     base_frame_id: "base_footprint"
@@ -29,6 +29,7 @@ amcl:
     scan_topic: "/scan"
     map_topic: "/map"
     tf_broadcast: true
+    save_pose_rate: 0.2  # Save pose more frequently
 
 
 bt_navigator:
