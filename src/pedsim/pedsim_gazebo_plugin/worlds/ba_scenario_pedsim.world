@@ -97,10 +97,10 @@
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
     <state world_name='default'>
-      <sim_time>2348 886000000</sim_time>
-      <real_time>437 863483601</real_time>
-      <wall_time>1729675189 213276464</wall_time>
-      <iterations>435091</iterations>
+      <sim_time>2393 927000000</sim_time>
+      <real_time>46 717733786</real_time>
+      <wall_time>1732014433 183221898</wall_time>
+      <iterations>45041</iterations>
       <model name='grey_wall_0_clone'>
         <pose>-6.99495 -6.36801 0 0 0 -1.57</pose>
         <scale>1 1 1</scale>
@@ -292,13 +292,13 @@
         </link>
       </model>
       <model name='person_standing'>
-        <pose>-1.67098 3.24707 -0 0 -1e-06 1.15536</pose>
+        <pose>-1.67097 3.24708 -0 -1e-06 1e-06 1.15522</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose>-1.67098 3.24707 -0 0 -1e-06 1.15536</pose>
+          <pose>-1.67097 3.24708 -0 -1e-06 1e-06 1.15522</pose>
           <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>-1.67243 -1.00781 -1.57898 -2.14425 -1.33601 -3.09721</acceleration>
-          <wrench>-133.794 -80.6245 -126.318 0 -0 0</wrench>
+          <acceleration>-0.383315 1.91597 -1.57336 -1.96362 -0.453999 -0.04442</acceleration>
+          <wrench>-30.6652 153.278 -125.869 0 -0 0</wrench>
         </link>
       </model>
       <light name='sun'>
@@ -307,7 +307,7 @@
     </state>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose>6.7564 6.93762 9.40282 -0 0.737801 -2.6349</pose>
+        <pose>0.749035 -18.7704 20.8934 0 0.877801 1.56429</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>

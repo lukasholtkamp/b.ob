@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scenario>
+    <!-- Waypoints -->
+
+    <!-- Agent 1 waypoints (modified) -->
+    <waypoint id="wp_agent3_start" x="2" y="4" r="0.25"/>
+    <waypoint id="wp_agent3_mid1" x="2" y="-4" r="0.25"/>
+    <waypoint id="wp_agent3_end" x="2" y="4" r="0.25"/>
+
+    <!-- Agent 2 waypoints (modified) -->
+    <waypoint id="wp_agent4_start" x="4" y="4" r="0.25"/>
+    <waypoint id="wp_agent4_mid1" x="4" y="-4" r="0.25"/>
+    <waypoint id="wp_agent4_end" x="4" y="4" r="0.25"/>
+
+
+    <!-- Agents -->
+
+    <!-- Agent 1  -->
+    <agent x="2" y="4" n="1" dx="0" dy="0" type="0">
+        <addwaypoint id="wp_agent3_start"/>
+        <addwaypoint id="wp_agent3_mid1"/>
+        <addwaypoint id="wp_agent3_end"/>
+    </agent>
+
+    <!-- Agent 2  -->
+    <agent x="4" y="-4" n="1" dx="0" dy="0" type="0">
+        <addwaypoint id="wp_agent4_start"/>
+        <addwaypoint id="wp_agent4_mid1"/>
+        <addwaypoint id="wp_agent4_end"/>
+    </agent>
+</scenario>
