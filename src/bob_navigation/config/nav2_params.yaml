@@ -1,338 +1,338 @@
 amcl:
   ros__parameters:
-    use_sim_time: false
-    min_particles: 3000
-    max_particles: 10000
-    update_min_d: 0.02
-    update_min_a: 0.05
-    alpha1: 0.5
-    alpha2: 0.7
-    alpha3: 0.3
-    alpha4: 0.6
-    alpha5: 0.2
-    z_hit: 0.9
-    sigma_hit: 0.15 # Make the scan matching more precise
-    z_rand: 0.05
-    z_max: 0.01
-    do_beamskip: true
-    beam_skip_distance: 0.5
-    beam_skip_error_threshold: 0.4
-    beam_skip_threshold: 0.25
-    max_beams: 150
-    recovery_alpha_slow: 0.0001
-    recovery_alpha_fast: 0.2
-    transform_tolerance: 0.5
-    resample_interval: 0
-    odom_frame_id: "odom"
-    base_frame_id: "base_footprint"
-    global_frame_id: "map"
-    scan_topic: "/scan"
-    map_topic: "/map"
-    tf_broadcast: true
+    use_sim_time: false # Use simulation time or not
+    min_particles: 3000 # Minimum particles in filter
+    max_particles: 10000 # Maximum particles in filter
+    update_min_d: 0.02 # Min distance for updates
+    update_min_a: 0.05 # Min angle for updates
+    alpha1: 0.5 # Odometry rotation noise coefficient
+    alpha2: 0.7 # Odometry translation noise coefficient
+    alpha3: 0.3 # Translation noise with rotation
+    alpha4: 0.6 # Rotation noise with translation
+    alpha5: 0.2 # Noise from random velocity
+    z_hit: 0.9 # Weight for sensor match
+    sigma_hit: 0.15 # Precision of scan matching
+    z_rand: 0.05 # Weight for random measurements
+    z_max: 0.01 # Weight for max range measurements
+    do_beamskip: true # Enable skipping bad beams
+    beam_skip_distance: 0.5 # Distance to skip beams
+    beam_skip_error_threshold: 0.4 # Error threshold for beamskip
+    beam_skip_threshold: 0.25 # Beam skip error ratio
+    max_beams: 150 # Number of beams per scan
+    recovery_alpha_slow: 0.0001 # Factor for slow weight recovery
+    recovery_alpha_fast: 0.2 # Factor for fast weight recovery
+    transform_tolerance: 0.5 # Max time to transform frames
+    resample_interval: 0 # Interval for resampling particles
+    odom_frame_id: "odom" # Odometry frame name
+    base_frame_id: "base_footprint" # Robot base frame
+    global_frame_id: "map" # Global frame name
+    scan_topic: "/scan" # Laser scan topic
+    map_topic: "/map" # Map topic
+    tf_broadcast: true # Broadcast transform or not
 
 bt_navigator:
   ros__parameters:
-    use_sim_time: True
-    global_frame: map
-    robot_base_frame: base_footprint
-    odom_topic: /odometry/filtered
-    bt_loop_duration: 10
-    default_server_timeout: 20
-    plugin_lib_names:
-      - nav2_compute_path_to_pose_action_bt_node
-      - nav2_compute_path_through_poses_action_bt_node
-      - nav2_smooth_path_action_bt_node
-      - nav2_follow_path_action_bt_node
-      - nav2_spin_action_bt_node
-      - nav2_wait_action_bt_node
-      - nav2_assisted_teleop_action_bt_node
-      - nav2_back_up_action_bt_node
-      - nav2_drive_on_heading_bt_node
-      - nav2_clear_costmap_service_bt_node
-      - nav2_is_stuck_condition_bt_node
-      - nav2_goal_reached_condition_bt_node
-      - nav2_goal_updated_condition_bt_node
-      - nav2_globally_updated_goal_condition_bt_node
-      - nav2_is_path_valid_condition_bt_node
-      - nav2_initial_pose_received_condition_bt_node
-      - nav2_reinitialize_global_localization_service_bt_node
-      - nav2_rate_controller_bt_node
-      - nav2_distance_controller_bt_node
-      - nav2_speed_controller_bt_node
-      - nav2_truncate_path_action_bt_node
-      - nav2_truncate_path_local_action_bt_node
-      - nav2_goal_updater_node_bt_node
-      - nav2_recovery_node_bt_node
-      - nav2_pipeline_sequence_bt_node
-      - nav2_round_robin_node_bt_node
-      - nav2_transform_available_condition_bt_node
-      - nav2_time_expired_condition_bt_node
-      - nav2_path_expiring_timer_condition
-      - nav2_distance_traveled_condition_bt_node
-      - nav2_single_trigger_bt_node
-      - nav2_goal_updated_controller_bt_node
-      - nav2_is_battery_low_condition_bt_node
-      - nav2_navigate_through_poses_action_bt_node
-      - nav2_navigate_to_pose_action_bt_node
-      - nav2_remove_passed_goals_action_bt_node
-      - nav2_planner_selector_bt_node
-      - nav2_controller_selector_bt_node
-      - nav2_goal_checker_selector_bt_node
-      - nav2_controller_cancel_bt_node
-      - nav2_path_longer_on_approach_bt_node
-      - nav2_wait_cancel_bt_node
-      - nav2_spin_cancel_bt_node
-      - nav2_back_up_cancel_bt_node
-      - nav2_assisted_teleop_cancel_bt_node
-      - nav2_drive_on_heading_cancel_bt_node
-      - nav2_is_battery_charging_condition_bt_node
+    use_sim_time: True # Use simulation time or not
+    global_frame: map # Global reference frame
+    robot_base_frame: base_footprint # Base reference frame
+    odom_topic: /odometry/filtered # Odometry topic to use
+    bt_loop_duration: 10 # Duration of BT loop
+    default_server_timeout: 20 # Timeout for server actions
+    plugin_lib_names: # List of behavior tree plugins
+      - nav2_compute_path_to_pose_action_bt_node # Path to pose plugin
+      - nav2_compute_path_through_poses_action_bt_node # Path through poses plugin
+      - nav2_smooth_path_action_bt_node # Smooth path action plugin
+      - nav2_follow_path_action_bt_node # Follow path action plugin
+      - nav2_spin_action_bt_node # Spin action plugin
+      - nav2_wait_action_bt_node # Wait action plugin
+      - nav2_assisted_teleop_action_bt_node # Assisted teleoperation plugin
+      - nav2_back_up_action_bt_node # Back up action plugin
+      - nav2_drive_on_heading_bt_node # Drive on heading plugin
+      - nav2_clear_costmap_service_bt_node # Clear costmap service plugin
+      - nav2_is_stuck_condition_bt_node # Check if robot is stuck
+      - nav2_goal_reached_condition_bt_node # Check goal reached condition
+      - nav2_goal_updated_condition_bt_node # Check if goal updated
+      - nav2_globally_updated_goal_condition_bt_node # Check global goal updates
+      - nav2_is_path_valid_condition_bt_node # Validate path condition
+      - nav2_initial_pose_received_condition_bt_node # Check for initial pose
+      - nav2_reinitialize_global_localization_service_bt_node # Reinitialize localization
+      - nav2_rate_controller_bt_node # Control action rate
+      - nav2_distance_controller_bt_node # Control action distance
+      - nav2_speed_controller_bt_node # Control robot speed
+      - nav2_truncate_path_action_bt_node # Truncate path plugin
+      - nav2_truncate_path_local_action_bt_node # Local truncation plugin
+      - nav2_goal_updater_node_bt_node # Update goal plugin
+      - nav2_recovery_node_bt_node # Recovery node plugin
+      - nav2_pipeline_sequence_bt_node # Sequential pipeline behavior
+      - nav2_round_robin_node_bt_node # Round robin behavior plugin
+      - nav2_transform_available_condition_bt_node # Check transform availability
+      - nav2_time_expired_condition_bt_node # Time expired condition
+      - nav2_path_expiring_timer_condition # Path expiration timer
+      - nav2_distance_traveled_condition_bt_node # Check distance traveled
+      - nav2_single_trigger_bt_node # Single action trigger plugin
+      - nav2_goal_updated_controller_bt_node # Updated goal controller
+      - nav2_is_battery_low_condition_bt_node # Check battery status
+      - nav2_navigate_through_poses_action_bt_node # Navigate through poses plugin
+      - nav2_navigate_to_pose_action_bt_node # Navigate to pose plugin
+      - nav2_remove_passed_goals_action_bt_node # Remove passed goals
+      - nav2_planner_selector_bt_node # Planner selection plugin
+      - nav2_controller_selector_bt_node # Controller selection plugin
+      - nav2_goal_checker_selector_bt_node # Goal checker selector plugin
+      - nav2_controller_cancel_bt_node # Cancel controller plugin
+      - nav2_path_longer_on_approach_bt_node # Path extension condition
+      - nav2_wait_cancel_bt_node # Cancel wait action
+      - nav2_spin_cancel_bt_node # Cancel spin action
+      - nav2_back_up_cancel_bt_node # Cancel backup action
+      - nav2_assisted_teleop_cancel_bt_node # Cancel assisted teleop
+      - nav2_drive_on_heading_cancel_bt_node # Cancel drive on heading
+      - nav2_is_battery_charging_condition_bt_node # Check battery charging condition
 
 controller_server:
   ros__parameters:
-    use_sim_time: True
-    controller_frequency: 20.0
-    min_x_velocity_threshold: 0.001
-    min_y_velocity_threshold: 0.5
-    min_theta_velocity_threshold: 0.001
-    failure_tolerance: 0.3
-    progress_checker_plugins: ["progress_checker"]
+    use_sim_time: True # Use simulation time or not
+    controller_frequency: 20.0 # Frequency of controller updates
+    min_x_velocity_threshold: 0.001 # Min linear x velocity
+    min_y_velocity_threshold: 0.5 # Min linear y velocity
+    min_theta_velocity_threshold: 0.001 # Min angular velocity
+    failure_tolerance: 0.3 # Allowed failure tolerance
+    progress_checker_plugins: ["progress_checker"] # Plugins for progress checking
     progress_checker:
-      plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.2 # Stops if the progress is below this radius.
-      movement_time_allowance: 2.0 # Time in seconds before the system is considered 'blocked'.
-    goal_checker_plugins: ["goal_checker"]
+      plugin: "nav2_controller::SimpleProgressChecker" # Progress checker plugin
+      required_movement_radius: 0.2 # Min radius for progress
+      movement_time_allowance: 2.0 # Time before marking blocked
+    goal_checker_plugins: ["goal_checker"] # Plugins for goal checking
     goal_checker:
-      plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.5
-      yaw_goal_tolerance: 0.25
-      stateful: True
-    controller_plugins: ["FollowPath"]
+      plugin: "nav2_controller::SimpleGoalChecker" # Goal checker plugin
+      xy_goal_tolerance: 0.5 # Tolerance for goal distance
+      yaw_goal_tolerance: 0.25 # Tolerance for goal orientation
+      stateful: True # Retain state during operation
+    controller_plugins: ["FollowPath"] # List of controller plugins
     FollowPath:
-      plugin: "dwb_core::DWBLocalPlanner"
-      debug_trajectory_details: True
-      min_vel_x: 0.0
-      min_vel_y: 0.0
-      max_vel_x: 0.5
-      max_vel_y: 0.0
-      max_vel_theta: 0.8
-      min_speed_xy: 0.0
-      max_speed_xy: 0.5
-      min_speed_theta: 0.0
-      acc_lim_x: 2.5
-      acc_lim_y: 0.0
-      acc_lim_theta: 2.0 # Maximum Angular Acceleration
-      decel_lim_x: -2.5
-      decel_lim_y: 0.0
-      decel_lim_theta: -3.2
-      vx_samples: 20
-      vy_samples: 5
-      vtheta_samples: 10 # Rotational Velocity Samples
-      sim_time: 1.0 # Reduced Precomputation Time for Shorter Trajectories
-      linear_granularity: 0.05
-      angular_granularity: 0.025
-      transform_tolerance: 0.5
-      xy_goal_tolerance: 0.25
-      trans_stopped_velocity: 0.1 # Speed Threshold for Stop
-      short_circuit_trajectory_evaluation: True
-      limit_vel_cmd_in_traj: False
-      stateful: True
-      critics:
+      plugin: "dwb_core::DWBLocalPlanner" # Dynamic window planner
+      debug_trajectory_details: True # Debug trajectory details
+      min_vel_x: 0.0 # Min linear x velocity
+      min_vel_y: 0.0 # Min linear y velocity
+      max_vel_x: 0.5 # Max linear x velocity
+      max_vel_y: 0.0 # Max linear y velocity
+      max_vel_theta: 0.8 # Max angular velocity
+      min_speed_xy: 0.0 # Min translational speed
+      max_speed_xy: 0.5 # Max translational speed
+      min_speed_theta: 0.0 # Min angular speed
+      acc_lim_x: 2.5 # Max linear x acceleration
+      acc_lim_y: 0.0 # Max linear y acceleration
+      acc_lim_theta: 2.0 # Max angular acceleration
+      decel_lim_x: -2.5 # Max linear x deceleration
+      decel_lim_y: 0.0 # Max linear y deceleration
+      decel_lim_theta: -3.2 # Max angular deceleration
+      vx_samples: 20 # Linear x velocity samples
+      vy_samples: 5 # Linear y velocity samples
+      vtheta_samples: 10 # Angular velocity samples
+      sim_time: 1.0 # Simulation time for trajectories
+      linear_granularity: 0.05 # Linear path granularity
+      angular_granularity: 0.025 # Angular path granularity
+      transform_tolerance: 0.5 # Max transform time tolerance
+      xy_goal_tolerance: 0.25 # XY distance to goal tolerance
+      trans_stopped_velocity: 0.1 # Threshold for stopping speed
+      short_circuit_trajectory_evaluation: True # Enable short-circuit evaluation
+      limit_vel_cmd_in_traj: False # Limit velocity in trajectory
+      stateful: True # Keep state during planning
+      critics: # Trajectory critics for evaluation
         [
-          "RotateToGoal",
-          "Oscillation",
-          "BaseObstacle",
-          "GoalAlign",
-          "PathAlign",
-          "PathDist",
-          "GoalDist",
+          "RotateToGoal", # Rotate-to-goal critic
+          "Oscillation", # Prevent oscillation
+          "BaseObstacle", # Obstacle avoidance critic
+          "GoalAlign", # Align to goal critic
+          "PathAlign", # Align to path critic
+          "PathDist", # Distance to path critic
+          "GoalDist", # Distance to goal critic
         ]
-      BaseObstacle.scale: 1.0 # Higher value for strict obstacle avoidance. (0.02)
-      PathAlign.scale: 16.0 # Weighting of Path Alignment
-      GoalAlign.scale: 16.0 # Weighting of Target Alignment
-      PathDist.scale: 32.0
-      GoalDist.scale: 24.0
-      RotateToGoal.scale: 10.0 # Important to Avoid Excessive Rotations
-      RotateToGoal.slowing_factor: 3.0 # Rotational Movements Near the Target
-      RotateToGoal.lookahead_time: -1.0
+      BaseObstacle.scale: 1.0 # Obstacle avoidance weight
+      PathAlign.scale: 16.0 # Path alignment weight
+      GoalAlign.scale: 16.0 # Goal alignment weight
+      PathDist.scale: 32.0 # Path distance weight
+      GoalDist.scale: 24.0 # Goal distance weight
+      RotateToGoal.scale: 10.0 # Rotate to goal weight
+      RotateToGoal.slowing_factor: 3.0 # Factor for slowing near goal
+      RotateToGoal.lookahead_time: -1.0 # Lookahead time for rotation
 
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 50.0
-      publish_frequency: 20.0
-      global_frame: odom
-      robot_base_frame: base_footprint
-      use_sim_time: True
-      rolling_window: true
-      width: 3
-      height: 3
-      resolution: 0.05
-      robot_radius: 0.15
-      plugins: ["voxel_layer", "inflation_layer"]
+      update_frequency: 50.0 # Frequency of costmap updates
+      publish_frequency: 20.0 # Costmap publishing frequency
+      global_frame: odom # Global frame for local costmap
+      robot_base_frame: base_footprint # Robot base frame
+      use_sim_time: True # Use simulation time or not
+      rolling_window: true # Enable rolling costmap window
+      width: 3 # Costmap width in meters
+      height: 3 # Costmap height in meters
+      resolution: 0.05 # Resolution of costmap in meters
+      robot_radius: 0.15 # Radius of the robot
+      plugins: ["voxel_layer", "inflation_layer"] # Costmap layers to use
       inflation_layer:
-        plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        plugin: "nav2_costmap_2d::InflationLayer" # Inflation layer plugin
+        cost_scaling_factor: 3.0 # Cost growth near obstacles
+        inflation_radius: 0.55 # Radius for obstacle inflation
       voxel_layer:
-        plugin: "nav2_costmap_2d::VoxelLayer"
-        enabled: True
-        publish_voxel_map: True
-        origin_z: 0.0
-        z_resolution: 0.05
-        z_voxels: 16
-        max_obstacle_height: 2.0
-        mark_threshold: 0
-        observation_sources: scan
+        plugin: "nav2_costmap_2d::VoxelLayer" # Voxel layer plugin
+        enabled: True # Enable voxel layer
+        publish_voxel_map: True # Publish voxel map
+        origin_z: 0.0 # Origin height for costmap
+        z_resolution: 0.05 # Height resolution in meters
+        z_voxels: 16 # Number of height voxels
+        max_obstacle_height: 2.0 # Max height for obstacles
+        mark_threshold: 0 # Threshold for marking obstacles
+        observation_sources: scan # Observation sources for costmap
         scan:
-          topic: /scan
-          max_obstacle_height: 2.0
-          clearing: True
-          marking: True
-          data_type: "LaserScan"
-          raytrace_max_range: 10.0
-          raytrace_min_range: 0.0
-          obstacle_max_range: 3.0
-          obstacle_min_range: 0.0
-          inf_is_valid: true
+          topic: /scan # Laser scan topic
+          max_obstacle_height: 2.0 # Max obstacle height from scan
+          clearing: True # Enable clearing obstacles
+          marking: True # Enable marking obstacles
+          data_type: "LaserScan" # Scan data type
+          raytrace_max_range: 10.0 # Max raytrace range
+          raytrace_min_range: 0.0 # Min raytrace range
+          obstacle_max_range: 3.0 # Max obstacle detection range
+          obstacle_min_range: 0.0 # Min obstacle detection range
+          inf_is_valid: true # Treat infinite ranges as valid
       static_layer:
-        plugin: "nav2_costmap_2d::StaticLayer"
-        map_subscribe_transient_local: True
-      always_send_full_costmap: false
+        plugin: "nav2_costmap_2d::StaticLayer" # Static layer plugin
+        map_subscribe_transient_local: True # Local static map subscription
+      always_send_full_costmap: false # Full costmap publishing or not
 
 global_costmap:
   global_costmap:
     ros__parameters:
-      update_frequency: 30.0
-      publish_frequency: 20.0
-      global_frame: map
-      robot_base_frame: base_footprint
-      use_sim_time: True
-      robot_radius: 0.15
-      resolution: 0.05
-      track_unknown_space: true
-      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      update_frequency: 30.0 # Frequency of costmap updates
+      publish_frequency: 20.0 # Costmap publishing frequency
+      global_frame: map # Global frame for global costmap
+      robot_base_frame: base_footprint # Robot base frame
+      use_sim_time: True # Use simulation time or not
+      robot_radius: 0.15 # Radius of the robot
+      resolution: 0.05 # Resolution of the costmap in meters
+      track_unknown_space: true # Track unknown space or not
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"] # Costmap layers
       obstacle_layer:
-        plugin: "nav2_costmap_2d::ObstacleLayer"
-        enabled: True
-        observation_sources: scan obstacle_pointcloud
+        plugin: "nav2_costmap_2d::ObstacleLayer" # Obstacle layer plugin
+        enabled: True # Enable obstacle layer
+        observation_sources: scan obstacle_pointcloud # Obstacle observation sources
         scan:
-          topic: /scan
-          max_obstacle_height: 2.0
-          clearing: True
-          marking: True
-          data_type: "LaserScan"
-          raytrace_max_range: 10.0
-          raytrace_min_range: 0.0
-          obstacle_max_range: 3.0 # Range for detecting
-          obstacle_min_range: 0.0
-          inf_is_valid: true # For Tracking
+          topic: /scan # Laser scan topic
+          max_obstacle_height: 2.0 # Max obstacle height from scan
+          clearing: True # Enable obstacle clearing
+          marking: True # Enable obstacle marking
+          data_type: "LaserScan" # Data type for scan
+          raytrace_max_range: 10.0 # Max raytrace range
+          raytrace_min_range: 0.0 # Min raytrace range
+          obstacle_max_range: 3.0 # Max range for obstacle detection
+          obstacle_min_range: 0.0 # Min range for obstacle detection
+          inf_is_valid: true # Treat infinite ranges as valid "For updating"
         obstacle_pointcloud:
-          topic: /obstacle_pointcloud
-          max_obstacle_height: 2.0
-          clearing: True
-          marking: True
-          data_type: "PointCloud2"
-          raytrace_max_range: 5.0
-          raytrace_min_range: 0.0
-          obstacle_max_range: 10.0
-          obstacle_min_range: 0.0
-          inf_is_valid: true
+          topic: /obstacle_pointcloud # Point cloud topic
+          max_obstacle_height: 2.0 # Max obstacle height for point cloud
+          clearing: True # Enable obstacle clearing
+          marking: True # Enable obstacle marking
+          data_type: "PointCloud2" # Data type for point cloud
+          raytrace_max_range: 5.0 # Max raytrace range
+          raytrace_min_range: 0.0 # Min raytrace range
+          obstacle_max_range: 10.0 # Max detection range
+          obstacle_min_range: 0.0 # Min detection range
+          inf_is_valid: true # Treat infinite ranges as valid "For updating"
       inflation_layer:
-        plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 4.0 # Steeper costs near obstacles.
-        inflation_radius: 0.8
+        plugin: "nav2_costmap_2d::InflationLayer" # Inflation layer plugin
+        cost_scaling_factor: 4.0 # Cost growth near obstacles
+        inflation_radius: 0.8 # Radius for obstacle inflation
       static_layer:
-        plugin: "nav2_costmap_2d::StaticLayer"
-        map_subscribe_transient_local: True
-      always_send_full_costmap: True
+        plugin: "nav2_costmap_2d::StaticLayer" # Static layer plugin
+        map_subscribe_transient_local: True # Subscribe locally to static map
+      always_send_full_costmap: True # Always send full costmap updates
 
 map_server:
   ros__parameters:
-    use_sim_time: True
+    use_sim_time: True # Use simulation time or not
     # Overridden in launch by the "map" launch configuration or provided default value.
     # To use in yaml, remove the default "map" value in the tb3_simulation_launch.py file & provide full path to map below.
-    yaml_filename: ""
+    yaml_filename: "" # Map file to use (overridden)
 
 map_saver:
   ros__parameters:
-    use_sim_time: True
-    save_map_timeout: 5.0
-    free_thresh_default: 0.25
-    occupied_thresh_default: 0.65
-    map_subscribe_transient_local: True
+    use_sim_time: True # Use simulation time or not
+    save_map_timeout: 5.0 # Timeout for saving map
+    free_thresh_default: 0.25 # Default free space threshold
+    occupied_thresh_default: 0.65 # Default occupied space threshold
+    map_subscribe_transient_local: True # Local map subscription
 
 planner_server:
   ros__parameters:
-    planner_plugins: ["GridBased"]
+    planner_plugins: ["GridBased"] # List of planner plugins
     GridBased:
-      plugin: "nav2_navfn_planner/NavfnPlanner" # In Iron and older versions, "/" was used instead of "::"
-      use_astar: False
-      allow_unknown: True
-      tolerance: 1.0
-      use_final_approach_orientation: False
+      plugin: "nav2_navfn_planner/NavfnPlanner" # Navigation planner plugin
+      use_astar: False # Use A* algorithm or not
+      allow_unknown: True # Allow planning through unknown space
+      tolerance: 1.0 # Path planning tolerance
+      use_final_approach_orientation: False # Orient robot on final approach
 
 smoother_server:
   ros__parameters:
-    use_sim_time: True
-    smoother_plugins: ["simple_smoother"]
+    use_sim_time: True # Use simulation time or not
+    smoother_plugins: ["simple_smoother"] # List of smoother plugins
     simple_smoother:
-      plugin: "nav2_smoother::SimpleSmoother"
-      tolerance: 1.0e-10
-      max_its: 1000
-      do_refinement: True
+      plugin: "nav2_smoother::SimpleSmoother" # Path smoothing plugin
+      tolerance: 1.0e-10 # Smoothing tolerance
+      max_its: 1000 # Maximum iterations for smoothing
+      do_refinement: True # Refine smoothed paths
 
 behavior_server:
   ros__parameters:
-    costmap_topic: local_costmap/costmap_raw
-    footprint_topic: local_costmap/published_footprint
-    cycle_frequency: 10.0
-    behavior_plugins:
+    costmap_topic: local_costmap/costmap_raw # Topic for costmap
+    footprint_topic: local_costmap/published_footprint # Robot footprint topic
+    cycle_frequency: 10.0 # Frequency of behavior cycles
+    behavior_plugins: # List of behavior plugins
       ["spin", "backup", "drive_on_heading", "assisted_teleop", "wait"]
     spin:
-      plugin: "nav2_behaviors/Spin"
+      plugin: "nav2_behaviors/Spin" # Spin behavior plugin
     backup:
-      plugin: "nav2_behaviors/BackUp"
+      plugin: "nav2_behaviors/BackUp" # Backup behavior plugin
     drive_on_heading:
-      plugin: "nav2_behaviors/DriveOnHeading"
+      plugin: "nav2_behaviors/DriveOnHeading" # Drive on heading plugin
     wait:
-      plugin: "nav2_behaviors/Wait"
+      plugin: "nav2_behaviors/Wait" # Wait behavior plugin
     assisted_teleop:
-      plugin: "nav2_behaviors/AssistedTeleop"
-    global_frame: odom
-    robot_base_frame: base_footprint
-    transform_tolerance: 0.1
-    use_sim_time: true
-    simulate_ahead_time: 2.0
-    max_rotational_vel: 1.0
-    min_rotational_vel: 0.4
-    rotational_acc_lim: 3.2
+      plugin: "nav2_behaviors/AssistedTeleop" # Assisted teleop plugin
+    global_frame: odom # Global frame for behaviors
+    robot_base_frame: base_footprint # Robot base frame
+    transform_tolerance: 0.1 # Max transform time tolerance
+    use_sim_time: true # Use simulation time or not
+    simulate_ahead_time: 2.0 # Simulate ahead duration
+    max_rotational_vel: 1.0 # Max rotational velocity
+    min_rotational_vel: 0.4 # Min rotational velocity
+    rotational_acc_lim: 3.2 # Max rotational acceleration
 
 robot_state_publisher:
   ros__parameters:
-    use_sim_time: True
+    use_sim_time: True # Use simulation time or not
 
 waypoint_follower:
   ros__parameters:
-    use_sim_time: True
-    loop_rate: 20
-    stop_on_failure: false
-    waypoint_task_executor_plugin: "wait_at_waypoint"
+    use_sim_time: True # Use simulation time or not
+    loop_rate: 20 # Loop rate in Hz
+    stop_on_failure: false # Stop robot on failure
+    waypoint_task_executor_plugin: "wait_at_waypoint" # Task plugin for waypoints
     wait_at_waypoint:
-      plugin: "nav2_waypoint_follower::WaitAtWaypoint"
-      enabled: True
-      waypoint_pause_duration: 200
+      plugin: "nav2_waypoint_follower::WaitAtWaypoint" # Wait at waypoint plugin
+      enabled: True # Enable waiting at waypoints
+      waypoint_pause_duration: 200 # Pause duration at waypoints (ms)
 
 velocity_smoother:
   ros__parameters:
-    use_sim_time: True
-    smoothing_frequency: 20.0
-    scale_velocities: False
-    feedback: "OPEN_LOOP"
-    max_velocity: [1.0, 0.0, 1.0]
-    min_velocity: [-1.0, 0.0, -1.0]
-    max_accel: [6.0, 0.0, 6.0]
-    max_decel: [-6.0, 0.0, -6.0]
-    odom_topic: "odometry/filtered"
-    odom_duration: 0.1
-    deadband_velocity: [0.0, 0.0, 0.0]
-    velocity_timeout: 1.0
+    use_sim_time: True # Use simulation time or not
+    smoothing_frequency: 20.0 # Velocity smoothing frequency
+    scale_velocities: False # Scale velocities or not
+    feedback: "OPEN_LOOP" # Velocity feedback mechanism
+    max_velocity: [1.0, 0.0, 1.0] # Max linear and angular velocities
+    min_velocity: [-1.0, 0.0, -1.0] # Min linear and angular velocities
+    max_accel: [6.0, 0.0, 6.0] # Max linear and angular acceleration
+    max_decel: [-6.0, 0.0, -6.0] # Max linear and angular deceleration
+    odom_topic: "odometry/filtered" # Odometry topic for feedback
+    odom_duration: 0.1 # Duration for odometry smoothing
+    deadband_velocity: [0.0, 0.0, 0.0] # Deadband velocity thresholds
+    velocity_timeout: 1.0 # Timeout for velocity commands
