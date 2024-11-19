@@ -63,7 +63,7 @@ class Detection(Node):
         # Minimum age for clusters to be considered
         self.min_cluster_age = 1  # Reduced from 3 for testing
 
-        # Initialize variables to store the previous position and time
+        # Initialize variables to store the previous time
         self.prev_time = None
 
         # Boolean variable to initialize prev x and prev y
@@ -554,7 +554,7 @@ class Detection(Node):
         marker.pose.orientation.w = qw
 
         # Set scale and color
-        marker.scale.x = velocity * 3  # Arrow length
+        marker.scale.x = velocity * 2.5  # Arrow length
         marker.scale.y = 0.1  # Arrow width
         marker.scale.z = 0.1  # Arrow height
         marker.color.r = 0.0
