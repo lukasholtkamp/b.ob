@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import casadi as ca
 import random
-import control as ct
 
 from .waypoint_filter import *
 from .line_fitting import *

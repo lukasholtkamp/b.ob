@@ -32,6 +32,7 @@ def generate_launch_description():
     inverted = LaunchConfiguration("inverted", default="false")
     angle_compensate = LaunchConfiguration("angle_compensate", default="true")
     scan_mode = LaunchConfiguration("scan_mode", default="Stability")
+    scan_frequency = LaunchConfiguration("scan_frequency", default=10.0)
 
     # Get config path of the PID settings
     pid_config_filepath = os.path.join(
@@ -79,6 +80,11 @@ def generate_launch_description():
                 "scan_mode",
                 default_value=scan_mode,
                 description="Specifying scan mode of lidar",
+            ),           
+            DeclareLaunchArgument(
+                "scan_frequency",
+                default_value=scan_frequency,
+                description="Specifying scan frequency lidar",
             ),
             Node(
                 package="bob_lidar",
@@ -94,6 +100,7 @@ def generate_launch_description():
                         "inverted": inverted,
                         "angle_compensate": angle_compensate,
                         "scan_mode": scan_mode,
+                        "scan_frequency": scan_frequency,
                     },
                 ],
                 output="screen",
