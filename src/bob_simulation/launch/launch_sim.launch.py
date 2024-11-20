@@ -39,7 +39,7 @@ def generate_launch_description():
 
     declare_use_ros2_control_cmd = DeclareLaunchArgument(
         name="use_ros2_control",
-        default_value="True",
+        default_value="False",
         description="Use ros2_control if true",
     )
 
@@ -51,7 +51,7 @@ def generate_launch_description():
 
     declare_use_robot_localization_cmd = DeclareLaunchArgument(
         name="use_robot_localization",
-        default_value="True",
+        default_value="False",
         description="Use robot_localization package if true",
     )
 

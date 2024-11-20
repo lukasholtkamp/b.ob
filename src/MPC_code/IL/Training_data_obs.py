@@ -2,14 +2,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-from NMPC_solver import *
+from NMPC_solver_oa import *
 
 # Define constants and parameters
 curvatures = np.linspace(0, 2, 11)      # Curvature values η_k from 0 to 3
 d_k = 0.2                                  # Controls the length of the path segment
 theta_steps = 10                         # Number of discrete points along θ for each path
-# grid_resolution = 2                     # Number of samples along each axis (tangential, normal, orientation)
-grid_resolution = 11                     # Number of samples along each axis (tangential, normal, orientation)
+grid_resolution = 2                     # Number of samples along each axis (tangential, normal, orientation)
+# grid_resolution = 11                     # Number of samples along each axis (tangential, normal, orientation)
 
 width= 0.4
 length = 0.5
@@ -51,17 +51,24 @@ y_normal = lambda s,x: m_normal(s)*x - m_normal(s)*s*g(v_max,curvature) + curvat
 m_tangent = lambda s: (2*curvature*s*g(v_max,curvature))
 y_tangent = lambda s,x: m_tangent(s)*x - m_tangent(s)*s*g(v_max,curvature) + curvature*(s*g(v_max,curvature))**2
 
-cir_r = 0.03
-bot_r = 0
 
-impact_region = 0.05 # test
+inflation = 0.18
+cir_r = 0.17
+bot_r = 0.23
 
-cases = [None,cir_r+bot_r,0,-(cir_r+bot_r)]
+impact_region = 0.3 # test
 
-segments = 15
+cases = np.linspace(0.65,-0.65,7).tolist()
+cases.insert(0, None)
+
+segments = 30
 layers = 4
+
+# segments = 3
+# layers = 2
+
 outer_radius = cir_r + impact_region
-eps = 0.01
+eps = bot_r/2
 
 def in_circle(xc,yc,rc,x,y,r):
     distance = math.sqrt((xc - x) ** 2 + (yc - y) ** 2)
@@ -81,10 +88,10 @@ for curvature in curvatures:
 
         fig, ax = plt.subplots()
 
-        states = []
-        controls = []
+        # states = []
+        # controls = []
 
-        for k in range(1):
+        for k in range(len(th)):
 
             if case!= None:
 
@@ -102,14 +109,59 @@ for curvature in curvatures:
                     xc = zeta[k,0]
                     yc = -dx
 
-                circle = plt.Circle((xc,yc), cir_r, color='blue', fill=False, linewidth=2)  # 'fill=False' makes it a hollow circle
+                # circle = plt.Circle((xc,yc), cir_r, color='blue', fill=False, linewidth=2)  # 'fill=False' makes it a hollow circle
 
-                # Add the circle to the plot
-                ax.add_patch(circle)
+                # # Add the circle to the plot
+                # ax.add_patch(circle)
 
-                ax.plot(xc,yc,'g*')
+                # ax.plot(xc,yc,'g*')
+
+                angles = np.linspace(0, 2 * np.pi, segments, endpoint=False)
+
+                radii = np.linspace(cir_r + eps, outer_radius, layers)
+
+                points = []
+
+                for r in radii:
+                    for angle in angles:
+
+                        x = xc + r * np.cos(angle)
+                        y = yc + r * np.sin(angle)
+
+                        start_angle = np.arctan(2 * curvature * (th[k])*g(v_max,curvature))
+                        
+                        # Generate 10 angles around the circle, starting from the start_angle
+                        orientations = np.linspace(start_angle, start_angle + 2 * np.pi,grid_resolution, endpoint=False)
+
+                        # Apply modulus to ensure all angles are within [0, 2*pi)
+                        orientations = orientations % (2 * np.pi)
+
+                        for orientation in orientations:
+                            states.append([x,y,orientation,th[k],curvature,xc,yc,cir_r+inflation])
+
+                            obs_list = [[xc, yc, cir_r+inflation]]
+
+                            x_pred,u = run_open_loop_mpc(v_max, [x,y,orientation], th[k],curvature,obs_list)
+                            controls.append(u[0,:])
+                            # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
+
+                            if k+1 <= len(th)-1:
+                                states.append([x,y,orientation,th[k+1],curvature,xc,yc,cir_r+inflation])
+                                x_pred,u = run_open_loop_mpc(v_max, [x,y,orientation], th[k+1],curvature,obs_list)
+                                controls.append(u[0,:])
+                                # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
+
+                            else:
+                                diff = th[1]-th[0]
+                                states.append([x,y,orientation,th[k]+diff,curvature,xc,yc,cir_r+inflation])
+                                x_pred,u = run_open_loop_mpc(v_max, [x,y,orientation], th[k]+diff,curvature,obs_list)
+                                controls.append(u[0,:])
+                                # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
+
             
-            if case == None:
+            elif case == None:
+
+                empty_obs = []
 
                 tangent_axis = np.linspace(th[k]-length/2,th[k]+length/2,grid_resolution)
 
@@ -140,22 +192,22 @@ for curvature in curvatures:
                                 x_r = (tangent_axis[i])*g(v_max,curvature) + dx
 
                                 if normal_axis[j]!=0:
-                                    states.append([x_l,y_normal(tangent_axis[i],x_l),orientation,th[k],curvature])
-                                    states.append([x_r,y_normal(tangent_axis[i],x_r),orientation,th[k],curvature])
+                                    states.append([x_l,y_normal(tangent_axis[i],x_l),orientation,th[k],curvature,0,0,0])
+                                    states.append([x_r,y_normal(tangent_axis[i],x_r),orientation,th[k],curvature,0,0,0])
                                         
-                                    # x_pred,u = run_open_loop_mpc(v_max, [x_l,y_normal(tangent_axis[i],x_l),orientation], th[k],curvature)
-                                    # controls.append(u[0,:])
+                                    x_pred,u = run_open_loop_mpc(v_max, [x_l,y_normal(tangent_axis[i],x_l),orientation], th[k],curvature,empty_obs)
+                                    controls.append(u[0,:])
                                     # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
 
-                                    # x_pred,u = run_open_loop_mpc(v_max, [x_r,y_normal(tangent_axis[i],x_r),orientation], th[k],curvature)
-                                    # controls.append(u[0,:])
+                                    x_pred,u = run_open_loop_mpc(v_max, [x_r,y_normal(tangent_axis[i],x_r),orientation], th[k],curvature,empty_obs)
+                                    controls.append(u[0,:])
                                     # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
 
                                 else:
-                                    states.append([x_l,y_normal(tangent_axis[i],x_l),orientation,th[k],curvature])
+                                    states.append([x_l,y_normal(tangent_axis[i],x_l),orientation,th[k],curvature,0,0,0])
 
-                                    # x_pred,u = run_open_loop_mpc(v_max, [x_l,y_normal(tangent_axis[i],x_l),orientation], th[k],curvature)
-                                    # controls.append(u[0,:])
+                                    x_pred,u = run_open_loop_mpc(v_max, [x_l,y_normal(tangent_axis[i],x_l),orientation], th[k],curvature,empty_obs)
+                                    controls.append(u[0,:])
                                     # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
 
 
@@ -166,72 +218,46 @@ for curvature in curvatures:
                                 x_r = (tangent_axis[i])*g(v_max,curvature)
 
                                 if normal_axis[j]!=0:
-                                    states.append([x_l,-dx,orientation,th[k],curvature])
-                                    states.append([x_r,dx,orientation,th[k],curvature])
+                                    states.append([x_l,-dx,orientation,th[k],curvature,0,0,0])
+                                    states.append([x_r,dx,orientation,th[k],curvature,0,0,0])
 
-                                    # x_pred,u = run_open_loop_mpc(v_max, [x_l,-dx,orientation], th[k],curvature)
-                                    # controls.append(u[0,:])
+                                    x_pred,u = run_open_loop_mpc(v_max, [x_l,-dx,orientation], th[k],curvature,empty_obs)
+                                    controls.append(u[0,:])
                                     # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
 
-                                    # x_pred,u = run_open_loop_mpc(v_max, [x_r,dx,orientation], th[k],curvature)
-                                    # controls.append(u[0,:])
+                                    x_pred,u = run_open_loop_mpc(v_max, [x_r,dx,orientation], th[k],curvature,empty_obs)
+                                    controls.append(u[0,:])
                                     # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
                                 else:
-                                    states.append([x_l,0,orientation,th[k],curvature])
+                                    states.append([x_l,0,orientation,th[k],curvature,0,0,0])
 
-                                    # x_pred,u = run_open_loop_mpc(v_max, [x_l,0,orientation], th[k],curvature)
-                                    # controls.append(u[0,:])
+                                    x_pred,u = run_open_loop_mpc(v_max, [x_l,0,orientation], th[k],curvature,empty_obs)
+                                    controls.append(u[0,:])
                                     # plt.plot(x_pred[:, 0], x_pred[:, 1], color='green')
-            else:
-                angles = np.linspace(0, 2 * np.pi, segments, endpoint=False)
 
-                radii = np.linspace(cir_r + eps, outer_radius, layers)
+        # # Loop through each point
+        # for x, y, orientation,_,_,_,_,_ in states:
+        #     # Plot the point
+        #     ax.plot(x, y, 'bo')  # 'bo' for blue dots
 
-                points = []
+        #     # Plot the smaller arrow for orientation
+        #     scale = 0.0001  # Scale factor for arrow size
+        #     dx = scale * np.cos(orientation)  # x-component of the arrow
+        #     dy = scale * np.sin(orientation)  # y-component of the arrow
+        #     ax.arrow(x, y, dx, dy, head_width=0.0001, head_length=0.005, fc='r', ec='r')  # Smaller red arrow
 
-                for r in radii:
-                    for angle in angles:
+        # # plt.plot(states[:,0],states[:,1],'r*')
+        # # ax.plot(zeta[k,0],zeta[k,1],'ko')
+        # ax.plot(zeta[:,0],zeta[:,1])
 
-                        x = xc + r * np.cos(angle)
-                        y = yc + r * np.sin(angle)
+        # ax = plt.gca()
+        # ax.set_aspect('equal', adjustable='box')
 
-                        start_angle = np.arctan(2 * curvature * (th[k])*g(v_max,curvature))
-                        
-                        # Generate 10 angles around the circle, starting from the start_angle
-                        angles = np.linspace(start_angle, start_angle + 2 * np.pi,grid_resolution, endpoint=False)
+        # plt.show()
 
-                        # Apply modulus to ensure all angles are within [0, 2*pi)
-                        angles = angles % (2 * np.pi)
-
-                        for orientation in angles:
-                            states.append([x,y,orientation,th[k],curvature])
-                            
-
-
-            
-        # states = np.array(states)
-        # controls = np.array(controls)
-
-        # Loop through each point
-        for x, y, orientation,_,_ in states:
-            # Plot the point
-            ax.plot(x, y, 'bo')  # 'bo' for blue dots
-
-            # Plot the smaller arrow for orientation
-            scale = 0.0001  # Scale factor for arrow size
-            dx = scale * np.cos(orientation)  # x-component of the arrow
-            dy = scale * np.sin(orientation)  # y-component of the arrow
-            ax.arrow(x, y, dx, dy, head_width=0.0001, head_length=0.005, fc='r', ec='r')  # Smaller red arrow
-
-        # plt.plot(states[:,0],states[:,1],'r*')
-        # ax.plot(zeta[k,0],zeta[k,1],'ko')
-        ax.plot(zeta[:,0],zeta[:,1])
-
-        ax = plt.gca()
-        ax.set_aspect('equal', adjustable='box')
-
-        plt.show()
+states = np.array(states)
+controls = np.array(controls)
 
 # Save the data or use it directly for training
-np.save("train_states.npy", states)
-np.save("train_controls.npy", controls)
+np.save("train_states_obs.npy", states)
+np.save("train_controls_obs.npy", controls)

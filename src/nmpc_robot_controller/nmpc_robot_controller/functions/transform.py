@@ -206,7 +206,7 @@ def error(path_segments,current_state,s):
     # Calculate the position error vector
     error_vector = np.array([current_state[0] - path_x, current_state[1] - path_y])
 
-        # Calculate the orientation of the tangent at (path_x, path_y)
+    # Calculate the orientation of the tangent at (path_x, path_y)
     tangent_orientation = get_orientation(current_segment, path_x, path_y)
 
     # Create the tangent vector from the orientation
@@ -223,6 +223,40 @@ def error(path_segments,current_state,s):
     en = np.dot(error_vector, normal_vector)
 
     return en,et,tangent_orientation
+
+def get_deviated_point(path_segments, s, deviation):
+    # Find the current segment based on the value of s
+    current_segment = None
+    for segment in path_segments:
+        if segment.start_time <= s <= segment.end_time:
+            current_segment = segment
+            break
+    
+    if s > path_segments[-1].end_time:
+        current_segment = path_segments[-1]
+
+    # Get the point on the path at s
+    path_point = current_segment.f(s)
+    path_x, path_y = float(path_point[0]), float(path_point[1])
+
+    # Calculate the orientation of the tangent at (path_x, path_y)
+    tangent_orientation = get_orientation(current_segment, path_x, path_y)
+
+    # Create the tangent vector from the orientation
+    tangent_vector = np.array([np.cos(tangent_orientation), np.sin(tangent_orientation)])
+
+    # Normalize the tangent vector
+    tangent_vector = tangent_vector / np.linalg.norm(tangent_vector)
+
+    # Calculate the normal vector as perpendicular to the tangent vector
+    normal_vector = np.array([-tangent_vector[1], tangent_vector[0]])
+
+    # Apply the deviation in the normal direction
+    deviated_x = path_x + deviation * normal_vector[0]
+    deviated_y = path_y + deviation * normal_vector[1]
+
+    return deviated_x, deviated_y
+
 
 def T_z(path_segments, x, y, current_orientation, s):
     """
@@ -266,6 +300,58 @@ def T_z(path_segments, x, y, current_orientation, s):
     s_transformed = s - segment.start_time - mid
 
     return transformed_x, transformed_y, transformed_orientation, s_transformed, current_segment.eta
+
+def T_z_obs(path_segments, x, y, current_orientation, s, obs_x, oby_y,obs_r):
+    """
+    Transforms the current position (x, y) and orientation based on the path segment corresponding to s.
+    Plots the original and transformed segment, position, and orientation.
+    
+    Parameters:
+    - path_segments: List of segments in the path.
+    - x: Current x-coordinate of the position.
+    - y: Current y-coordinate of the position.
+    - current_orientation: Current orientation (in radians).
+    - s: The current s value (parameter along the path).
+
+    Returns:
+    - (transformed_x, transformed_y, transformed_orientation, s): Transformed position and orientation, along with the given s.
+    """
+    
+    # Find the segment corresponding to the current value of s
+    current_segment = None
+    for segment in path_segments:
+        if segment.start_time <= s <= segment.end_time:
+            current_segment = segment
+            break
+
+    if s > path_segments[-1].end_time:
+        current_segment = path_segments[-1]
+    
+    if current_segment is None:
+        raise ValueError(f"s={s} does not fall within any segment's time bounds.")
+    
+    # Transform the current position (x, y) using the segment's transformation matrix
+    transformed_position = current_segment.inv_transform_p((x,y))
+    transformed_x = transformed_position[0]
+    transformed_y = transformed_position[1]
+
+    transformed_obs = current_segment.inv_transform_p((obs_x,oby_y))
+    transformed_obs_x = transformed_obs[0]
+    transformed_obs_y = transformed_obs[1]
+
+    if transformed_obs_x<(-0.2-obs_r) or transformed_obs_x>(0.2+obs_r):
+        relevant_flag = False
+    else:
+        relevant_flag = True
+
+    # Adjust the orientation based on the segment's rotation
+    transformed_orientation = current_orientation - current_segment.rotation  # Assuming segment has a 'rotation' attribute
+
+    mid = (segment.end_time - segment.start_time)/2
+
+    s_transformed = s - segment.start_time - mid
+
+    return transformed_x, transformed_y, transformed_orientation, s_transformed, current_segment.eta,transformed_obs_x,transformed_obs_y,relevant_flag
 
 def gamma(eta):
     if eta==0:

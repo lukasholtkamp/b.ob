@@ -2,7 +2,7 @@
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry, Path
-from geometry_msgs.msg import Twist, PoseStamped, Point
+from geometry_msgs.msg import Twist, PoseStamped, Point, PoseWithCovarianceStamped
 from sensor_msgs.msg import LaserScan
 import numpy as np
 from casadi import *
@@ -15,9 +15,13 @@ import math
 from sklearn.linear_model import LinearRegression
 from scipy.linalg import block_diag
 
+from obstacle_detector.msg import Obstacles
+
 from geometry_msgs.msg import TransformStamped
 from visualization_msgs.msg import Marker
 from builtin_interfaces.msg import Duration
+
+from .functions.path_planner import *
 
 
 class NMPCController(Node):
@@ -26,8 +30,8 @@ class NMPCController(Node):
         super().__init__('nmpc_controller')
 
         # NMPC Parameters
-        self.Ts = 1  # Sampling time
-        self.N = 6  # Prediction horizon
+        self.Ts = 0.3  # Sampling time
+        self.N = 20  # Prediction horizon
         self.nx = 4  # State dimension (x, y, theta,s)
         self.nu = 3  # Input dimension (v, omega, w)
 
@@ -36,77 +40,188 @@ class NMPCController(Node):
         self.end = 0
 
         # Bounds
-        self.umax = np.array([0.1, 0.1])    # Upper bounds on controls
-        self.lb_u = np.array([0, -0.1])   # Lower bounds on controls
-        self.ub_u = np.array([0.1, 0.1])    # Upper bounds on controls
+        self.umax = np.array([1, 1])    # Upper bounds on controls
+        self.lb_u = np.array([0, -1])   # Lower bounds on controls
+        self.ub_u = np.array([1, 1])    # Upper bounds on controls
         self.lb_w = 0                   # Lower bound for w
         self.ub_w = 1                   # Upper bound for w
         self.lb_s = 0                   # Lower bound for s (reference trajectory variable)
+        self.ub_s = None
 
         # Weight matrices for cost function
         self.Q = np.diag([1000, 1000, 0])   # State weight
-        self.R = np.diag([1, 1])        # Control input weight
+        self.R = np.diag([0.01, 0.01])        # Control input weight
         self.T = 10
 
         # Other initializations
-        self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
-        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.cmd_vel_pub = self.create_publisher(Twist, '/diffbot_base_controller/cmd_vel_unstamped', 10)
         self.ref_path_pub = self.create_publisher(Path, '/ref_path', 10)
         self.ol_path_pub = self.create_publisher(Path, '/ol_path', 10)
+        self.amcl_pose_sub = self.create_subscription(PoseWithCovarianceStamped,'/amcl_pose',self.amcl_pose_callback,10)
 
         self.global_path_sub = self.create_subscription(Path, '/plan', self.path_callback, 10)
         self.goal_pose_sub = self.create_subscription(PoseStamped, '/goal_pose', self.goal_pose_callback, 10)
 
-        self.current_state = []
-        self.goal = []
+        self.obs_sub = self.create_subscription(Obstacles, '/obstacles', self.obs_callback, 10)
+        self.max_obs = 2
+        self.obs_list = np.zeros((self.max_obs, 3))
+
+        self.current_state = np.array([])
+        self.goal = np.array([])
 
         self.initialized = False
-        self.u0 = np.array([0.1, 0])
+        self.u0 = np.array([1, 0])
         self.w0 = 1
         self.s0 = 0
 
         # Array to store x, y, theta, s values
         self.data_log = []
 
-        # LiDAR scan subscriber
-        self.scan_sub = self.create_subscription(LaserScan, '/altered_scan', self.scan_callback, 10)
-
-        # Setup TF2 listener to transform LiDAR frame coordinates
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
-
-        # To store the dynamic LiDAR frame center
-        self.lidar_frame_center = None
-        self.A = None
-        self.b = None
-
-        self.global_path = []
-        self.segment_length = 10
+        self.segment_length = 20
+        self.epsilon = 0.15
+        self.v_max = 0.1
 
         self.new_goal_received = False  # Flag to track new goal pose
 
         # Control loop initialization
         self.last_time = None
-        self.control_loop_timer = self.create_timer(0.0001, self.control_loop)
+        self.control_loop_timer = self.create_timer(0.05, self.control_loop)
 
         # Create a publisher for the marker
         self.marker_publisher = self.create_publisher(Marker, '/visualization_marker', 10)
         # Initialize a unique ID for the marker
         self.marker_id = 0
 
+        self.last_transform_update_time = None
+
+        self.ref_path = None
+        self.global_path = None
+
+    def amcl_pose_callback(self, msg):
+        # Extract position and orientation from the AMCL pose
+        x = msg.pose.pose.position.x
+        y = msg.pose.pose.position.y
+        quat = msg.pose.pose.orientation
+
+        # Convert the quaternion to a list or tuple
+        quaternion = [quat.x, quat.y, quat.z, quat.w]
+
+        # Convert quaternion to Euler angles
+        _, _, theta = euler_from_quaternion(quaternion)
+
+        # Update the current state
+        self.current_state = np.array([x, y, theta])
+
+
+    def obs_callback(self, msg):
+
+        # Initialize an array to store obstacle information
+        obs = np.zeros((len(msg.circles), 3))
+
+        # Extract the x, y, radius for each circle and store it in the obs array
+        for i in range(len(msg.circles)):
+            obs[i] = [msg.circles[i].center.x, msg.circles[i].center.y, msg.circles[i].radius]
+
+        # Calculate the difference between the obstacle positions and the current position
+        try:
+            diff = obs[:, :2] - np.tile(self.current_state[:2], (obs[:, :2].shape[0], 1))
+
+            # Calculate the Euclidean distance
+            distances = np.linalg.norm(diff, axis=1)
+
+            # Sort the obs array according to the distances
+            sorted_indices = np.argsort(distances)
+            obs_sorted = obs[sorted_indices]
+
+            if obs_sorted.shape[0] < self.max_obs:
+                obs_sorted = np.vstack((obs_sorted, np.zeros((self.max_obs - obs_sorted.shape[0], 3))))
+
+            self.obs_list = obs_sorted[:self.max_obs, :]
+            
+        except:
+            self.obs_list = np.zeros((self.max_obs, 3))
+
     def path_callback(self, msg):
         if self.new_goal_received:
             path_points = []
+            self.data_log = []
             for pose in msg.poses:
                 x = pose.pose.position.x
                 y = pose.pose.position.y
                 quaternion = [pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w]
                 _, _, theta = euler_from_quaternion(quaternion)
+
                 path_points.append((x, y, theta))
-            self.global_path = np.array(path_points)
-            self.ub_s = len(self.global_path) / 18
-            self.fit_path_segments()
+                self.data_log.append([x,y])
+
+            self.global_path, points = LSPB_fit(np.array(path_points),self.segment_length,self.epsilon,self.v_max)
+            self.ub_s = self.global_path[-1].end_time
+            # self.save_to_csv()
+            s = ca.MX.sym('s')
+            self.reference_traj = ca.Function('f_s', [s], [f(self.global_path, s)])
             self.new_goal_received = False
+
+            # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+
+            # ax1.plot(points[:,0],points[:,1],'ko')
+
+            # for i, segment in enumerate(self.global_path):
+
+            #     if segment.segment_type == 'line':
+            #         s = np.linspace(segment.start_time, segment.end_time-0.01, 1000)
+            #         x_vals = []
+            #         y_vals = []
+
+            #         for s_value in s:
+            #             result = self.reference_traj(s_value)
+            #             x_vals.append(float(result[0]))
+            #             y_vals.append(float(result[1]))
+
+            #         ax1.plot(x_vals, y_vals, 'r-', label="Full Path using f_s")
+            #         ax1.set_title(f"Original Segment and Input Positions")
+            #         ax1.set_xlabel('x')
+            #         ax1.set_ylabel('y')
+            #         ax1.grid(True)
+
+            #         tfx = []
+            #         tfy = []
+
+            #         for i in range(len(x_vals)):
+            #             point = segment.inv_transform_p((x_vals[i],y_vals[i]))
+            #             tfx.append(point[0])
+            #             tfy.append(point[1])
+
+            #         ax2.plot(tfx,tfy,'g-')
+
+
+            #     if segment.segment_type == 'parabola':
+                    
+            #         s = np.linspace(segment.start_time, segment.end_time-0.01, 1000)
+            #         x_vals = []
+            #         y_vals = []
+
+            #         for s_value in s:
+            #             result = self.reference_traj(s_value)
+            #             x_vals.append(float(result[0]))
+            #             y_vals.append(float(result[1]))
+
+            #         ax1.plot(x_vals, y_vals, 'b-', label="Full Path using f_s")
+            #         ax1.set_title(f"Original Segment and Input Positions")
+            #         ax1.set_xlabel('x')
+            #         ax1.set_ylabel('y')
+            #         ax1.grid(True)
+
+            #         tfx = []
+            #         tfy = []
+
+            #         for i in range(len(x_vals)):
+            #             point = segment.inv_transform_p((x_vals[i],y_vals[i]))
+            #             tfx.append(point[0])
+            #             tfy.append(point[1])
+
+            #         ax2.plot(tfx,tfy,'g-')
+
+            # plt.show()
 
     def goal_pose_callback(self, msg):
         self.new_goal_received = True
@@ -116,174 +231,28 @@ class NMPCController(Node):
         quaternion = [msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
         _, _, theta = euler_from_quaternion(quaternion)
         
-        self.goal = [x, y, theta]
+        self.goal = np.array([x, y, theta])
+    
 
-    def fit_path_segments(self):
-        x = self.global_path[:, 0]
-        y = self.global_path[:, 1]
+    def gamma(self,eta):
+        # Define a small threshold to prevent division by zero
+        eta_safe = ca.fmax(eta, 1e-10)  # Prevents eta from being exactly zero
 
-        segments = []
-        prev_end = None
+        # Calculate non-zero eta case safely
+        sqrt_term = ca.sqrt(1 + (2 * eta_safe) ** 2)
+        arcsinh_term = ca.arcsinh(2 * eta_safe) / (2 * eta_safe)
+        
+        # Combine with if_else, guaranteeing no division by zero
+        result = ca.if_else(eta != 1e-10, 0.5 * (sqrt_term + arcsinh_term), 1)
+        return result
 
-        # Loop advances by self.segment_length each iteration
-        for i in range(0, len(x) - self.segment_length + 1, self.segment_length):
-            x_seg = x[i:i + self.segment_length]
-            y_seg = y[i:i + self.segment_length]
-
-            if prev_end is not None:
-                # Add the last end point to the start of the current segment
-                x_seg = np.insert(x_seg, 0, prev_end[0])
-                y_seg = np.insert(y_seg, 0, prev_end[1])
-
-            if len(x_seg) > 2:
-                # Fit a 2nd-degree polynomial for segments with more than 2 points
-                coeff_x = np.polyfit(np.linspace(0, 1, len(x_seg)), x_seg, 2)
-                coeff_y = np.polyfit(np.linspace(0, 1, len(y_seg)), y_seg, 2)
-                degree = 2
-            else:
-                # Fit a linear polynomial if there are only 2 points
-                coeff_x = np.polyfit([0, 1], x_seg, 1)
-                coeff_y = np.polyfit([0, 1], y_seg, 1)
-                degree = 1
-
-            s = SX.sym('s')
-            x_s = sum([coeff_x[j] * s**(degree - j) for j in range(degree + 1)])
-            y_s = sum([coeff_y[j] * s**(degree - j) for j in range(degree + 1)])
-
-            f_x = Function('f_x', [s], [x_s])
-            f_y = Function('f_y', [s], [y_s])
-
-            segments.append((f_x, f_y))
-
-            # Update prev_end with the final point of the current segment
-            prev_end = (f_x(1).full().flatten()[0], f_y(1).full().flatten()[0])
-
-        # Now add the final segment from the last fitted point to the final goal
-        final_goal = (x[-1], y[-1])
-        if prev_end is not None and (prev_end[0] != final_goal[0] or prev_end[1] != final_goal[1]):
-            x_seg = np.array([prev_end[0], final_goal[0]])
-            y_seg = np.array([prev_end[1], final_goal[1]])
-
-            # Fit a linear segment for the final connection
-            coeff_x = np.polyfit([0, 1], x_seg, 1)
-            coeff_y = np.polyfit([0, 1], y_seg, 1)
-            degree = 1
-
-            x_s = coeff_x[0] * s + coeff_x[1]
-            y_s = coeff_y[0] * s + coeff_y[1]
-
-            f_x = Function('f_x', [s], [x_s])
-            f_y = Function('f_y', [s], [y_s])
-
-            segments.append((f_x, f_y))
-
-        self.fitted_segments = segments
-
-    def reference_traj(self, s):
-
-        scaled_s = s * (len(self.global_path)/self.ub_s) * 1.1
-
-        num_segments = len(self.fitted_segments)
-        threshold = 0.5  # Threshold for large changes
-
-        # Determine the current segment index and the normalized segment position
-        segment_index = floor(scaled_s / self.segment_length)
-        segment_s = fmod(scaled_s, self.segment_length) / self.segment_length
-
-        # Ensure the segment_index is within bounds
-        segment_index = fmin(segment_index, num_segments - 1)
-
-        # Initialize the position variables
-        eta_x = SX(0)
-        eta_y = SX(0)
-
-        for i, (f_x, f_y) in enumerate(self.fitted_segments):
-            # Get the value of the current segment
-            current_x = f_x(segment_s)
-            current_y = f_y(segment_s)
-
-            # Check if the segment is the one to use for this s
-            eta_x = if_else(segment_index == i, current_x, eta_x)
-            eta_y = if_else(segment_index == i, current_y, eta_y)
-
-            # Check for a large change in x or y
-            if i < num_segments - 1:
-                next_f_x, next_f_y = self.fitted_segments[i + 1]
-                next_x = next_f_x(0)
-                next_y = next_f_y(0)
-
-                large_change_x = fabs(next_x - current_x) > threshold
-                large_change_y = fabs(next_y - current_y) > threshold
-
-                # Use nested if_else to handle both conditions
-                eta_x = if_else(large_change_x, next_f_x(1), eta_x)
-                eta_y = if_else(large_change_y, next_f_y(1), eta_y)
-
-        eta = vertcat(eta_x, eta_y, 0.0)
-        return eta
-
-    def odom_callback(self, msg):
-        now = rclpy.time.Time()
-        x = msg.pose.pose.position.x
-        y = msg.pose.pose.position.y
-        quat = msg.pose.pose.orientation
-
-        quaternion = [quat.x, quat.y, quat.z, quat.w]
-
-        if len(quaternion) != 4:
-            raise Exception("Invalid quaternion received")
-        # Convert quaternion to Euler angles (yaw)
-        _, _, theta = euler_from_quaternion(quaternion)
-
-        self.current_state = np.array([x, y, theta])
-
-        # Create and publish the marker
-        marker = Marker()
-        marker.header.frame_id = 'map'
-        marker.header.stamp = now.to_msg()
-        marker.ns = 'robot_pose_marker'
-        marker.id = self.marker_id
-        marker.type = Marker.SPHERE  # Choose the shape you prefer
-        marker.action = Marker.ADD
-
-        # Set the pose of the marker to the robot's global position
-        marker.pose.position.x = x
-        marker.pose.position.y = y
-        # marker.pose.position.z = position.z  # Adjust if you want the marker above the robot
-        marker.pose.orientation = quat
-
-        # Set the scale of the marker
-        marker.scale.x = 0.2  # Adjust the size as needed
-        marker.scale.y = 0.2
-        marker.scale.z = 0.2
-
-        # Set the color of the marker (RGBA)
-        marker.color.r = 1.0
-        marker.color.g = 0.0
-        marker.color.b = 0.0
-        marker.color.a = 1.0  # Don't forget to set alpha to non-zero!
-
-        # Set the lifetime of the marker
-        marker.lifetime = Duration(nanosec=1_000_000_000)  # Marker lasts for 1 second
-
-        # Publish the marker
-        self.marker_publisher.publish(marker)
-
-        # Increment marker ID if needed (useful when adding/removing markers)
-        self.marker_id += 1
-
+    def g(self,v_max,eta):
+        return v_max/self.gamma(eta)
 
 
     def control_loop(self):
 
-        # Compute time difference (dt) for NMPC
-        current_time = time.time()
-        if self.last_time is None:
-            self.last_time = current_time
-            return
-
-        dt = current_time - self.last_time
-        self.last_time = current_time
+        now = self.get_clock().now()
 
         if self.start == 0:
             self.start = time.perf_counter()
@@ -292,38 +261,54 @@ class NMPCController(Node):
             self.dt = self.end - self.start
             self.start = self.end
 
-        if not self.initialized and hasattr(self, 'fitted_segments'):
+        if self.current_state.shape[0]<=0:
+            self.stop_robot()
+            return  # If the transform is unavailable, skip this control loop iteration
+
+        if self.goal.shape[0]>0:
+            goal_dist = self.dist(self.current_state,self.goal)
+        else:
+            goal_dist = 0
+
+        if not self.initialized and self.global_path!=None and self.ub_s!=None:
             self.setup_mpc(self.current_state)
             self.publish_reference_path()  # Publish the reference path once initialized
 
-        elif self.initialized:
-            goal_dist = self.dist(self.current_state, self.goal)
+        elif self.initialized and self.dt > 0 and goal_dist>0.2:
 
-            if goal_dist > 0.2:
+            self.x0 = np.append(self.current_state,np.array([self.s0]))
 
-                self.x0 = np.append(self.current_state,np.array([self.s0]))
+            self.solver.set(0, "p", np.transpose(self.obs_list).reshape((1, -1))[0].reshape((-1, 1)))
 
-                self.solver.set(0, "lbx", self.x0)
-                self.solver.set(0, "ubx", self.x0)
+            self.solver.set(0, "lbx", self.x0)
+            self.solver.set(0, "ubx", self.x0)
 
-                status = self.solver.solve()
+            status = self.solver.solve()
 
-                if status != 0:
-                    print(f"ACADOS returned status {status}")
-                    
-                usol = self.solver.get(0, "u")
+            if status != 0:
+                print(f"ACADOS returned status {status}")
+                
+            usol = self.solver.get(0, "u")
 
-                x_opt = np.array([self.solver.get(i, "x") for i in range(self.ocp.dims.N + 1)])
+            x_opt = np.array([self.solver.get(i, "x") for i in range(self.ocp.dims.N + 1)])
 
-                self.publish_control(usol)
-                self.publish_reference_path()
-                self.publish_ol_path(x_opt)
+            print(usol)
 
-                self.w0 = usol[2]
-                self.s0 += self.dt * self.w0
+            usol = self.convert_u(usol)
 
-            else:
-                self.stop_robot()
+            print(usol)
+
+            print("\n")
+
+            self.publish_control(usol)
+            self.publish_reference_path()
+            self.publish_ol_path(x_opt)
+
+            self.w0 = usol[2]
+            self.s0 += self.dt * self.w0
+            
+        else:
+            self.stop_robot()
 
     def stop_robot(self):
         # Publish zero velocity to stop the robot
@@ -331,22 +316,7 @@ class NMPCController(Node):
         twist.linear.x = 0.0
         twist.angular.z = 0.0
         self.cmd_vel_pub.publish(twist)
-
-    def update_current_state_from_tf(self):
-        try:
-            # Set a timeout for the transform lookup
-            timeout = rclpy.time.Duration(seconds=2.0)  # Set a 2-second timeout
-
-            # Get the transformation between 'map' and 'odom'
-            transform = self.tf_buffer.lookup_transform('map', 'base_footprint', rclpy.time.Time(), timeout)
-
-
-        except tf2_ros.LookupException:
-            self.get_logger().warn("Transform not found from 'map' to 'base_footprint'. Waiting for it...")
-        except tf2_ros.ExtrapolationException as e:
-            self.get_logger().warn(f"Extrapolation error: {str(e)}")
-        except Exception as e:
-            self.get_logger().warn(f"Error in transform from 'map' to 'base_footprint': {str(e)}")
+        print("stopped")
 
 
     def dist(self, current, goal):
@@ -394,98 +364,31 @@ class NMPCController(Node):
         twist_msg.angular.z = control_input[1]
         self.cmd_vel_pub.publish(twist_msg)
 
+    def convert_u(self,usol):
+        u = [0,0,0]
+
+        u[0] = 0.02 + usol[0]*(0.15-0.02)
+        u[1] = np.sign(usol[1])*0.05 + usol[1]*(0.15-0.05)
+        u[2] = 0.8 * usol[2]
+
+        return u
+
     def setup_mpc(self, x0):
         self.x0 = np.append(x0,np.array([self.s0]))
         self.initialized = True
 
         # Initialize NMPC settings after global path is received and processed
         self.ocp = self.setup_ocp_with_cost_function()
+
+        # Make sure coeff_x and coeff_y are properly flattened and concatenated
+        parameter_values = np.transpose(self.obs_list).reshape((1, -1))[0].reshape((-1, 1))
+
+        # Initialize the solver
         self.solver = AcadosOcpSolver(self.ocp, json_file="acados_ocp.json")
 
-    def get_lidar_frame_transform(self):
-        """Manually extract the translation and yaw angle from 'lidar_frame' to 'map'."""
-        try:
-            # Get the transform between 'map' and 'lidar_frame'
-            transform = self.tf_buffer.lookup_transform('map', 'lidar_frame', rclpy.time.Time())
-
-            # Extract the translation
-            translation = transform.transform.translation
-            translation_vec = np.array([translation.x, translation.y, translation.z])
-
-            # Extract the rotation quaternion and convert it to euler angles (yaw is the Z-axis rotation)
-            rotation = transform.transform.rotation
-            quaternion = [rotation.x, rotation.y, rotation.z, rotation.w]
-            _, _, yaw = euler_from_quaternion(quaternion)
-
-            return translation_vec, yaw
-
-        except Exception as e:
-            self.get_logger().warn(f"Could not get transform for lidar_frame: {str(e)}")
-            return None, None
-
-    def manually_transform_point(self, point, translation_vec, yaw):
-        """Manually transform a point using translation and yaw rotation."""
-        cos_yaw = math.cos(yaw)
-        sin_yaw = math.sin(yaw)
-        rotation_matrix = np.array([[cos_yaw, -sin_yaw],
-                                    [sin_yaw, cos_yaw]])
-
-        # Apply the rotation to the point (assuming z=0, planar motion)
-        point_vec = np.array([point.x, point.y])
-        rotated_point_vec = np.dot(rotation_matrix, point_vec)
-
-        transformed_point = Point(x=rotated_point_vec[0] + translation_vec[0],
-                                  y=rotated_point_vec[1] + translation_vec[1],
-                                  z=0.0)
-        return transformed_point
-
-    def scan_callback(self, msg):
-        try:
-            # Get the translation and yaw angle for manual transform
-            translation_vec, yaw = self.get_lidar_frame_transform()
-
-            # If the transform isn't available, skip this callback
-            if translation_vec is None or yaw is None:
-                return
-
-            # Create a point for lidar_frame_center
-            lidar_frame_center = Point(x=translation_vec[0], y=translation_vec[1], z=translation_vec[2])
-
-            # Filters for range limits
-            min_range = 0.1  # Minimum valid range value (ignore too close points)
-            max_range = 10.0  # Maximum valid range value (ignore far points)
-
-            # Process the scan data and manually transform all points first
-            angle = msg.angle_min
-            transformed_points = []
-            for i in range(len(msg.ranges)):
-                range_value = msg.ranges[i]
-
-                # Skip invalid points (out of range or zero)
-                if range_value < min_range or range_value > max_range:
-                    angle += msg.angle_increment
-                    continue
-
-                # Calculate the position of the point in the lidar_frame
-                x = range_value * math.cos(angle)
-                y = range_value * math.sin(angle)
-                point = Point(x=x, y=y, z=0.0)
-
-                # Manually transform the point from lidar_frame to map frame
-                transformed_point = self.manually_transform_point(point, translation_vec, yaw)
-
-                transformed_points.append(transformed_point)
-
-                # Increment the angle for the next scan point
-                angle += msg.angle_increment
-
-            # Now calculate the polygon matrix (Ax + By <= C) for the lines through each pair of points
-            self.compute_subshapes_and_plot(lidar_frame_center, transformed_points)
-
-        except Exception as e:
-            self.get_logger().error(f"Error processing scan: {str(e)}")
- 
-
+        # Set the parameter values in the solver
+        self.solver.set(0, "p", parameter_values)
+        
     def dist(self,current,goal):
         return np.sqrt((current[0]-goal[0])**2 + (current[1]-goal[1])**2)
 
@@ -511,34 +414,17 @@ class NMPCController(Node):
 
         self.ol_path_pub.publish(ol_path)
 
-    def publish_reference_path(self):
-        ref_path = Path()
-        ref_path.header.stamp = self.get_clock().now().to_msg()
-        ref_path.header.frame_id = "map"  # Adjust frame_id to your setup
-
-        for s in np.linspace(self.lb_s, self.ub_s, num=100):
-            eta_val = self.reference_traj(s)
-            pose = PoseStamped()
-            pose.header.stamp = ref_path.header.stamp
-            pose.header.frame_id = ref_path.header.frame_id
-            pose.pose.position.x = float(eta_val[0])
-            pose.pose.position.y = float(eta_val[1])
-            pose.pose.position.z = 0.0
-            # Assume no orientation or flat trajectory, set quaternion accordingly
-            pose.pose.orientation.x = 0.0
-            pose.pose.orientation.y = 0.0
-            pose.pose.orientation.z = 0.0
-            pose.pose.orientation.w = 1.0
-            ref_path.poses.append(pose)
-
-        self.ref_path_pub.publish(ref_path)
-
     def publish_control(self, control_input):
         twist_msg = Twist()
         twist_msg.linear.x = control_input[0]
         twist_msg.angular.z = control_input[1]
         self.cmd_vel_pub.publish(twist_msg)
 
+    def obstacle(self, x, obs):
+
+        h = if_else(obs[2] > 0,fmax(obs[2]**2 - (x[0]-obs[0]) ** 2 - (x[1]-obs[1]) ** 2, 0),0)
+
+        return h
 
     def mobile_robot_ode(self):
         # Define state variables
@@ -556,9 +442,11 @@ class NMPCController(Node):
         states = vertcat(x, y, theta, s)
         controls = vertcat(v, omega, w)
 
+        obs_list = SX.sym("obs", self.max_obs, 3)
+
         # System dynamics
-        dx = v * cos(theta)
-        dy = v * sin(theta)
+        dx = v * ca.cos(theta)
+        dy = v * ca.sin(theta)
         dtheta = omega
         ds = w
 
@@ -570,6 +458,8 @@ class NMPCController(Node):
         model.f_expl_expr = xdot
         model.x = states
         model.u = controls
+
+        model.p = ca.reshape(obs_list, -1, 1)
         model.name = "mobile_robot"
 
         return model
@@ -579,17 +469,20 @@ class NMPCController(Node):
         model = self.mobile_robot_ode()
         ocp.model = model
 
-        N = 6
-        Ts = 1
+        N = 20
+        Ts = 0.3
         T = N * Ts
+
+        mu=5*10**5
 
         ocp.dims.N = N
         ocp.solver_options.tf = T
 
         # Define weights
-        Q = np.diag([100, 100, 0])  # Adjust the weights as needed for state deviation
-        R = np.diag([1, 1])  # Control effort weights
-        T_cost = np.array([15])  # Weight for time dilation cost
+        Q = np.diag([1000, 1000, 0])  # Adjust the weights as needed for state deviation
+        R = np.diag([0.01, 0.01])  # Control effort weights
+        T_cost = np.array([10])  # Weight for time dilation cost
+
 
         # State variables
         x = ocp.model.x[:3]  # (x, y, theta)
@@ -597,16 +490,23 @@ class NMPCController(Node):
         w = ocp.model.u[2]  # w is the third control input
         s = ocp.model.x[3]  # s is the path parameter
 
+        obs_list = ca.reshape(ocp.model.p, self.max_obs, 3)
+
         # Reference trajectory
         xi_s = self.reference_traj(s)
         dx = x - xi_s
 
         # Define cost function expressions
         ocp.model.cost_y_expr = vertcat(dx, u, (1 - w))
+
+        for i in range(self.max_obs):
+            ocp.model.cost_y_expr = vertcat(ocp.model.cost_y_expr,self.obstacle(x, obs_list[i, :]))
+
         ocp.model.cost_y_expr_e = vertcat(dx)
 
         # Ensure the dimensions match the weights
-        ocp.cost.W = block_diag(Q, R, T_cost)
+        ocp.cost.W = block_diag(Q, R, T_cost,0.5*mu*np.diag([1]*self.max_obs))
+        # ocp.cost.W = block_diag(Q, R, T_cost)
         ocp.cost.W_e = Q
 
         # Provide an initial reference value for `yref` and `yref_e`
@@ -619,8 +519,11 @@ class NMPCController(Node):
         ocp.constraints.ubx = np.array([self.ub_s])  # Upper bound for `s`
         ocp.constraints.idxbx = np.array([3])  # Index of the constrained state (s)
 
-        ocp.constraints.lbu = np.array([0, -0.1, 0])  # Lower bounds for (v, omega, w)
-        ocp.constraints.ubu = np.array([0.1, 0.1, 1])  # Upper bounds for (v, omega, w)
+        # Set parameter values (initialize as zeros, these will be updated during execution)
+        ocp.parameter_values = np.zeros((self.max_obs*3, 1))
+
+        ocp.constraints.lbu = np.array([0, -0.7, 0])  # Lower bounds for (v, omega, w)
+        ocp.constraints.ubu = np.array([1, 0.7, 1])  # Upper bounds for (v, omega, w)
         ocp.constraints.idxbu = np.array([0, 1, 2])
 
         # Set the cost type to NONLINEAR_LS
@@ -645,16 +548,16 @@ class NMPCController(Node):
         ocp.solver_options.levenberg_marquardt = 1e-4
 
         # Set the initial state directly
-        x0_initial = np.array([4, 0, 0, 0])  # (x, y, theta, s)
+        x0_initial = np.append(self.current_state,np.array([self.s0]))  # (x, y, theta, s)
         ocp.constraints.x0 = x0_initial
 
         return ocp
 
-    def save_to_csv(self, filename='nmpc_data_log.csv'):
+    def save_to_csv(self, filename='path_data_log.csv'):
         """Save the logged x, y, theta, s data to a CSV file."""
         with open(filename, mode='w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(['x', 'y', 'theta', 's','obs1_x','obs1_y','obs1_r','obs2_x','obs2_y','obs2_r'])  # Header
+            writer.writerow(['x', 'y'])  # Header
             writer.writerows(self.data_log)
         self.get_logger().info(f'Data saved to {filename}')
 

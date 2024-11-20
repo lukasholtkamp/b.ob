@@ -97,6 +97,8 @@ class NMPCController(Node):
         self.ref_path = None
         self.global_path = None
 
+        self.old_vel = None
+
     def amcl_pose_callback(self, msg):
         # Extract position and orientation from the AMCL pose
         x = msg.pose.pose.position.x
@@ -292,13 +294,10 @@ class NMPCController(Node):
 
             x_opt = np.array([self.solver.get(i, "x") for i in range(self.ocp.dims.N + 1)])
 
-            print(usol)
 
             usol = self.convert_u(usol)
 
-            print(usol)
-
-            print("\n")
+            usol = self.low_pass_filter(usol, self.old_vel)
 
             self.publish_control(usol)
             self.publish_reference_path()
@@ -306,6 +305,8 @@ class NMPCController(Node):
 
             self.w0 = usol[2]
             self.s0 += self.dt * self.w0
+
+            self.old_vel = usol
             
         else:
             self.stop_robot()
@@ -357,6 +358,12 @@ class NMPCController(Node):
             ref_path.poses.append(pose)
 
         self.ref_path_pub.publish(ref_path)
+
+    def low_pass_filter(self,usol, old_usol, alpha=0.2):
+        """Applies a low-pass filter to smooth the control output."""
+        usol[0] = alpha * usol[0] + (1 - alpha) * old_usol[0]
+        usol[1] = alpha * usol[1] + (1 - alpha) * old_usol[1]
+        return usol
 
     def publish_control(self, control_input):
         twist_msg = Twist()
