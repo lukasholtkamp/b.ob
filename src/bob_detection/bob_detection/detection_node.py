@@ -601,33 +601,6 @@ class Detection(Node):
         ]
         return points
 
-    def publish_arrow_as_pointcloud(
-        self, prev_x, prev_y, mean_x, mean_y, length, all_arrow_points
-    ):
-        # Parameters for the arrow as a line of points
-        num_points = 30  # Number of points along the arrow's length
-
-        # Calculate the angle from start to end point for orientation
-        delta_x = mean_x - prev_x
-        delta_y = mean_y - prev_y
-        angle = math.atan2(delta_y, delta_x)
-
-        # Calculate the points along the direction of the arrow
-        points = np.array(
-            [
-                (
-                    mean_x + i * (length / num_points) * math.cos(angle),
-                    mean_y + i * (length / num_points) * math.sin(angle),
-                    0.0,
-                )
-                for i in range(num_points + 1)  # Including both start and end points
-            ],
-            dtype=np.float32,
-        )
-
-        # Append points for this arrow to the main list of all points
-        all_arrow_points.extend(points)
-
     def publish_all_arrows_as_pointcloud(self, all_arrow_points):
         # Define the fields for x, y, z in the PointCloud2 message
         fields = [
