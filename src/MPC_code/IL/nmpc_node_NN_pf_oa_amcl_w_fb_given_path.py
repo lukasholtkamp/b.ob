@@ -116,7 +116,7 @@ class NMPCController(Node):
         self.obs_position = None  # Replace with your desired position
         self.obs_s = 35
         self.obs_d = 0.58
-        self.obs_r = 0.17  # Set the radius
+        self.obs_r = 0.0  # Set the radius
 
     def publish_circle_marker(self, height=0.1, frame_id='map'):
         """
@@ -390,12 +390,12 @@ class NMPCController(Node):
 
             if eta>=0:
                 if relevant_flag:
-                    input = np.array([[x_hat, y_hat, theta_hat, s_hat, eta,obs_x_hat,_obs_y_hat,self.obs_r]])  # Shape: (1, 8)
+                    input = np.array([[x_hat, y_hat, theta_hat, s_hat, eta,0,0,0]])  # Shape: (1, 8)
                 else:#
                     input = np.array([[x_hat, y_hat, theta_hat, s_hat, eta,0,0,0]])  # Shape: (1, 8)
             else:
                 if relevant_flag:
-                    input = np.array([[x_hat, -y_hat, -theta_hat, s_hat, -eta,obs_x_hat,_obs_y_hat,self.obs_r]])  # Shape: (1, 8)
+                    input = np.array([[x_hat, -y_hat, -theta_hat, s_hat, -eta,0,0,0]])  # Shape: (1, 8)
                 else:
                     input = np.array([[x_hat, y_hat, theta_hat, s_hat, eta,0,0,0]])  # Shape: (1, 8)
 
@@ -533,7 +533,6 @@ class NMPCController(Node):
             writer.writerow(['x', 'y'])  # Header
             writer.writerows(self.data_log)
         self.get_logger().info(f'Data saved to {filename}')
-
 
 
 def main(args=None):

@@ -379,7 +379,6 @@ f_s = ca.Function('f_s', [s], [selected_result])
 
 # T_z_with_random_s_per_segment_with_transform_plot(path_segments, f_s,v_max=0.1,eps=0.15)
 
-
 # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
 # circle = plt.Circle((4, 3.5), 0.5, color='blue', fill=False)
@@ -453,6 +452,33 @@ f_s = ca.Function('f_s', [s], [selected_result])
 # plt.show()
 
 
+from tensorflow.keras.models import load_model
+import tensorflow as tf
+import keras
+# Enable unsafe deserialization
+keras.config.enable_unsafe_deserialization()
+
+class CollisionPenaltyLayer(tf.keras.layers.Layer):
+    def __init__(self, safety_margin=0.41, penalty_weight=10, **kwargs):
+        super(CollisionPenaltyLayer, self).__init__(**kwargs)
+        self.safety_margin = safety_margin
+        self.penalty_weight = penalty_weight
+
+    def call(self, inputs):
+        # Extract input components
+        x, y = inputs[:, 0], inputs[:, 1]
+        obs_x, obs_y, obs_r = inputs[:, 5], inputs[:, 6], inputs[:, 7]
+
+        # Compute distance to the obstacle
+        dist_to_obs = tf.sqrt((x - obs_x)**2 + (y - obs_y)**2)
+
+        # Compute collision penalty
+        collision_penalty = tf.nn.relu(self.safety_margin - dist_to_obs)
+
+        # Scale the penalty
+        scaled_penalty = self.penalty_weight * collision_penalty
+        return scaled_penalty
+
 class NMPCController:
     def __init__(self):
         # NMPC Parameters
@@ -474,12 +500,14 @@ class NMPCController:
         # Set obstacle at (3, 0.5) with a radius of 0.03
         self.max_obs = 1
 
-        self.obs_s = 35
-        self.obs_d = 0.58
+        self.obs_s = 40
+        self.obs_d = 0.1
+        self.obs_r = 0.17
+        self.obs_inflation = 0.18
 
         self.obs_x, self.obs_y = get_deviated_point(path_segments, self.obs_s, self.obs_d)
 
-        self.obs_list = np.array([[self.obs_x, self.obs_y, 0.17]])  # Single obstacle
+        self.obs_list = np.array([[self.obs_x, self.obs_y, self.obs_r]])  # Single obstacle
 
         # Setup MPC
         self.ocp = self.setup_ocp_with_cost_function()
@@ -488,6 +516,12 @@ class NMPCController:
         self.closed_loop_trajectory = []
 
         self.final_position = f_s(path_segments[-1].end_time).full().flatten()
+
+        self.obs_model = load_model("/home/bertrandt/b.ob/src/MPC_code/IL/path_following_obs_avoidance_attention.h5")
+
+        # self.obs_model = tf.keras.models.load_model("/home/bertrandt/b.ob/src/MPC_code/IL/path_following_obs_avoidance_with_penalty.keras",custom_objects={"CollisionPenaltyLayer": CollisionPenaltyLayer})
+        
+        self.pf_model = load_model("/home/bertrandt/b.ob/src/MPC_code/IL/path_following_model.h5")
 
 
     def mobile_robot_ode(self):
@@ -739,6 +773,80 @@ class NMPCController:
         plt.axis('equal')
         plt.show()
 
+    def run_NN_obs_n(self,n=50):
+
+        for _ in range(n):
+
+            x_hat, y_hat, theta_hat, s_hat, eta,obs_x_hat,obs_y_hat,relevant_flag = T_z_obs(path_segments, self.current_state[0], self.current_state[1], self.current_state[2], self.current_state[3], self.obs_x, self.obs_y,self.obs_r)
+
+            if eta>=0:
+                if relevant_flag:
+                    input = np.array([[x_hat, y_hat, theta_hat, s_hat, eta,obs_x_hat,obs_y_hat,self.obs_r+self.obs_inflation]])  # Shape: (1, 8)
+                else:
+                    input = np.array([[x_hat, y_hat, theta_hat, s_hat, eta,0,0,0]])  # Shape: (1, 8)
+            else:
+                if relevant_flag:
+                    input = np.array([[x_hat, -y_hat, -theta_hat, s_hat, -eta,obs_x_hat,-obs_y_hat,self.obs_r+self.obs_inflation]])  # Shape: (1, 8)
+                else:
+                    input = np.array([[x_hat, -y_hat, -theta_hat, s_hat, -eta,0,0,0]])  # Shape: (1, 8)
+
+
+            usol = self.obs_model.predict(input)
+            
+            if eta<0:
+                usol[0][1] *= -1
+
+            # print(usol)
+
+            usol[0][0] = np.clip(usol[0][0], 0.01, 1)
+            usol[0][1] = np.clip(usol[0][1], -0.8, 0.8)
+            usol[0][2] = np.clip(usol[0][2], 0.01, 1)
+
+            Pt = 1.0
+            Pn = 1.0
+
+            en,et,phi = error(path_segments,self.current_state,self.current_state[3])
+                
+            usol[0][0]-= Pt*et
+            usol[0][1]-= Pn*en
+
+            self.current_state = self.simulate_kinematic_step(self.current_state, usol[0], self.Ts_sim)
+
+            self.closed_loop_trajectory.append(self.current_state[:3])  # Store (x, y, theta)
+
+    def run_NN_pf_n(self,n=50):
+
+        for _ in range(n):
+
+            x_hat, y_hat, theta_hat, s_hat, eta = T_z(path_segments, self.current_state[0], self.current_state[1], self.current_state[2], self.current_state[3])
+
+            if eta>=0:
+                input = np.array([[x_hat, y_hat, theta_hat, s_hat, eta]])  # Shape: (1, 5)
+            else:
+                input = np.array([[x_hat, -y_hat, -theta_hat, s_hat, -eta]])  # Shape: (1, 5)
+
+            # Make predictions using the model
+            usol = self.pf_model.predict(input)
+            
+            if eta<0:
+                usol[0][1] *= -1
+
+            usol[0][0] = np.clip(usol[0][0], 0, 1)
+            usol[0][1] = np.clip(usol[0][1], -0.8, 0.8)
+            usol[0][2] = np.clip(usol[0][2], 0, 1)
+                
+            Pt = 1.0
+            Pn = 1.0
+
+            en,et,phi = error(path_segments,self.current_state,self.current_state[3])
+                
+            usol[0][0]-= Pt*et
+            usol[0][1]-= Pn*en
+
+            self.current_state = self.simulate_kinematic_step(self.current_state, usol[0], self.Ts_sim)
+
+            self.closed_loop_trajectory.append(self.current_state[:3])  # Store (x, y, theta)
+
 if __name__ == "__main__":
     controller = NMPCController()
     # usol, x_opt = controller.run_mpc()
@@ -748,5 +856,5 @@ if __name__ == "__main__":
     # # Plot results
     # controller.plot_results(x_opt)
 
-    controller.run_mpc_loop_n(n=1400)
+    controller.run_NN_obs_n(n=1400)
     controller.plot_closed_loop()

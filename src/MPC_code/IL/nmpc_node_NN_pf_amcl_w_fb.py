@@ -55,7 +55,9 @@ class NMPCController(Node):
         self.T = 10
 
         # Other initializations
-        self.cmd_vel_pub = self.create_publisher(Twist, '/diffbot_base_controller/cmd_vel_unstamped', 10)
+        # self.cmd_vel_pub = self.create_publisher(Twist, '/diffbot_base_controller/cmd_vel_unstamped', 10)
+        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+
         self.ref_path_pub = self.create_publisher(Path, '/ref_path', 10)
         self.ol_path_pub = self.create_publisher(Path, '/ol_path', 10)
         self.amcl_pose_sub = self.create_subscription(PoseWithCovarianceStamped,'/amcl_pose',self.amcl_pose_callback,10)

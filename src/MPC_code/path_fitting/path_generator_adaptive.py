@@ -4,19 +4,25 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import casadi as ca
 import random
+import control as ct
+import csv
+from acados_template import AcadosOcp, AcadosOcpSolver, AcadosModel
 
-from .waypoint_filter import *
-from .line_fitting import *
-from .transform import *
-from .path_segments import *
-from .plotting import *
+from matplotlib.patches import Circle
 
+from waypoint_filter import *
+from line_fitting import *
+from transform import *
+from path_segments import *
+from plotting import *
 
-def LSPB_fit(waypoints,n,epsilon,v_max):
+def LSPB_fit(n,epsilon,v_max=0.1):
+
+    file_path = '/home/bertrandt/b.ob/src/MPC_code/path_fitting/path_data_log_2.csv'
 
     # Get the selected waypoints and their original indices
-    original_indices, selected_waypoints = select_waypoints_with_indices(waypoints, n)
-    
+    original_indices, selected_waypoints, waypoints = select_waypoints_with_indices(file_path, n)
+
     # Get the indices and the processed waypoints
     processed_indices, processed_waypoints = preprocess_segments_by_deviation(selected_waypoints, original_indices)
 
@@ -300,18 +306,12 @@ def LSPB_fit(waypoints,n,epsilon,v_max):
 
         prev_end_time = segment.end_time
 
-    return path_segments, selected_waypoints
+    return path_segments
     
+
 def f(segments, s):
     result = ca.MX.zeros(3)  # Initialize a CasADi variable to store the selected (x, y) result
 
-    # Handle the case where s is less than the first segment's start_time (e.g., s < 0)
-    first_segment = segments[0]
-    result = ca.if_else(s < first_segment.start_time,
-                        first_segment.f(first_segment.start_time),  # Return the first segment's start point
-                        result)
-    
-    # Iterate through the segments to select the appropriate one
     for segment in segments:
         # Use ca.logic_and to check if s falls within the current segment's time bounds
         condition = ca.logic_and(s >= segment.start_time, s <= segment.end_time)
@@ -328,105 +328,101 @@ def f(segments, s):
                         result)
     
     return result
+    
+path_segments = LSPB_fit(20,0.15,0.1)
 
 
-# # Define the CasADi variable for s
-# s = ca.MX.sym('s')
+# Define the CasADi variable for s
+s = ca.MX.sym('s')
 
-# # Select the correct segment and calculate (x, y) for the given value of s
-# selected_result = f(path_segments, s)
+# Select the correct segment and calculate (x, y) for the given value of s
+selected_result = f(path_segments, s)
 
-# # Define a CasADi function to evaluate the selected (x, y) for a given s
-# f_s = ca.Function('f_s', [s], [selected_result])
-
-# T_z_with_random_s_per_segment_with_transform_plot(path_segments, f_s,v_max,epsilon)
-
-# s = 1.0          # Example value for forward speed (adjust based on your control inputs)
-# phi_hat = 0.5    # Example orientation angle in radians (adjust as necessary)
-# Delta_t = 0.1    # Discrete time step in seconds (adjust as needed)
-
-# # State transition matrix A
-# A = np.array([
-#     [1, 0, -s * np.sin(phi_hat) * Delta_t, 0],
-#     [0, 1,  s * np.cos(phi_hat) * Delta_t, 0],
-#     [0, 0, 1, 0],
-#     [0, 0, 0, 1]
-# ])
-
-# # Control matrix B
-# B = np.array([
-#     [np.cos(phi_hat) * Delta_t, 0, 0],
-#     [np.sin(phi_hat) * Delta_t, 0, 0],
-#     [0, Delta_t, 0],
-#     [0, 0, Delta_t]
-# ])
-
-# Q=0
-# R=0
-
-# P,L,K = ct.dare(A,B,Q,R)
-
-# K = -np.array(K)
-
-# fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-
-# for i, segment in enumerate(path_segments):
-
-#     if segment.segment_type == 'line':
-#         s = np.linspace(segment.start_time, segment.end_time-0.01, 1000)
-#         x_vals = []
-#         y_vals = []
-
-#         for s_value in s:
-#             result = f_s(s_value)
-#             x_vals.append(float(result[0]))
-#             y_vals.append(float(result[1]))
-
-#         ax1.plot(x_vals, y_vals, 'r-', label="Full Path using f_s")
-#         ax1.set_title(f"Original Segment and Input Positions")
-#         ax1.set_xlabel('x')
-#         ax1.set_ylabel('y')
-#         ax1.grid(True)
-
-#         tfx = []
-#         tfy = []
-
-#         for i in range(len(x_vals)):
-#             point = segment.inv_transform_p((x_vals[i],y_vals[i]))
-#             tfx.append(point[0])
-#             tfy.append(point[1])
-
-#         ax2.plot(tfx,tfy,'g-')
+# Define a CasADi function to evaluate the selected (x, y) for a given s
+f_s = ca.Function('f_s', [s], [selected_result])
 
 
-#     if segment.segment_type == 'parabola':
-        
-#         s = np.linspace(segment.start_time, segment.end_time-0.01, 1000)
-#         x_vals = []
-#         y_vals = []
+# Plotting Code with Safety Radius for Point-wise Intersection Check and Highlighting Closest Endpoints Outside
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
-#         for s_value in s:
-#             result = f_s(s_value)
-#             x_vals.append(float(result[0]))
-#             y_vals.append(float(result[1]))
+# Define obstacle properties
+obs_x, obs_y, obs_r = 2, 0.2, 0.17
+safety_radius = 0.18  # Define the safety radius
 
-#         ax1.plot(x_vals, y_vals, 'b-', label="Full Path using f_s")
-#         ax1.set_title(f"Original Segment and Input Positions")
-#         ax1.set_xlabel('x')
-#         ax1.set_ylabel('y')
-#         ax1.grid(True)
+# Draw the obstacle with safety radius as a circle
+total_radius = obs_r + safety_radius
+circle = plt.Circle((obs_x, obs_y), obs_r, color='blue', fill=False)
+ax1.add_patch(circle)
 
-#         tfx = []
-#         tfy = []
+# Loop through path segments and plot points only if they do not intersect the obstacle
+for segment in path_segments:
+    s = np.linspace(segment.start_time, segment.end_time - 0.01, 1000)
+    x_vals = []
+    y_vals = []
 
-#         for i in range(len(x_vals)):
-#             point = segment.inv_transform_p((x_vals[i],y_vals[i]))
-#             tfx.append(point[0])
-#             tfy.append(point[1])
+    intersection_detected = False  # To track if any point intersects with the obstacle
 
-#         ax2.plot(tfx,tfy,'g-')
+    for s_value in s:
+        # Evaluate the point on the segment using the f_s function
+        result = f_s(s_value)
+        x, y = float(result[0]), float(result[1])
 
-#     print(segment.eta)
+        # Calculate distance from the point to the circle center
+        distance = np.linalg.norm(np.array([x, y]) - np.array([obs_x, obs_y]))
 
-# plt.show()
+        # Append the point only if it does not fall within the obstacle + safety radius
+        if distance > total_radius:
+            x_vals.append(x)
+            y_vals.append(y)
+        else:
+            intersection_detected = True
+
+    # Plotting the segment points that do not intersect with the obstacle
+    if len(x_vals) > 0:
+        color = 'r-' if segment.segment_type == 'line' else 'b-'  # Red for lines, Blue for parabolas
+        ax1.plot(x_vals, y_vals, color, label="Full Path using f_s")
+        ax1.set_title("Original Segment and Input Positions")
+        ax1.set_xlabel('x')
+        ax1.set_ylabel('y')
+        ax1.grid(True)
+
+        # Highlight closest start or endpoint that is outside the obstacle
+        if intersection_detected:
+            start_point = np.array(segment.start_point)
+            end_point = np.array(segment.end_point)
+            obstacle_center = np.array([obs_x, obs_y])
+
+            # Calculate distances to the obstacle center
+            distance_to_start = np.linalg.norm(start_point - obstacle_center)
+            distance_to_end = np.linalg.norm(end_point - obstacle_center)
+
+            # Determine the closest point that is outside the obstacle radius
+            closest_point = None
+            if distance_to_start > total_radius and distance_to_end > total_radius:
+                closest_point = start_point if distance_to_start < distance_to_end else end_point
+            elif distance_to_start > total_radius:
+                closest_point = start_point
+            elif distance_to_end > total_radius:
+                closest_point = end_point
+
+            # Highlight the closest point in red
+            if closest_point is not None:
+                ax1.plot(closest_point[0], closest_point[1], 'ro', markersize=8)
+
+        # Mark the start and end points
+        ax1.plot(segment.start_point[0], segment.start_point[1], 'ko')
+        ax1.plot(segment.end_point[0], segment.end_point[1], 'ko')
+
+        # Inverse transform plotting (optional)
+        tfx = []
+        tfy = []
+
+        for i in range(len(x_vals)):
+            point = segment.inv_transform_p((x_vals[i], y_vals[i]))
+            tfx.append(point[0])
+            tfy.append(point[1])
+
+        ax2.plot(tfx, tfy, 'g-')
+
+plt.show()
 

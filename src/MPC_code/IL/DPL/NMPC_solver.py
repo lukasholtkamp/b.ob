@@ -99,29 +99,6 @@ def objective_cost(X, U, S_a, W, N, reference_trajectory, dyn_cost_fcn, Q):
     J += bilin(Q, X[:, N] - reference_trajectory(S_a[N]))
     return J
 
-def objective_cost(X, U, S_a, W, N, reference_trajectory, dyn_cost_fcn, Q, obs_list, mu=8 * 10**2):
-    J = 0.0
-    for i in range(N):
-        dx = X[:, i] - reference_trajectory(S_a[i])
-        du = U[:, i]
-        J += dyn_cost_fcn(dx, du, W[i])
-
-        # Obstacle avoidance term
-        for obs in obs_list:
-            obs_x, obs_y, obs_radius = obs
-            h = fmax((obs_radius + 0.23)**2 - (X[0, i] - obs_x)**2 - (X[1, i] - obs_y)**2, 0)
-            J += 0.5 * mu * h**2  # Add weighted obstacle cost
-
-    # Terminal cost with obstacles
-    J += bilin(Q, X[:, N] - reference_trajectory(S_a[N]))
-    for obs in obs_list:
-        obs_x, obs_y, obs_radius = obs
-        h_e = fmax((obs_radius + 0.23)**2 - (X[0, N] - obs_x)**2 - (X[1, N] - obs_y)**2, 0)
-        J += 0.5* mu * h_e**2  # Add weighted terminal obstacle cost
-
-    return J
-
-
 # Define the equality constraints function outside of run_open_loop_mpc
 def equality_constraints(X, U, S_a, W, P_a, Ts, system, N, nx):
     g = []  # Equality constraints initialization
@@ -139,14 +116,13 @@ def equality_constraints(X, U, S_a, W, P_a, Ts, system, N, nx):
     return g
 
 # The main function that uses the above-defined functions
-def run_open_loop_mpc(v_max, x0, s0, eta, obs_list):
+def run_open_loop_mpc(v_max, x0, s0, eta):
     # Controller frequency and prediction horizon
     Ts = 0.3
-    N = 60
+    N = 20
     nx = 3
     nu = 2
     T = 10
-    mu = 8 * 10**2
     
     x = SX.sym('x', nx)
     u = SX.sym('u', nu)
@@ -166,14 +142,14 @@ def run_open_loop_mpc(v_max, x0, s0, eta, obs_list):
     
     P_a = SX.sym('P_a', nx + 1)
     
-    Q = np.diag([10, 10, 0])
-    R = np.diag([1, 1])
+    Q = np.diag([1000, 1000, 0])
+    R = np.diag([0.001, 0.001])
     
     V_dyn = bilin(Q, x) + bilin(R, u) + bilin(T, (1 - w))
     dyn_cost_fcn = Function("dyn_cost", [x, u, w], [V_dyn])
     
     # Call the objective cost function
-    J = objective_cost(X, U, S_a, W, N, reference_trajectory, dyn_cost_fcn, Q,obs_list,mu)
+    J = objective_cost(X, U, S_a, W, N, reference_trajectory, dyn_cost_fcn, Q)
     
     g = equality_constraints(X, U, S_a, W, P_a, Ts, system, N, nx)
     G = vertcat(*g)
@@ -238,16 +214,12 @@ def run_open_loop_mpc(v_max, x0, s0, eta, obs_list):
     
     return x_pred, u
 
-# x0 = np.array([-0.5, -0.1, -np.pi/4])  # Initial state [x, y, theta]
-# s0 = 1  # Initial reference position
+# x0 = np.array([-0.1, -0.1, -np.pi/2-np.pi/4])  # Initial state [x, y, theta]
+# s0 = 0  # Initial reference position
 # v_max = 1
 # eta_val = 0
 
-# # Define the obstacles (example: [x, y, radius])
-# obs_list = [[0.0, 0.0, 0.17+0.18]]  # You can modify or add more obstacles
-
-
-# x_pred, u = run_open_loop_mpc(v_max, x0, s0, eta_val, obs_list=obs_list)
+# x_pred, u = run_open_loop_mpc(v_max, x0, s0, eta_val)
 
 # # Create CasADi function for reference trajectory
 
@@ -270,12 +242,6 @@ def run_open_loop_mpc(v_max, x0, s0, eta, obs_list):
 # # Plot the reference trajectory
 
 # plt.figure(figsize=(10, 6))
-
-# # Plot obstacles
-# for obs in obs_list:
-#     obs_x, obs_y, obs_radius = obs
-#     obstacle_circle = plt.Circle((obs_x, obs_y), obs_radius, color='orange', alpha=0.5, label='Obstacle' if obs == obs_list[0] else "")
-#     plt.gca().add_patch(obstacle_circle)
 
 # # Calculate the coordinates for s0 on the reference trajectory
 # s0_x, s0_y = reference_traj_func(s0, eta_val)

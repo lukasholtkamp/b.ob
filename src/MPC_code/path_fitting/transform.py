@@ -197,6 +197,9 @@ def error(path_segments,current_state,s):
     if s>path_segments[-1].end_time:
         current_segment = path_segments[-1]
 
+    if s<0:
+        current_segment = path_segments[0]
+
     # Get the point on the path at f(s)
     path_point = current_segment.f(s)
     path_x, path_y = float(path_point[0]), float(path_point[1])
@@ -232,6 +235,9 @@ def get_deviated_point(path_segments, s, deviation):
     
     if s > path_segments[-1].end_time:
         current_segment = path_segments[-1]
+
+    if s < 0:
+        current_segment = path_segments[0]
 
     # Get the point on the path at s
     path_point = current_segment.f(s)
@@ -281,6 +287,9 @@ def T_z(path_segments, x, y, current_orientation, s):
 
     if s > path_segments[-1].end_time:
         current_segment = path_segments[-1]
+
+    if s < 0:
+        current_segment = path_segments[0]
     
     if current_segment is None:
         raise ValueError(f"s={s} does not fall within any segment's time bounds.")
@@ -299,7 +308,7 @@ def T_z(path_segments, x, y, current_orientation, s):
 
     return transformed_x, transformed_y, transformed_orientation, s_transformed, current_segment.eta
 
-def T_z_obs(path_segments, x, y, current_orientation, s, obs_x, oby_y):
+def T_z_obs(path_segments, x, y, current_orientation, s, obs_x, oby_y,obs_r):
     """
     Transforms the current position (x, y) and orientation based on the path segment corresponding to s.
     Plots the original and transformed segment, position, and orientation.
@@ -325,6 +334,9 @@ def T_z_obs(path_segments, x, y, current_orientation, s, obs_x, oby_y):
     if s > path_segments[-1].end_time:
         current_segment = path_segments[-1]
     
+    if s < 0:
+        current_segment = path_segments[0]
+    
     if current_segment is None:
         raise ValueError(f"s={s} does not fall within any segment's time bounds.")
     
@@ -337,6 +349,11 @@ def T_z_obs(path_segments, x, y, current_orientation, s, obs_x, oby_y):
     transformed_obs_x = transformed_obs[0]
     transformed_obs_y = transformed_obs[1]
 
+    if (transformed_obs_x<(-0.4-obs_r) or transformed_obs_x>(0.4+obs_r)) or (transformed_obs_y<(-0.65-obs_r) or transformed_obs_y>(0.65+obs_r)) :
+        relevant_flag = False
+    else:
+        relevant_flag = True
+
     # Adjust the orientation based on the segment's rotation
     transformed_orientation = current_orientation - current_segment.rotation  # Assuming segment has a 'rotation' attribute
 
@@ -344,7 +361,7 @@ def T_z_obs(path_segments, x, y, current_orientation, s, obs_x, oby_y):
 
     s_transformed = s - segment.start_time - mid
 
-    return transformed_x, transformed_y, transformed_orientation, s_transformed, current_segment.eta,transformed_obs_x,transformed_obs_y
+    return transformed_x, transformed_y, transformed_orientation, s_transformed, current_segment.eta,transformed_obs_x,transformed_obs_y,relevant_flag
 
 def gamma(eta):
     if eta==0:

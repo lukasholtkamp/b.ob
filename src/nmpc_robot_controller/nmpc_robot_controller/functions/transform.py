@@ -199,6 +199,9 @@ def error(path_segments,current_state,s):
     if s>path_segments[-1].end_time:
         current_segment = path_segments[-1]
 
+    if s<0:
+        current_segment = path_segments[0]
+
     # Get the point on the path at f(s)
     path_point = current_segment.f(s)
     path_x, path_y = float(path_point[0]), float(path_point[1])
@@ -234,6 +237,9 @@ def get_deviated_point(path_segments, s, deviation):
     
     if s > path_segments[-1].end_time:
         current_segment = path_segments[-1]
+
+    if s < 0:
+        current_segment = path_segments[0]
 
     # Get the point on the path at s
     path_point = current_segment.f(s)
@@ -283,6 +289,9 @@ def T_z(path_segments, x, y, current_orientation, s):
 
     if s > path_segments[-1].end_time:
         current_segment = path_segments[-1]
+
+    if s < 0:
+        current_segment = path_segments[0]
     
     if current_segment is None:
         raise ValueError(f"s={s} does not fall within any segment's time bounds.")
@@ -327,6 +336,9 @@ def T_z_obs(path_segments, x, y, current_orientation, s, obs_x, oby_y,obs_r):
     if s > path_segments[-1].end_time:
         current_segment = path_segments[-1]
     
+    if s < 0:
+        current_segment = path_segments[0]
+    
     if current_segment is None:
         raise ValueError(f"s={s} does not fall within any segment's time bounds.")
     
@@ -339,7 +351,7 @@ def T_z_obs(path_segments, x, y, current_orientation, s, obs_x, oby_y,obs_r):
     transformed_obs_x = transformed_obs[0]
     transformed_obs_y = transformed_obs[1]
 
-    if transformed_obs_x<(-0.2-obs_r) or transformed_obs_x>(0.2+obs_r):
+    if transformed_obs_x<(-0.3-obs_r) or transformed_obs_x>(0.3+obs_r):
         relevant_flag = False
     else:
         relevant_flag = True

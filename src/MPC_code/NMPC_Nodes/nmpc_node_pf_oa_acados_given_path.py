@@ -110,7 +110,7 @@ class NMPCController(Node):
         self.obs_position = None  # Replace with your desired position
         self.obs_s = 35
         self.obs_d = 0.58
-        self.obs_r = 0.17  # Set the radius
+        self.obs_r = 0.0  # Set the radius
 
     def publish_circle_marker(self, height=0.1, frame_id='map'):
 
