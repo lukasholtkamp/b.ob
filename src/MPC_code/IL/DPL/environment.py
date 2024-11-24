@@ -29,7 +29,7 @@ class SimpleEnvironment:
 
         # Randomly sample curvature, progress, and orientation
         eta = np.random.uniform(0, 3)  # Curvature
-        s = np.random.uniform(-0.4, 0.4)  # Path progress
+        s = np.random.uniform(-0.5, 0.5)  # Path progress
         orientation = np.random.uniform(0, 2 * np.pi)  # Orientation
 
         # Initial position on the path
