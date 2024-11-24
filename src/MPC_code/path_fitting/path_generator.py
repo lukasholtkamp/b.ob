@@ -7,18 +7,19 @@ import random
 import control as ct
 import csv
 from acados_template import AcadosOcp, AcadosOcpSolver, AcadosModel
+import json
 
 from matplotlib.patches import Circle
 
 from waypoint_filter import *
 from line_fitting import *
 from transform import *
-from path_segments import *
+from path_segments_save import *
 from plotting import *
 
 def LSPB_fit(n,epsilon,v_max=0.1):
 
-    file_path = '/home/bertrandt/b.ob/src/MPC_code/path_fitting/path_data_log_2.csv'
+    file_path = '/home/jkan67/b.ob/src/MPC_code/path_fitting/path_data_log_3.csv'
 
     # Get the selected waypoints and their original indices
     original_indices, selected_waypoints, waypoints = select_waypoints_with_indices(file_path, n)
@@ -363,10 +364,30 @@ def generate_path_and_save(filename="path_points.csv"):
             writer.writerow(point[:2])  # Only save x and y coordinates
     return path_points
 
+def save_path_segments(path_segments, filename="path_segments_1.json"):
+    """Save a list of PathSegment objects to a JSON file."""
+    segments_data = [segment.to_dict() for segment in path_segments]
+    with open(filename, "w") as f:
+        json.dump(segments_data, f, indent=4)
+    print(f"Path segments saved to {filename}")
+
+def load_path_segments(filename="path_segments_1.json"):
+    """Load a list of PathSegment objects from a JSON file."""
+    with open(filename, "r") as f:
+        segments_data = json.load(f)
+    path_segments = [PathSegment.from_dict(segment) for segment in segments_data]
+    print(f"Path segments loaded from {filename}")
+    return path_segments
+
+
 points = np.array(generate_path_and_save())
 
 # path_segments = LSPB_fit(55,0.6)
-path_segments = LSPB_fit(20,0.15,0.1)
+path_segments_og = LSPB_fit(20,0.15,0.1)
+
+save_path_segments(path_segments_og)
+
+path_segments = load_path_segments()
 
 # Define the CasADi variable for s
 s = ca.MX.sym('s')
@@ -517,11 +538,11 @@ class NMPCController:
 
         self.final_position = f_s(path_segments[-1].end_time).full().flatten()
 
-        self.obs_model = load_model("/home/bertrandt/b.ob/src/MPC_code/IL/path_following_obs_avoidance_attention.h5")
+        self.obs_model = load_model("/home/jkan67/b.ob/src/MPC_code/IL/path_following_obs_avoidance_attention.h5")
 
-        # self.obs_model = tf.keras.models.load_model("/home/bertrandt/b.ob/src/MPC_code/IL/path_following_obs_avoidance_with_penalty.keras",custom_objects={"CollisionPenaltyLayer": CollisionPenaltyLayer})
+        # self.obs_model = tf.keras.models.load_model("/home/jkan67/b.ob/src/MPC_code/IL/path_following_obs_avoidance_with_penalty.keras",custom_objects={"CollisionPenaltyLayer": CollisionPenaltyLayer})
         
-        self.pf_model = load_model("/home/bertrandt/b.ob/src/MPC_code/IL/path_following_model.h5")
+        self.pf_model = load_model("/home/jkan67/b.ob/src/MPC_code/IL/path_following_model.h5")
 
 
     def mobile_robot_ode(self):
@@ -849,12 +870,12 @@ class NMPCController:
 
 if __name__ == "__main__":
     controller = NMPCController()
-    # usol, x_opt = controller.run_mpc()
-    # print("Optimal control input:", usol)
-    # print("Optimal state trajectory:", x_opt)
+    usol, x_opt = controller.run_mpc()
+    print("Optimal control input:", usol)
+    print("Optimal state trajectory:", x_opt)
 
-    # # Plot results
-    # controller.plot_results(x_opt)
+    # Plot results
+    controller.plot_results(x_opt)
 
-    controller.run_NN_obs_n(n=1400)
-    controller.plot_closed_loop()
+    # controller.run_NN_obs_n(n=1400)
+    # controller.plot_closed_loop()
