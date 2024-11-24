@@ -24,7 +24,9 @@ from builtin_interfaces.msg import Duration
 
 from .functions.path_planner import *
 
-from tensorflow.keras.models import load_model
+import torch
+import torch.nn as nn
+from .functions.policy_model import PolicyModel  # Import your PyTorch policy model class
 
 import subprocess
 import re
@@ -114,18 +116,23 @@ class NMPCController(Node):
 
         self.obs_position = None  # Replace with your desired position
         self.obs_s = 20
-        self.obs_d = -0.15
-        self.obs_r = 0.17  # Set the radius
+        self.obs_d = 0.1
+        self.obs_r = 0.12  # Set the radius
 
-        self.model = load_model("/home/bertrandt/b.ob/src/nmpc_robot_controller/nmpc_robot_controller/functions/path_following_model.h5")
-        # self.model = load_model("/home/ubuntu/b.ob/src/nmpc_robot_controller/nmpc_robot_controller/functions/path_following_model.h5")
-
+        # Load PyTorch model
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Use GPU if available
+        model_path = "/home/bertrandt/b.ob/src/MPC_code/IL/DPL/models/final_policy.pth"  # Replace with the actual path to your final policy
+        self.model = PolicyModel(input_dim=5, output_dim=3)  # Adjust dimensions as per your model
+        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+        self.model.eval()  # Set to evaluation mode
+        self.model.to(self.device)  # Move model to appropriate device
+        
         self.path_received = False  # Flag to indicate if a new path has been received
         self.new_path_points = []  # Store the new path points from /plan
 
         # Initialize parameters
-        self.safety_margin = 0.2  # Safety margin for obstacle avoidance
-        self.replan_threshold = 1.8  # Threshold for checking the reference trajectory point
+        self.safety_margin = 0.3  # Safety margin for obstacle avoidance
+        self.replan_threshold = 5.5  # Threshold for checking the reference trajectory point
         self.path_points = []  # Path points list
         self.reference_traj = None  # Reference trajectory function
         self.replan_required = False  # Flag to indicate when replanning is needed
@@ -149,7 +156,7 @@ class NMPCController(Node):
         # Extract the obstacle position and radius
         obs_x, obs_y, obs_r = self.obs_position
 
-        obs_r -= 0.08
+        obs_r -= 0.06
 
         # Generate points to approximate the circular obstacle
         points = []
@@ -486,7 +493,6 @@ class NMPCController(Node):
 
 
     def control_loop(self):
-
         now = self.get_clock().now()
 
         if self.start == 0:
@@ -496,62 +502,70 @@ class NMPCController(Node):
             self.dt = self.end - self.start
             self.start = self.end
 
-        if self.current_state.shape[0]<=0:
+        if self.current_state.shape[0] <= 0:
             self.get_current_state()
             self.stop_robot()
-            return  # If the transform is unavailable, skip this control loop iteration
+            return  # Skip this control loop iteration if no state
 
-        if self.goal.shape[0]>0:
-            goal_dist = self.dist(self.current_state,self.goal)
+        if self.goal.shape[0] > 0:
+            goal_dist = self.dist(self.current_state, self.goal)
         else:
             goal_dist = 0
 
-        if self.global_path!=None:
-            self.publish_reference_path()  # Publish the reference path once initialized
-        
+        if self.global_path is not None:
+            self.publish_reference_path()  # Publish the reference path if available
 
-        if self.global_path!=None and self.dt > 0 and goal_dist>0.2:
+        if self.global_path is not None and self.dt > 0 and goal_dist > 0.2:
             self.check_update_path()
             self.publish_obstacle()
 
-            x_hat, y_hat, theta_hat, s_hat, eta = T_z(self.global_path, self.current_state[0], self.current_state[1], self.current_state[2], self.s0)
+            # Transform current state into the path-relative coordinates
+            x_hat, y_hat, theta_hat, s_hat, eta = T_z(
+                self.global_path,
+                self.current_state[0],
+                self.current_state[1],
+                self.current_state[2],
+                self.s0,
+            )
 
-            if eta>=0:
-                input = np.array([[x_hat, y_hat, theta_hat, s_hat, eta]])  # Shape: (1, 5)
+            # Prepare model input
+            if eta >= 0:
+                input_data = torch.tensor([[x_hat, y_hat, theta_hat, s_hat, eta]], dtype=torch.float32).to(self.device)
             else:
-                input = np.array([[x_hat, -y_hat, -theta_hat, s_hat, -eta]])  # Shape: (1, 5)
+                input_data = torch.tensor([[x_hat, -y_hat, -theta_hat, s_hat, -eta]], dtype=torch.float32).to(self.device)
 
-            # Make predictions using the model
-            usol = self.model.predict(input)
-            
-            if eta<0:
-                usol[0][1] *= -1
-                
-            Pt = 0.1
-            Pn = 0.1
+            # Perform inference with PyTorch model
+            with torch.no_grad():
+                usol = self.model(input_data).cpu().numpy()[0]  # Get the first (and only) output
 
-            en,et,phi = error(self.global_path,self.current_state,self.s0)
-            
-            # print(en)
-            # print(et)
-                
-            # usol[0][0]-= Pt*et
-            # usol[0][1]-= Pn*en
+            if eta < 0:
+                usol[1] *= -1  # Adjust angular velocity for inverted eta
 
-            usol = self.convert_u(usol[0])
+            # Apply feedback corrections to model predictions
+            en, et, phi = error(self.global_path, self.current_state, self.s0)
+            Pt = 1.0  # Tangential feedback gain
+            Pn = 1.0  # Normal feedback gain
 
-            print(usol)
+            usol[0] -= Pt * et  # Correct linear velocity based on tangential error
+            usol[1] -= Pn * en  # Correct angular velocity based on normal error
 
+            # Scale and adjust the control input
+            # usol = self.convert_u(usol)
+            usol = [np.clip(float(usol[0]),0,1),np.clip(float(usol[1]),-0.8,0.8),np.clip(float(usol[2]),0,1)]
+
+            # Publish the corrected control command
             self.publish_control(usol)
-            # print(usol)
-            self.publish_reference_path()
-            self.publish_circle_marker()
 
-            self.w0 = usol[2]
-            self.s0 += self.dt * self.w0
-            
+            # Publish markers and reference path
+            self.publish_circle_marker()
+            self.publish_reference_path()
+
+            # Update state variables
+            self.w0 = usol[2]  # Update path progress rate
+            self.s0 += self.dt * self.w0  # Update path progress
         else:
             self.stop_robot()
+
 
     def stop_robot(self):
         # Publish zero velocity to stop the robot
@@ -610,9 +624,9 @@ class NMPCController(Node):
     def convert_u(self,usol):
         u = [0,0,0]
 
-        u[0] = 0.02 + np.clip(usol[0],0,1)*(0.1-0.02)
-        u[1] = np.sign(usol[1])*0.05 + np.clip(usol[1],-0.8,0.8)*(0.1-0.05)
-        u[2] = 0.7 * np.clip(usol[2],0,1)
+        u[0] = 0.02 + np.clip(usol[0],0,1)*(0.15-0.02)
+        u[1] = np.sign(usol[1])*0.05 + np.clip(usol[1],-0.8,0.8)*(0.15-0.05)
+        u[2] = 0.9 * np.clip(usol[2],0,1)
 
         return u
 
