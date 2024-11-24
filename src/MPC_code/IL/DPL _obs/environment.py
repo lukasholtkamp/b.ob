@@ -19,12 +19,13 @@ def f(eta, s, v_max=0.1):
 
 # Environment class
 class SimpleEnvironment:
-    def __init__(self, v_max=0.1, dt=0.3, max_steps=60, num_obstacles=3, epsilon=0.1):
+    def __init__(self, v_max=0.1, dt=0.3, max_steps=60, num_obstacles=1, epsilon=0.1, inflation=0.18):
         self.v_max = v_max
         self.dt = dt  # Time step for simulation
         self.max_steps = max_steps  # Maximum number of steps per episode
         self.num_obstacles = num_obstacles
         self.epsilon = epsilon  # Minimum distance for obstacles
+        self.inflation = inflation
         self.reset()
 
     def reset(self):
@@ -71,7 +72,7 @@ class SimpleEnvironment:
         """
         obstacles = []
         for _ in range(self.num_obstacles):
-            obs_r = np.random.uniform(0.08, 0.2)  # Obstacle radius
+            obs_r = np.random.uniform(0.08, 0.2) + self.inflation  # Obstacle radius
             min_distance = obs_r + self.epsilon
             max_distance = min_distance + 0.18
 
