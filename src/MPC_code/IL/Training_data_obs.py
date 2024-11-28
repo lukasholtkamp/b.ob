@@ -88,7 +88,7 @@ def generate_path(eta):
 states, controls = initialize_data(state_file, control_file)
 
 # Use the length of the `states` array as the progress tracker
-processed_states = len(states)
+processed_states = 0
 print(f"Resuming from state index: {processed_states}")
 
 # Batch containers
