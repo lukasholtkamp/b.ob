@@ -41,7 +41,7 @@ def initialize_data(state_file, control_file):
     if os.path.exists(control_file):
         controls = np.load(control_file)
     else:
-        controls = np.empty((0, 2))  # Control array: [v, omega]
+        controls = np.empty((0, 3))  # Control array: [v, omega,w]
 
     # Check for consistent lengths
     if len(states) != len(controls):
@@ -139,7 +139,7 @@ for curvature in curvatures:
 
                                 # Add to batch
                                 batch_states.append(state)
-                                batch_controls.append([u_step[0, 0], u_step[0, 1]])
+                                batch_controls.append([u_step[0, 0], u_step[0, 1],u_step[0, 2]])
 
                                 # Process and save batch
                                 if len(batch_states) >= BATCH_SIZE:
@@ -182,7 +182,7 @@ for curvature in curvatures:
 
                                     # Add to batch
                                     batch_states.append(state)
-                                    batch_controls.append([u_step[0, 0], u_step[0, 1]])
+                                    batch_controls.append([u_step[0, 0], u_step[0, 1],u_step[0, 2]])
 
                                     # Process and save batch
                                     if len(batch_states) >= BATCH_SIZE:
