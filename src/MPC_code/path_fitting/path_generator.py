@@ -621,6 +621,28 @@ class NMPCController:
         self.pf_model.load_state_dict(torch.load("/home/bertrandt/b.ob/src/MPC_code/IL/DPL/models/final_policy.pth"))
         self.pf_model.eval()  # Set the model to evaluation mode
 
+        self.plot_initialized = False
+
+    def initialize_plots(self):
+        """Initialize shared plots for overlaying results."""
+        if not self.plot_initialized:
+            self.fig, (self.ax_traj, self.ax_error, self.ax_control) = plt.subplots(3, 1, figsize=(10, 18))
+            self.ax_traj.set_title("Trajectories")
+            self.ax_traj.set_xlabel("X")
+            self.ax_traj.set_ylabel("Y")
+            self.ax_traj.grid()
+
+            self.ax_error.set_title("Cartesian Error vs. s0")
+            self.ax_error.set_xlabel("s0 (Path Progress Parameter)")
+            self.ax_error.set_ylabel("Cartesian Error (m)")
+            self.ax_error.grid()
+
+            self.ax_control.set_title("Control Inputs vs. s0")
+            self.ax_control.set_xlabel("s0 (Path Progress Parameter)")
+            self.ax_control.set_ylabel("Control Input Value")
+            self.ax_control.grid()
+
+            self.plot_initialized = True
 
     def predict_policy(self, input_data):
         # Convert the input data to a PyTorch tensor
@@ -754,51 +776,6 @@ class NMPCController:
 
         return ocp
 
-
-    def run_mpc(self):
-        self.solver.set(0, "p", self.obs_list.flatten())
-        self.solver.set(0, "lbx", self.current_state)
-        self.solver.set(0, "ubx", self.current_state)
-
-        status = self.solver.solve()
-
-        if status != 0:
-            print(f"ACADOS returned status {status}")
-
-        usol = self.solver.get(0, "u")
-        x_opt = [self.solver.get(i, "x") for i in range(self.N + 1)]
-        return usol, x_opt
-
-
-    def plot_results(self, x_opt):
-        # Plot the reference path
-        s_values = np.linspace(0, path_segments[-1].end_time, 500)
-        ref_path = np.array([f_s(s).full().flatten() for s in s_values])
-        
-        plt.figure(figsize=(10, 10))
-        
-        # Plot reference path
-        plt.plot(ref_path[:, 0], ref_path[:, 1], 'g--', label='Reference Path')
-
-        # Plot obstacles
-        for obs in self.obs_list:
-            circle = plt.Circle((obs[0], obs[1]), obs[2], color='red', alpha=0.5)
-            plt.gca().add_patch(circle)
-
-        # Plot x_opt trajectory
-        x_opt = np.array(x_opt)
-        plt.plot(x_opt[:, 0], x_opt[:, 1], 'b-', label='Optimal Trajectory')
-
-        # Plot settings
-        plt.scatter(self.initial_point[0], self.initial_point[1], color='black', label='Start Point')
-        plt.title('Reference Path, Obstacles, and Optimal Trajectory')
-        plt.xlabel('X')
-        plt.ylabel('Y')
-        plt.legend()
-        plt.grid(True)
-        plt.axis('equal')
-        plt.show()
-
     def simulate_kinematic_step(self, state, control, Ts):
         x, y, theta, s = state
         v, omega = control[:2]
@@ -807,11 +784,12 @@ class NMPCController:
         theta_next = theta + Ts * omega
         s_next = s + Ts * control[2]  # Increment s using the third control input (w)
         return np.array([x_next, y_next, theta_next, s_next])
-    
 
     def run_mpc_loop(self):
-        self.closed_loop_controls = []  # Store control inputs
+        closed_loop_controls = []  # Store control inputs
+        closed_loop_trajectory = []
         solver_times = []  # Store solver times for each iteration
+
 
         while np.linalg.norm(self.current_state[:2] - self.final_position[:2]) > 0.1:
             # Find the closest obstacle
@@ -828,12 +806,14 @@ class NMPCController:
             start_time = time.time()
             status = self.solver.solve()
             end_time = time.time()
-            solver_time = end_time - start_time
-            solver_times.append(solver_time)
 
             if status != 0:
-                print(f"ACADOS returned status {status}")
-                break
+                print(f"ACADOS returned status {status}. Exiting loop.")
+                break  # Exit loop on solver failure
+
+            # Store solver time
+            solver_time = end_time - start_time
+            solver_times.append(solver_time)
 
             usol = self.solver.get(0, "u")
             x_opt = [self.solver.get(i, "x") for i in range(self.N + 1)]
@@ -843,162 +823,12 @@ class NMPCController:
             self.s0 = self.current_state[3]
 
             # Store the full state (x, y, theta, s)
-            self.closed_loop_trajectory.append(self.current_state.copy())
+            closed_loop_trajectory.append(self.current_state.copy())
 
             # Store the control inputs
-            self.closed_loop_controls.append(usol.copy())
+            closed_loop_controls.append(usol.copy())
 
-        # Compute statistics for solver times
-        mean_time = np.mean(solver_times)
-        std_time = np.std(solver_times)
-        worst_time = np.max(solver_times)
-
-        # Display results in a table
-        table = [["Metric", "Time (s)"],
-                 ["Mean", f"{mean_time:.6f}"],
-                 ["Standard Deviation", f"{std_time:.6f}"],
-                 ["Worst Case", f"{worst_time:.6f}"]]
-        print(tabulate(table, headers="firstrow", tablefmt="grid"))
-
-
-    def run_mpc_loop_n(self, n=50):
-        plt.figure(figsize=(10, 10))
-
-        for _ in range(n):
-            self.solver.set(0, "p", self.obs_list.flatten())
-            self.solver.set(0, "lbx", self.current_state)
-            self.solver.set(0, "ubx", self.current_state)
-
-            status = self.solver.solve()
-
-            if status != 0:
-                print(f"ACADOS returned status {status}")
-                break
-
-            usol = self.solver.get(0, "u")
-            x_opt = np.array([self.solver.get(i, "x") for i in range(self.N + 1)])
-
-            # plt.plot(x_opt[:, 0], x_opt[:, 1], 'r--')
-
-            # Apply the first control input to the kinematic model
-            self.current_state = self.simulate_kinematic_step(self.current_state, usol, self.Ts_sim)
-
-            # Update s0 based on the third control input from usol
-            self.s0 = self.current_state[3]
-
-            # Store the current state for plotting
-            self.closed_loop_trajectory.append(self.current_state[:3])  # Store (x, y, theta)
-
-    def plot_closed_loop(self, csv_file=None):
-        """
-        Plot the closed-loop trajectory, reference path, and obstacles.
-        Optionally overlay recorded data from a CSV file.
-        """
-        self.closed_loop_trajectory = np.array(self.closed_loop_trajectory)
-        s_values = np.linspace(0, path_segments[-1].end_time, 500)
-        ref_path = np.array([f_s(s).full().flatten() for s in s_values])
-
-        plt.figure(figsize=(10, 10))
-
-        # Plot the reference path
-        plt.plot(ref_path[:, 0], ref_path[:, 1], 'g--', label='Reference Path')
-
-        # Plot all obstacles from obs_list
-        for obs in self.obs_list:
-            obs_x = obs["x"]
-            obs_y = obs["y"]
-            obs_r = obs["r"] - self.obs_inflation
-            circle = plt.Circle((obs_x, obs_y), obs_r, color='red', alpha=0.5)
-            plt.gca().add_patch(circle)
-
-        # Plot the closed-loop trajectory
-        plt.plot(self.closed_loop_trajectory[:, 0], self.closed_loop_trajectory[:, 1], 'b-', label='Closed-Loop Trajectory')
-
-        # Overlay CSV data if provided
-        if csv_file:
-            csv_data = self.load_csv_data(csv_file)
-            plt.plot(csv_data[:, 0], csv_data[:, 1], 'r--', label='Recorded Data (CSV)')
-
-        # Start point
-        plt.scatter(self.initial_point[0], self.initial_point[1], color='black', label='Start Point')
-
-        # Plot settings
-        plt.title('Closed-Loop Trajectory, Reference Path, and Obstacles')
-        plt.xlabel('X')
-        plt.ylabel('Y')
-        plt.legend()
-        plt.grid(True)
-        plt.axis('equal')
-        plt.show()
-
-        # Plot Cartesian error and inputs
-        self.plot_cartesian_error_and_inputs(csv_file)
-
-
-    def plot_cartesian_error_and_inputs(self, csv_file=None):
-        """Plot the Cartesian error and control inputs against `s0`. Optionally overlay data from a CSV file."""
-        # Extract s0 and positions from the stored trajectory
-        s_history = [state[3] for state in self.closed_loop_trajectory]
-        x_history = [state[0] for state in self.closed_loop_trajectory]
-        y_history = [state[1] for state in self.closed_loop_trajectory]
-
-        # Cartesian error computation
-        cartesian_errors = []
-        for s, x, y in zip(s_history, x_history, y_history):
-            ref_pos = f_s(s).full().flatten()
-            cartesian_error = np.sqrt((x - ref_pos[0])**2 + (y - ref_pos[1])**2)
-            cartesian_errors.append(cartesian_error)
-
-        # Control inputs
-        v_inputs = [control[0] for control in self.closed_loop_controls]
-        omega_inputs = [control[1] for control in self.closed_loop_controls]
-        w_inputs = [control[2] for control in self.closed_loop_controls]
-
-        # Plot Cartesian error vs. s0
-        plt.figure(figsize=(10, 6))
-        plt.plot(s_history, cartesian_errors, label="Cartesian Error (Simulated)", color="blue")
-
-        # Overlay CSV data if provided
-        if csv_file:
-            csv_data = self.load_csv_data(csv_file)
-            s_csv = csv_data[:, 3]  # Assuming `s0` is the fourth column
-            x_csv = csv_data[:, 0]  # Assuming `x` is the first column
-            y_csv = csv_data[:, 1]  # Assuming `y` is the second column
-            csv_errors = [
-                np.sqrt((x_csv[i] - f_s(s_csv[i]).full().flatten()[0])**2 +
-                        (y_csv[i] - f_s(s_csv[i]).full().flatten()[1])**2)
-                for i in range(len(s_csv))
-            ]
-            plt.plot(s_csv, csv_errors, label="Cartesian Error (CSV)", color="red", linestyle="--")
-
-        plt.title("Cartesian Error vs. s0")
-        plt.xlabel("s0 (Path Progress Parameter)")
-        plt.ylabel("Cartesian Error (m)")
-        plt.legend()
-        plt.grid(True)
-        plt.show()
-
-        # Plot control inputs vs. s0
-        plt.figure(figsize=(10, 6))
-        plt.plot(s_history, v_inputs, label="Linear Velocity (v)", color="green")
-        plt.plot(s_history, omega_inputs, label="Angular Velocity (ω)", color="red")
-        plt.plot(s_history, w_inputs, label="Path Progress Rate (w)", color="orange")
-
-        if csv_file:
-            v_csv = csv_data[:, 4]  # Assuming `v` is the fifth column
-            omega_csv = csv_data[:, 5]  # Assuming `omega` is the sixth column
-            w_csv = csv_data[:, 6]  # Assuming `w` is the seventh column
-            plt.plot(s_csv, v_csv, label="v (CSV)", color="green", linestyle="--")
-            plt.plot(s_csv, omega_csv, label="ω (CSV)", color="red", linestyle="--")
-            plt.plot(s_csv, w_csv, label="w (CSV)", color="orange", linestyle="--")
-
-        plt.title("Control Inputs vs. s0")
-        plt.xlabel("s0 (Path Progress Parameter)")
-        plt.ylabel("Control Input Value")
-        plt.legend()
-        plt.grid(True)
-        plt.show()
-
+        return closed_loop_trajectory,closed_loop_controls,solver_times
 
     def run_NN_obs_n(self,n=50):
 
@@ -1046,8 +876,9 @@ class NMPCController:
         """
         Run the closed-loop control using the path-following neural network (NN).
         """
-        self.closed_loop_controls = []  # Store control inputs
-        self.solver_times = []  # Store inference times
+        closed_loop_controls = []  # Store control inputs
+        solver_times = []  # Store inference times
+        closed_loop_trajectory = [] 
 
         while np.linalg.norm(self.current_state[:2] - self.final_position[:2]) > 0.1:
             # Prepare inputs for the NN
@@ -1070,7 +901,7 @@ class NMPCController:
             usol = self.predict_policy(input_data)
             end_time = time.time()
 
-            self.solver_times.append(end_time - start_time)
+            solver_times.append(end_time - start_time)
 
             # Adjust NN output based on eta
             if eta < 0:
@@ -1083,32 +914,137 @@ class NMPCController:
             self.current_state = self.simulate_kinematic_step(self.current_state, usol[0], self.Ts_sim)
 
             # Log the closed-loop trajectory
-            self.closed_loop_trajectory.append(self.current_state.copy())
+            closed_loop_trajectory.append(self.current_state.copy())
             # Log the control inputs and s0
-            self.closed_loop_controls.append(usol[0].copy())
+            closed_loop_controls.append(usol[0].copy())
 
-        # Compute and display inference time statistics
-        mean_time = np.mean(self.solver_times)
-        std_time = np.std(self.solver_times)
-        worst_time = np.max(self.solver_times)
-        table = [["Metric", "Time (s)"],
-                 ["Mean", f"{mean_time:.6f}"],
-                 ["Standard Deviation", f"{std_time:.6f}"],
-                 ["Worst Case", f"{worst_time:.6f}"]]
-        print(tabulate(table, headers="firstrow", tablefmt="grid"))
+        return closed_loop_trajectory,closed_loop_controls,solver_times
+
+    def plot_trajectory(self, csv_file=None, trajectory=None, label=None):
+        """
+        Plot the trajectory of a closed-loop solution or a CSV file.
+        If `csv_file` is provided, plot the CSV data.
+        If `trajectory` is provided, plot the given trajectory data.
+        """
+        if not self.plot_initialized:
+            self.initialize_plots()
+
+        if csv_file:
+            csv_data = self.load_csv_data(csv_file)
+            self.ax_traj.plot(
+                csv_data[:, 0], csv_data[:, 1],
+                label=label or "CSV Solution", linestyle="--"
+            )
+        elif trajectory is not None:
+            trajectory = np.array(trajectory)
+            if trajectory.ndim != 2 or trajectory.shape[1] < 2:
+                print(f"Invalid trajectory format: expected 2D array, got shape {trajectory.shape}")
+                return
+            self.ax_traj.plot(
+                trajectory[:, 0], trajectory[:, 1],
+                label=label or "Closed-Loop Solution"
+            )
+        else:
+            print("No trajectory data provided for plotting.")
+
+
+    def plot_error(self, ref_function, csv_file=None, trajectory=None, label=None):
+        """
+        Plot Cartesian error vs. path progress parameter (s).
+        If `csv_file` is provided, use the CSV data.
+        If `trajectory` is provided, use the given trajectory data.
+        """
+        if csv_file:
+            csv_data = self.load_csv_data(csv_file)
+            s_values = csv_data[:, 3]  # Assuming s0 is the fourth column
+            errors = [
+                np.sqrt((csv_data[i, 0] - ref_function(csv_data[i, 3]).full().flatten()[0])**2 +
+                        (csv_data[i, 1] - ref_function(csv_data[i, 3]).full().flatten()[1])**2)
+                for i in range(len(s_values))
+            ]
+            self.ax_error.plot(
+                s_values, np.array(errors).ravel(),
+                label=label or "CSV Data"
+            )
+        elif trajectory is not None:
+            s_values = [state[3] for state in trajectory]
+            errors = [
+                np.sqrt((state[0] - ref_function(state[3]).full().flatten()[0])**2 +
+                        (state[1] - ref_function(state[3]).full().flatten()[1])**2)
+                for state in trajectory
+            ]
+            self.ax_error.plot(
+                s_values, np.array(errors).ravel(),
+                label=label or "Closed-Loop Solution"
+            )
+        else:
+            print("No error data provided for plotting.")
+
+    def plot_control_inputs(self, csv_file=None, controls=None, trajectory=None, label=None):
+        """
+        Plot control inputs vs. path progress parameter (s).
+        If `csv_file` is provided, plot the CSV data.
+        If `controls` and `trajectory` are provided, use the given data.
+        """
+        if csv_file:
+            # Load data from CSV
+            csv_data = self.load_csv_data(csv_file)
+            s_values = csv_data[:, 3]  # Assuming s0 is the fourth column
+            v_values = csv_data[:, 4]  # Assuming v is the fifth column
+            omega_values = csv_data[:, 5]  # Assuming omega is the sixth column
+            w_values = csv_data[:, 6]  # Assuming w is the seventh column
+
+            self.ax_control.plot(s_values, v_values, label=f"v ({label or 'CSV Data'})")
+            self.ax_control.plot(s_values, omega_values, label=f"ω ({label or 'CSV Data'})")
+            self.ax_control.plot(s_values, w_values, label=f"w ({label or 'CSV Data'})")
+        elif controls is not None and trajectory is not None:
+            # Ensure the trajectory and controls lengths match
+            s_values = [state[3] for state in trajectory]
+            controls = np.array(controls)
+
+            if len(s_values) != controls.shape[0]:
+                print(f"Mismatch between s_values ({len(s_values)}) and controls ({controls.shape[0]}).")
+                return
+
+            # Plot the control inputs
+            self.ax_control.plot(s_values, controls[:, 0], label=f"v ({label or 'Closed-Loop Solution'})")
+            self.ax_control.plot(s_values, controls[:, 1], label=f"ω ({label or 'Closed-Loop Solution'})")
+            self.ax_control.plot(s_values, controls[:, 2], label=f"w ({label or 'Closed-Loop Solution'})")
+        else:
+            print("No control input data or trajectory provided for plotting.")
+
+    def finalize_plots(self):
+        """Add legends and show the combined plot."""
+        self.ax_traj.legend()
+        self.ax_error.legend()
+        self.ax_control.legend()
+        plt.tight_layout()
+        plt.show()
+
 
     def load_csv_data(self, file_path):
         """Load CSV data for overlay."""
         data = np.loadtxt(file_path, delimiter=",", skiprows=1)
         return data
     
-    def analyze_timing_data(self, csv_file):
+    def analyze_timing_data(self, timing_array=None, csv_file=None, label=None):
         """
-        Analyze timing data from the CSV and display statistics as a table.
+        Analyze timing data and generate a table of statistics.
+        If `timing_array` is provided, use that data.
+        If `csv_file` is provided, use the CSV data.
+        Otherwise, use internal solver times.
         """
-        # Load CSV data
-        csv_data = self.load_csv_data(csv_file)
-        times = csv_data[:, -1]  # Assuming the last column contains time data
+        if timing_array is not None:
+            times = timing_array
+        elif csv_file:
+            csv_data = self.load_csv_data(csv_file)
+            times = csv_data[:, -1]  # Assuming the last column contains time data
+        else:
+            times = self.solver_times
+
+        if len(times)==0:
+            print(f"No timing data available for {label or 'Simulation'}.")
+            return
 
         # Compute statistics
         mean_time = np.mean(times)
@@ -1123,27 +1059,147 @@ class NMPCController:
             ["Worst Case", f"{worst_time:.6f}"],
         ]
 
-        # Print the table
+        print(f"\nTiming Data for {label or 'Simulation'}:")
         print(tabulate(table, headers="firstrow", tablefmt="grid"))
 
-        # Optionally return the statistics for further use
+        # Optionally return the statistics
         return {"mean": mean_time, "std": std_time, "worst": worst_time}
 
+        
+    def analyze_error_data(self, ref_function, csv_file=None, trajectory=None, label=None):
+        """
+        Analyze Cartesian error data and generate a summary table.
+        If `csv_file` is provided, use the CSV data; otherwise, use `trajectory`.
+        """
+        if csv_file:
+            csv_data = self.load_csv_data(csv_file)
+            s_values = csv_data[:, 3]  # Assuming s0 is the fourth column
+            errors = [
+                np.sqrt((csv_data[i, 0] - ref_function(csv_data[i, 3]).full().flatten()[0])**2 +
+                        (csv_data[i, 1] - ref_function(csv_data[i, 3]).full().flatten()[1])**2)
+                for i in range(len(s_values))
+            ]
+        elif trajectory is not None:
+            trajectory = np.array(trajectory)  # Convert to NumPy array if not already
+            s_values = [state[3] for state in trajectory]
+            errors = [
+                np.sqrt((trajectory[i, 0] - ref_function(s_values[i]).full().flatten()[0])**2 +
+                        (trajectory[i, 1] - ref_function(s_values[i]).full().flatten()[1])**2)
+                for i in range(len(s_values))
+            ]
+        else:
+            raise ValueError("No valid data provided for error analysis.")
 
+        # Compute statistics
+        mean_error = np.mean(errors)
+        max_error = np.max(errors)
+
+        # Prepare the table
+        table = [
+            ["Metric", "Error (m)"],
+            ["Mean", f"{mean_error:.6f}"],
+            ["Max", f"{max_error:.6f}"],
+        ]
+
+        print(f"\nError Data for {label or 'Simulation'}:")
+        print(tabulate(table, headers="firstrow", tablefmt="grid"))
+
+        # Optionally return the statistics
+        return {"mean_error": mean_error, "max_error": max_error}    
+    
 if __name__ == "__main__":
     controller = NMPCController()
-    # usol, x_opt = controller.run_mpc()
-    # print("Optimal control input:", usol)
-    # print("Optimal state trajectory:", x_opt)
 
-    # Plot results
-    # controller.plot_results(x_opt)
+    # Initialize plots
+    controller.initialize_plots()
 
-    controller.run_NN_pf()
-    controller.plot_closed_loop(csv_file="closed_loop_nn_pf_1.csv")
-    controller.analyze_timing_data(csv_file="closed_loop_nn_pf_1.csv")
+    # Run NN simulation
+    nn_trajectory, nn_controls, nn_times = controller.run_NN_pf()
+    if nn_trajectory and nn_controls:
+        controller.plot_trajectory(
+            trajectory=nn_trajectory, 
+            label="NN Policy (Simulated)"
+        )
+        controller.plot_error(
+            trajectory=nn_trajectory, 
+            ref_function=f_s, 
+            label="NN Policy (Simulated)"
+        )
+        controller.plot_control_inputs(
+            controls=nn_controls, 
+            trajectory=nn_trajectory, 
+            label="NN Policy (Simulated)"
+        )
+    else:
+        print("NN Policy simulation produced no valid data.")
 
-    # controller.run_mpc_loop()
-    # controller.plot_closed_loop(csv_file="closed_loop_mpc_1.csv")
-    # controller.analyze_timing_data(csv_file="closed_loop_mpc_1.csv")
+    controller.s0 = 0
+    controller.initial_point = f_s(0).full().flatten()  # Store the initial point for reuse
+    controller.current_state = np.array([controller.initial_point[0], controller.initial_point[1], 0, controller.s0])  # Assume theta = 0
 
+    # Run MPC simulation
+    mpc_trajectory, mpc_controls, mpc_times = controller.run_mpc_loop()
+    if mpc_trajectory and mpc_controls:
+        controller.plot_trajectory(
+            trajectory=mpc_trajectory, 
+            label="MPC Policy (Simulated)"
+        )
+        controller.plot_error(
+            trajectory=mpc_trajectory, 
+            ref_function=f_s, 
+            label="MPC Policy (Simulated)"
+        )
+        controller.plot_control_inputs(
+            controls=mpc_controls, 
+            trajectory=mpc_trajectory, 
+            label="MPC Policy (Simulated)"
+        )
+    else:
+        print("MPC Policy simulation produced no valid data.")
+
+    # Overlay CSV data for NN
+    controller.plot_trajectory(
+        csv_file="closed_loop_nn_pf_1.csv", 
+        label="NN Policy (CSV)"
+    )
+    controller.plot_error(
+        csv_file="closed_loop_nn_pf_1.csv", 
+        ref_function=f_s, 
+        label="NN Policy (CSV)"
+    )
+    controller.plot_control_inputs(
+        csv_file="closed_loop_nn_pf_1.csv", 
+        label="NN Policy (CSV)"
+    )
+
+    # Overlay CSV data for MPC
+    controller.plot_trajectory(
+        csv_file="closed_loop_mpc_1.csv", 
+        label="MPC Policy (CSV)"
+    )
+    controller.plot_error(
+        csv_file="closed_loop_mpc_1.csv", 
+        ref_function=f_s, 
+        label="MPC Policy (CSV)"
+    )
+    controller.plot_control_inputs(
+        csv_file="closed_loop_mpc_1.csv", 
+        label="MPC Policy (CSV)"
+    )
+
+    # Finalize plots
+    controller.finalize_plots()
+
+    # Summarize NN Policy results
+    print("\n=== NN Policy Results ===")
+    controller.analyze_timing_data(timing_array=nn_times, label="NN Policy (Simulated)")
+    controller.analyze_error_data(ref_function=f_s, trajectory=nn_trajectory, label="NN Policy (Simulated)")
+    controller.analyze_timing_data(csv_file="closed_loop_nn_pf_1.csv", label="NN Policy (CSV)")
+    controller.analyze_error_data(ref_function=f_s, csv_file="closed_loop_nn_pf_1.csv", label="NN Policy (CSV)")
+
+    # Summarize MPC Policy results
+    print("\n=== MPC Policy Results ===")
+    controller.analyze_timing_data(timing_array=mpc_times, label="MPC Policy (Simulated)")
+    controller.analyze_error_data(ref_function=f_s, trajectory=mpc_trajectory, label="MPC Policy (Simulated)")
+    controller.analyze_timing_data(csv_file="closed_loop_mpc_1.csv", label="MPC Policy (CSV)")
+    controller.analyze_error_data(ref_function=f_s, csv_file="closed_loop_mpc_1.csv", label="MPC Policy (CSV)")
