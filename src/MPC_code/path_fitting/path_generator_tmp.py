@@ -541,12 +541,9 @@ import keras
 # Enable unsafe deserialization
 keras.config.enable_unsafe_deserialization()
 
-import torch
-
 
 import time
 from tabulate import tabulate
-from policy_model import PolicyModel
 
 
 class CollisionPenaltyLayer(tf.keras.layers.Layer):
@@ -588,19 +585,20 @@ class NMPCController:
         self.u0 = np.array([1, 0])
         self.w0 = 1
 
-        self.obs_inflation = 0.22
-        self.obs_list = [
-            {"s": 15, "d": 0.2, "r": 0.15 + self.obs_inflation},
-            {"s": 23, "d": 0.1, "r": 0.17 + self.obs_inflation},
-            {"s": 30, "d": -0.2, "r": 0.2 + self.obs_inflation}
-        ]
-
-        # self.obs_inflation = 0
+        # self.obs_inflation = 0.18
+        # Define multiple obstacles
         # self.obs_list = [
-        #     {"s": 55, "d": 0.01, "r": 0},
-        #     {"s": 15, "d": 0.1, "r": 0},
-        #     {"s": 32, "d": -0.2, "r": 0}
+        #     {"s": 55, "d": 0.01, "r": 0.15+self.obs_inflation},
+        #     {"s": 15, "d": 0.1, "r": 0.17+self.obs_inflation},
+        #     {"s": 32, "d": -0.2, "r": 0.2+self.obs_inflation}
         # ]
+
+        self.obs_inflation = 0
+        self.obs_list = [
+            {"s": 55, "d": 0.01, "r": 0},
+            {"s": 15, "d": 0.1, "r": 0},
+            {"s": 32, "d": -0.2, "r": 0}
+        ]
 
         # Compute obstacle positions and add to the list
         for obs in self.obs_list:
@@ -617,19 +615,11 @@ class NMPCController:
 
         # self.obs_model = tf.keras.models.load_model("/home/bertrandt/b.ob/src/MPC_code/IL/path_following_obs_avoidance_with_penalty.keras",custom_objects={"CollisionPenaltyLayer": CollisionPenaltyLayer})
         
-        self.pf_model = PolicyModel(input_dim=5, output_dim=3)  # Replace with your actual architecture
-        self.pf_model.load_state_dict(torch.load("/home/bertrandt/b.ob/src/MPC_code/IL/DPL/models/final_policy.pth"))
-        self.pf_model.eval()  # Set the model to evaluation mode
+        self.pf_model = load_model("/home/bertrandt/b.ob/src/MPC_code/IL/path_following_model.h5")
+        # Wrap the model inference in a compiled TensorFlow function
+        self.compiled_inference = tf.function(self.pf_model.call, jit_compile=True)
 
 
-    def predict_policy(self, input_data):
-        # Convert the input data to a PyTorch tensor
-        input_tensor = torch.tensor(input_data, dtype=torch.float32)
-        # Perform the prediction
-        with torch.no_grad():
-            output = self.pf_model(input_tensor)
-        return output.numpy()  # Convert output to NumPy array for further processing
-    
     def find_closest_obstacle(self):
         """Find the closest obstacle to the current robot position."""
         current_x, current_y = self.current_state[0], self.current_state[1]
@@ -889,18 +879,12 @@ class NMPCController:
             # Store the current state for plotting
             self.closed_loop_trajectory.append(self.current_state[:3])  # Store (x, y, theta)
 
-    def plot_closed_loop(self, csv_file=None):
-        """
-        Plot the closed-loop trajectory, reference path, and obstacles.
-        Optionally overlay recorded data from a CSV file.
-        """
+    def plot_closed_loop(self):
         self.closed_loop_trajectory = np.array(self.closed_loop_trajectory)
         s_values = np.linspace(0, path_segments[-1].end_time, 500)
         ref_path = np.array([f_s(s).full().flatten() for s in s_values])
 
-        plt.figure(figsize=(10, 10))
-
-        # Plot the reference path
+        # Plot reference path
         plt.plot(ref_path[:, 0], ref_path[:, 1], 'g--', label='Reference Path')
 
         # Plot all obstacles from obs_list
@@ -911,14 +895,9 @@ class NMPCController:
             circle = plt.Circle((obs_x, obs_y), obs_r, color='red', alpha=0.5)
             plt.gca().add_patch(circle)
 
-        # Plot the closed-loop trajectory
+        # Plot closed-loop trajectory
         plt.plot(self.closed_loop_trajectory[:, 0], self.closed_loop_trajectory[:, 1], 'b-', label='Closed-Loop Trajectory')
-
-        # Overlay CSV data if provided
-        if csv_file:
-            csv_data = self.load_csv_data(csv_file)
-            plt.plot(csv_data[:, 0], csv_data[:, 1], 'r--', label='Recorded Data (CSV)')
-
+        
         # Start point
         plt.scatter(self.initial_point[0], self.initial_point[1], color='black', label='Start Point')
 
@@ -932,11 +911,11 @@ class NMPCController:
         plt.show()
 
         # Plot Cartesian error and inputs
-        self.plot_cartesian_error_and_inputs(csv_file)
+        self.plot_cartesian_error_and_inputs()
 
 
-    def plot_cartesian_error_and_inputs(self, csv_file=None):
-        """Plot the Cartesian error and control inputs against `s0`. Optionally overlay data from a CSV file."""
+    def plot_cartesian_error_and_inputs(self):
+        """Plot the Cartesian error and control inputs against self.s0."""
         # Extract s0 and positions from the stored trajectory
         s_history = [state[3] for state in self.closed_loop_trajectory]
         x_history = [state[0] for state in self.closed_loop_trajectory]
@@ -956,21 +935,7 @@ class NMPCController:
 
         # Plot Cartesian error vs. s0
         plt.figure(figsize=(10, 6))
-        plt.plot(s_history, cartesian_errors, label="Cartesian Error (Simulated)", color="blue")
-
-        # Overlay CSV data if provided
-        if csv_file:
-            csv_data = self.load_csv_data(csv_file)
-            s_csv = csv_data[:, 3]  # Assuming `s0` is the fourth column
-            x_csv = csv_data[:, 0]  # Assuming `x` is the first column
-            y_csv = csv_data[:, 1]  # Assuming `y` is the second column
-            csv_errors = [
-                np.sqrt((x_csv[i] - f_s(s_csv[i]).full().flatten()[0])**2 +
-                        (y_csv[i] - f_s(s_csv[i]).full().flatten()[1])**2)
-                for i in range(len(s_csv))
-            ]
-            plt.plot(s_csv, csv_errors, label="Cartesian Error (CSV)", color="red", linestyle="--")
-
+        plt.plot(s_history, cartesian_errors, label="Cartesian Error", color="blue")
         plt.title("Cartesian Error vs. s0")
         plt.xlabel("s0 (Path Progress Parameter)")
         plt.ylabel("Cartesian Error (m)")
@@ -983,22 +948,12 @@ class NMPCController:
         plt.plot(s_history, v_inputs, label="Linear Velocity (v)", color="green")
         plt.plot(s_history, omega_inputs, label="Angular Velocity (ω)", color="red")
         plt.plot(s_history, w_inputs, label="Path Progress Rate (w)", color="orange")
-
-        if csv_file:
-            v_csv = csv_data[:, 4]  # Assuming `v` is the fifth column
-            omega_csv = csv_data[:, 5]  # Assuming `omega` is the sixth column
-            w_csv = csv_data[:, 6]  # Assuming `w` is the seventh column
-            plt.plot(s_csv, v_csv, label="v (CSV)", color="green", linestyle="--")
-            plt.plot(s_csv, omega_csv, label="ω (CSV)", color="red", linestyle="--")
-            plt.plot(s_csv, w_csv, label="w (CSV)", color="orange", linestyle="--")
-
         plt.title("Control Inputs vs. s0")
         plt.xlabel("s0 (Path Progress Parameter)")
         plt.ylabel("Control Input Value")
         plt.legend()
         plt.grid(True)
         plt.show()
-
 
     def run_NN_obs_n(self,n=50):
 
@@ -1044,10 +999,11 @@ class NMPCController:
 
     def run_NN_pf(self):
         """
-        Run the closed-loop control using the path-following neural network (NN).
+        Run the closed-loop control using the path-following neural network (NN) with XLA optimization.
         """
         self.closed_loop_controls = []  # Store control inputs
         self.solver_times = []  # Store inference times
+        self.s_history = []  # Store s0 values
 
         while np.linalg.norm(self.current_state[:2] - self.final_position[:2]) > 0.1:
             # Prepare inputs for the NN
@@ -1061,23 +1017,30 @@ class NMPCController:
 
             # Handle orientation flip for eta < 0
             if eta >= 0:
-                input_data = [[x_hat, y_hat, theta_hat, s_hat, eta]]
+                input_data = tf.convert_to_tensor([[x_hat, y_hat, theta_hat, s_hat, eta]], dtype=tf.float32)
             else:
-                input_data = [[x_hat, -y_hat, -theta_hat, s_hat, -eta]]
+                input_data = tf.convert_to_tensor([[x_hat, -y_hat, -theta_hat, s_hat, -eta]], dtype=tf.float32)
 
             # Measure inference time
             start_time = time.time()
-            usol = self.predict_policy(input_data)
+            usol = self.compiled_inference(input_data)
             end_time = time.time()
 
             self.solver_times.append(end_time - start_time)
 
             # Adjust NN output based on eta
             if eta < 0:
-                usol[0, 1] *= -1
+                usol = tf.tensor_scatter_nd_update(usol, [[0, 1]], [-usol[0, 1]])
 
             # Clip NN outputs to enforce constraints
-            usol = np.clip(usol, [0.01, -0.8, 0.01], [1, 0.8, 1])
+            usol = tf.clip_by_value(usol, [0.01, -0.8, 0.01], [1, 0.8, 1]).numpy()
+
+            # Apply error corrections
+            Pt = 1.0  # Path tracking proportional gain
+            Pn = 1.0  # Path tracking normal gain
+            en, et, phi = error(path_segments, self.current_state, self.current_state[3])
+            usol[0][0] -= Pt * et
+            usol[0][1] -= Pn * en
 
             # Simulate the next state
             self.current_state = self.simulate_kinematic_step(self.current_state, usol[0], self.Ts_sim)
@@ -1097,37 +1060,6 @@ class NMPCController:
                  ["Worst Case", f"{worst_time:.6f}"]]
         print(tabulate(table, headers="firstrow", tablefmt="grid"))
 
-    def load_csv_data(self, file_path):
-        """Load CSV data for overlay."""
-        data = np.loadtxt(file_path, delimiter=",", skiprows=1)
-        return data
-    
-    def analyze_timing_data(self, csv_file):
-        """
-        Analyze timing data from the CSV and display statistics as a table.
-        """
-        # Load CSV data
-        csv_data = self.load_csv_data(csv_file)
-        times = csv_data[:, -1]  # Assuming the last column contains time data
-
-        # Compute statistics
-        mean_time = np.mean(times)
-        std_time = np.std(times)
-        worst_time = np.max(times)
-
-        # Prepare the table
-        table = [
-            ["Metric", "Time (s)"],
-            ["Mean", f"{mean_time:.6f}"],
-            ["Standard Deviation", f"{std_time:.6f}"],
-            ["Worst Case", f"{worst_time:.6f}"],
-        ]
-
-        # Print the table
-        print(tabulate(table, headers="firstrow", tablefmt="grid"))
-
-        # Optionally return the statistics for further use
-        return {"mean": mean_time, "std": std_time, "worst": worst_time}
 
 
 if __name__ == "__main__":
@@ -1140,10 +1072,5 @@ if __name__ == "__main__":
     # controller.plot_results(x_opt)
 
     controller.run_NN_pf()
-    controller.plot_closed_loop(csv_file="closed_loop_nn_pf_1.csv")
-    controller.analyze_timing_data(csv_file="closed_loop_nn_pf_1.csv")
-
     # controller.run_mpc_loop()
-    # controller.plot_closed_loop(csv_file="closed_loop_mpc_1.csv")
-    # controller.analyze_timing_data(csv_file="closed_loop_mpc_1.csv")
-
+    controller.plot_closed_loop()
