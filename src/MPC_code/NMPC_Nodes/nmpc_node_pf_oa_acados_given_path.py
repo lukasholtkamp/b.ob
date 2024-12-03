@@ -34,7 +34,7 @@ class NMPCController(Node):
 
         # NMPC Parameters
         self.Ts = 0.3  # Sampling time
-        self.N = 20  # Prediction horizon
+        self.N = 60  # Prediction horizon
         self.nx = 4  # State dimension (x, y, theta,s)
         self.nu = 3  # Input dimension (v, omega, w)
 
@@ -67,8 +67,16 @@ class NMPCController(Node):
         self.goal_pose_sub = self.create_subscription(PoseStamped, '/goal_pose', self.goal_pose_callback, 10)
 
         # self.obs_sub = self.create_subscription(Obstacles, '/obstacles', self.obs_callback, 10)
-        self.max_obs = 2
-        self.obs_list = np.zeros((self.max_obs, 3))
+        self.obs_inflation = 0.22
+        self.obs_list = [
+            {"s": 15, "d": 0.2, "r": 0.15 + self.obs_inflation},
+            {"s": 23, "d": 0.1, "r": 0.17 + self.obs_inflation},
+            {"s": 30, "d": -0.2, "r": 0.2 + self.obs_inflation}
+        ]
+
+        # The positions (x, y) will be computed later when the goal is set
+        for obs in self.obs_list:
+            obs["x"], obs["y"] = None, None  # Placeholder for positions
 
         self.current_state = np.array([])
         self.goal = np.array([])
@@ -77,9 +85,6 @@ class NMPCController(Node):
         self.u0 = np.array([1, 0])
         self.w0 = 1
         self.s0 = 0
-
-        # Array to store x, y, theta, s values
-        self.data_log = []
 
         self.segment_length = 20
         self.epsilon = 0.15
@@ -112,47 +117,45 @@ class NMPCController(Node):
         self.obs_d = 0.58
         self.obs_r = 0.0  # Set the radius
 
+        self.data_log = []  # Stores all the logged data
+        self.log_file_path = 'src/closed_loop_mpc_1.csv'  # Update this path
+
+    def find_closest_obstacle(self):
+        """Find the closest obstacle to the current robot position."""
+        current_x, current_y = self.current_state[0], self.current_state[1]
+        closest_obs = min(
+            self.obs_list,
+            key=lambda obs: np.sqrt((current_x - obs["x"])**2 + (current_y - obs["y"])**2)
+        )
+        return np.array([closest_obs["x"], closest_obs["y"], closest_obs["r"]])
+
     def publish_circle_marker(self, height=0.1, frame_id='map'):
+        for obs in self.obs_list:
+            marker = Marker()
+            marker.header.frame_id = frame_id
+            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.ns = 'obstacle_marker'
+            marker.id = self.marker_id
+            self.marker_id += 1
+            marker.type = Marker.CYLINDER
+            marker.action = Marker.ADD
 
-        """
-        Publish a circle or cylinder marker at a given position with a specified radius.
-        
-        :param position: Tuple (x, y, z) representing the center position of the circle.
-        :param radius: Radius of the circle.
-        :param height: Height of the cylinder (default is 0.1 for a thin circle).
-        :param frame_id: Frame ID for the marker (default is 'map').
-        """
-        marker = Marker()
-        marker.header.frame_id = frame_id
-        marker.header.stamp = self.get_clock().now().to_msg()
-        marker.ns = 'obstacle_marker'
-        marker.id = self.marker_id
-        self.marker_id += 1
-        marker.type = Marker.CYLINDER
-        marker.action = Marker.ADD
+            marker.pose.position.x = obs["x"]
+            marker.pose.position.y = obs["y"]
+            marker.pose.position.z = 0.0  # Ground level
+            marker.pose.orientation.w = 1.0
 
-        # Set the pose of the marker
-        marker.pose.position.x = self.obs_position[0]
-        marker.pose.position.y = self.obs_position[1]
-        marker.pose.position.z = self.obs_position[2]  # Adjust as needed
-        marker.pose.orientation.x = 0.0
-        marker.pose.orientation.y = 0.0
-        marker.pose.orientation.z = 0.0
-        marker.pose.orientation.w = 1.0
+            marker.scale.x = 2 * (obs["r"]-self.obs_inflation)  # Diameter
+            marker.scale.y = 2 * (obs["r"]-self.obs_inflation)   # Diameter
+            marker.scale.z = height  # Thin cylinder
 
-        # Set the scale (diameter in x and y, and height)
-        marker.scale.x = 2 * self.obs_r  # Diameter
-        marker.scale.y = 2 * self.obs_r  # Diameter
-        marker.scale.z = height  # Height for cylinder visualization
+            marker.color.r = 1.0
+            marker.color.g = 0.0
+            marker.color.b = 0.0
+            marker.color.a = 0.8
 
-        # Set the color (RGBA)
-        marker.color.r = 0.0
-        marker.color.g = 1.0
-        marker.color.b = 0.0
-        marker.color.a = 0.8  # Transparency
+            self.marker_publisher.publish(marker)
 
-        # Publish the marker
-        self.marker_publisher.publish(marker)
 
     def get_current_state(self):
         # Start the ros2 topic echo process
@@ -241,13 +244,14 @@ class NMPCController(Node):
         final_position = self.global_path[-1].end_point
         self.goal = np.array([final_position[0], final_position[1], 0.0])
 
-        x, y = get_deviated_point(self.global_path, self.obs_s, self.obs_d)
+        # Compute the positions of all obstacles based on the global path
+        for obs in self.obs_list:
+            obs["x"], obs["y"] = get_deviated_point(self.global_path, obs["s"], obs["d"])
 
-        self.obs_position = np.array([x,y,0])
-
+        # Set the initial obstacle position for visualization
+        self.obs_position = np.array([self.obs_list[0]["x"], self.obs_list[0]["y"], 0.0])
 
     def control_loop(self):
-
         now = self.get_clock().now()
 
         if self.start == 0:
@@ -272,10 +276,14 @@ class NMPCController(Node):
             self.publish_reference_path()  # Publish the reference path once initialized
 
         if self.initialized and self.global_path!=None and self.dt > 0 and goal_dist>0.2:
+            self.x0 = np.append(self.current_state, np.array([self.s0]))
 
-            self.x0 = np.append(self.current_state,np.array([self.s0]))
+            # Find the closest obstacle
+            closest_obs = self.find_closest_obstacle()
 
-            self.solver.set(0, "p", np.transpose(self.obs_list).reshape((1, -1))[0].reshape((-1, 1)))
+            # Set the closest obstacle as the parameter for all stages
+            for k in range(self.N):
+                self.solver.set(k, "p", closest_obs.flatten())
 
             self.solver.set(0, "lbx", self.x0)
             self.solver.set(0, "ubx", self.x0)
@@ -284,29 +292,41 @@ class NMPCController(Node):
 
             if status != 0:
                 print(f"ACADOS returned status {status}")
-                
-            usol = self.solver.get(0, "u")
+                return
 
+            # Extract control inputs and proceed
+            usol = self.solver.get(0, "u")
             x_opt = np.array([self.solver.get(i, "x") for i in range(self.ocp.dims.N + 1)])
 
-
-            usol = self.convert_u(usol)
-
+            # usol = self.convert_u(usol[0])
             # usol = self.low_pass_filter(usol, self.old_vel)
 
+            # Publish results
             self.publish_control(usol)
             self.publish_reference_path()
-            # Call the method to publish the marker
-            self.publish_circle_marker()
             self.publish_ol_path(x_opt)
+            self.publish_circle_marker()
 
+            # Update state and reference parameter
             self.w0 = usol[2]
             self.s0 += self.dt * self.w0
 
             self.old_vel = usol
-            
+
+            # Log the data
+            self.log_data(self.current_state, self.s0, usol, self.dt)
+
         else:
             self.stop_robot()
+            if self.initialized and goal_dist <= 0.2:
+                self.save_log_to_csv()  # Save the log when the robot reaches the goal
+
+    def log_data(self, state, s0, usol, time_elapsed):
+        """Log the current state, s0, usol, and time elapsed."""
+        x, y, theta = state
+        v, omega, w = usol
+        self.data_log.append([x, y, theta, s0, v, omega, w, time_elapsed])
+
 
     def stop_robot(self):
         # Publish zero velocity to stop the robot
@@ -378,20 +398,22 @@ class NMPCController(Node):
         return u
     
     def setup_mpc(self, x0):
-        self.x0 = np.append(x0,np.array([self.s0]))
+        self.x0 = np.append(x0, np.array([self.s0]))
         self.initialized = True
 
         # Initialize NMPC settings after global path is received and processed
         self.ocp = self.setup_ocp_with_cost_function()
 
-        # Make sure coeff_x and coeff_y are properly flattened and concatenated
-        parameter_values = np.transpose(self.obs_list).reshape((1, -1))[0].reshape((-1, 1))
+        # Use a placeholder for one obstacle initially
+        closest_obs = self.find_closest_obstacle()
+        parameter_values = closest_obs.flatten()  # Single obstacle (3 parameters)
 
         # Initialize the solver
         self.solver = AcadosOcpSolver(self.ocp, json_file="acados_ocp.json")
 
-        # Set the parameter values in the solver
+        # Set the placeholder obstacle as the initial parameter
         self.solver.set(0, "p", parameter_values)
+
 
     def dist(self,current,goal):
         return np.sqrt((current[0]-goal[0])**2 + (current[1]-goal[1])**2)
@@ -431,39 +453,30 @@ class NMPCController(Node):
         return h
     
     def mobile_robot_ode(self):
-        # Define state variables
-        x = SX.sym("x")
-        y = SX.sym("y")
-        theta = SX.sym("theta")
-        s = SX.sym("s")
+        x = ca.SX.sym("x")
+        y = ca.SX.sym("y")
+        theta = ca.SX.sym("theta")
+        s = ca.SX.sym("s")
+        v = ca.SX.sym("v")
+        omega = ca.SX.sym("omega")
+        w = ca.SX.sym("w")
 
-        # Define control inputs
-        v = SX.sym("v")
-        omega = SX.sym("omega")
-        w = SX.sym("w")
+        states = ca.vertcat(x, y, theta, s)
+        controls = ca.vertcat(v, omega, w)
+        obs_list = ca.SX.sym("obs", 1, 3)  # Single obstacle (closest one)
 
-        # Real and artificial states and controls
-        states = vertcat(x, y, theta, s)
-        controls = vertcat(v, omega, w)
-
-        obs_list = SX.sym("obs", self.max_obs, 3)
-
-        # System dynamics
         dx = v * ca.cos(theta)
         dy = v * ca.sin(theta)
         dtheta = omega
         ds = w
 
-        # Artificial dynamics are free variables (no dynamics for simplicity)
-        xdot = vertcat(dx, dy, dtheta, ds)
+        xdot = ca.vertcat(dx, dy, dtheta, ds)
 
-        # Define the model
         model = AcadosModel()
         model.f_expl_expr = xdot
         model.x = states
         model.u = controls
-
-        model.p = ca.reshape(obs_list, -1, 1)
+        model.p = ca.reshape(obs_list, -1, 1)  # Closest obstacle as parameter
         model.name = "mobile_robot"
 
         return model
@@ -493,31 +506,32 @@ class NMPCController(Node):
         w = ocp.model.u[2]  # w is the third control input
         s = ocp.model.x[3]  # s is the path parameter
 
+        obs_list = ca.reshape(ocp.model.p, 1, 3)  # Single obstacle as parameter
+
         # Reference trajectory
         xi_s = self.reference_traj(s)
         dx = x - xi_s
 
         # Cost function expressions
         ocp.model.cost_y_expr = ca.vertcat(dx, u, (1 - w))
-        for i in range(self.max_obs):
-            h = ca.if_else(
-                self.obs_r > 0,
-                ca.fmax((self.obs_r+0.23+0.18)**2 - (x[0] - self.obs_position[0])**2 - (x[1] - self.obs_position[1])**2, 0),
-                0
-            )
-            ocp.model.cost_y_expr = ca.vertcat(ocp.model.cost_y_expr, h)
+        obs_x = obs_list[0, 0]
+        obs_y = obs_list[0, 1]
+        obs_r = obs_list[0, 2]
+
+        # Obstacle avoidance penalty
+        h = ca.if_else(obs_r > 0, ca.fmax(obs_r**2 - (x[0] - obs_x)**2 - (x[1] - obs_y)**2, 0), 0)
+        ocp.model.cost_y_expr = ca.vertcat(ocp.model.cost_y_expr, h)
 
         ocp.model.cost_y_expr_e = ca.vertcat(dx)
 
         # Create the weight matrix with correct dimensions
-        num_obstacle_terms = self.max_obs
-        obstacle_weights = 0.5 * mu * np.eye(num_obstacle_terms)
+        obstacle_weights = 0.5 * mu
 
         ocp.cost.W = np.block([
-            [Q, np.zeros((3, 2)), np.zeros((3, 1)), np.zeros((3, num_obstacle_terms))],
-            [np.zeros((2, 3)), R, np.zeros((2, 1)), np.zeros((2, num_obstacle_terms))],
-            [np.zeros((1, 3)), np.zeros((1, 2)), T_cost, np.zeros((1, num_obstacle_terms))],
-            [np.zeros((num_obstacle_terms, 3)), np.zeros((num_obstacle_terms, 2)), np.zeros((num_obstacle_terms, 1)), obstacle_weights]
+            [Q, np.zeros((3, 2)), np.zeros((3, 1)), np.zeros((3, 1))],
+            [np.zeros((2, 3)), R, np.zeros((2, 1)), np.zeros((2, 1))],
+            [np.zeros((1, 3)), np.zeros((1, 2)), T_cost, np.zeros((1, 1))],
+            [np.zeros((1, 3)), np.zeros((1, 2)), np.zeros((1, 1)), obstacle_weights]
         ])
 
         # ocp.cost.W = block_diag(Q, R, T_cost)
@@ -534,7 +548,7 @@ class NMPCController(Node):
         ocp.constraints.idxbx = np.array([3])  # Index of the constrained state (s)
 
         # Set parameter values (initialize as zeros, these will be updated during execution)
-        ocp.parameter_values = np.zeros((self.max_obs*3, 1))
+        ocp.parameter_values = np.zeros((3, 1))
 
         ocp.constraints.lbu = np.array([0, -0.8, 0])  # Lower bounds for (v, omega, w)
         ocp.constraints.ubu = np.array([1, 0.8, 1])  # Upper bounds for (v, omega, w)
@@ -561,6 +575,7 @@ class NMPCController(Node):
         ocp.solver_options.regularize_method = "MIRROR"
         ocp.solver_options.levenberg_marquardt = 1e-4
 
+
         # Set the initial state directly
         x0_initial = np.append(self.current_state,np.array([self.s0]))  # (x, y, theta, s)
         ocp.constraints.x0 = x0_initial
@@ -575,6 +590,15 @@ class NMPCController(Node):
             writer.writerows(self.data_log)
         self.get_logger().info(f'Data saved to {filename}')
 
+    def save_log_to_csv(self):
+        """Save the logged data to a CSV file."""
+        with open(self.log_file_path, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            # Write the header
+            writer.writerow(['x', 'y', 'theta', 's0', 'v', 'omega', 'w', 'time_elapsed'])
+            # Write the logged data
+            writer.writerows(self.data_log)
+        self.get_logger().info(f"Data log saved to {self.log_file_path}")
 
 
 def main(args=None):

@@ -9,7 +9,7 @@ from policy_model import PolicyModel
 
 class PathFollowingController:
     def __init__(
-        self, model_path, path_segments_file, dt=0.3, max_steps=1000, tolerance=0.1
+        self, model_path, path_segments_file, dt=0.3, max_steps=2500, tolerance=0.1
     ):
         self.path_segments = load_path_segments(path_segments_file)
         self.dt = dt
@@ -156,9 +156,52 @@ class PathFollowingController:
 
 
 if __name__ == "__main__":
-    model_path = "models/policy_iteration_10.pth"
+    # Define the model paths for iterations 1, 4, 7, and 10
+    model_paths = [
+        "models/policy_iteration_1.pth",
+        "models/policy_iteration_4.pth",
+        "models/policy_iteration_7.pth",
+        "models/policy_iteration_10.pth",
+    ]
     path_segments_file = "paths/path_segments_left.json"
 
-    controller = PathFollowingController(model_path, path_segments_file)
-    controller.simulate_policy_until_goal()
-    controller.plot_results()
+    # Colors for each model's trajectory
+    colors = ["blue", "orange", "purple", "green"]
+    labels = ["Iteration 1", "Iteration 4", "Iteration 7", "Iteration 10"]
+
+    # Create a plot
+    plt.figure(figsize=(10, 10))
+
+    # Generate reference path
+    controller = PathFollowingController(model_paths[0], path_segments_file)
+    s_values = np.linspace(0, controller.path_segments[-1].end_time, 500)
+    ref_path = np.array([controller.f_s(s_val).full().flatten()[:2] for s_val in s_values])
+
+    # Plot the reference path
+    plt.plot(ref_path[:, 0], ref_path[:, 1], "g--", label="Reference Path")
+
+    # Simulate and plot each model's trajectory
+    for model_path, color, label in zip(model_paths, colors, labels):
+        controller = PathFollowingController(model_path, path_segments_file)
+        controller.simulate_policy_until_goal()
+        closed_loop = np.array(controller.closed_loop_trajectory)
+
+        # Plot the trajectory
+        plt.plot(closed_loop[:, 0], closed_loop[:, 1], "-", color=color, label=label)
+
+    # Mark the goal position
+    plt.scatter(
+        controller.goal_position[0],
+        controller.goal_position[1],
+        color="red",
+        label="Goal Position",
+    )
+
+    # Plot settings
+    plt.title("Progression of Policy Iterations")
+    plt.xlabel("X")
+    plt.ylabel("Y")
+    plt.legend()
+    plt.grid(True)
+    plt.axis("equal")
+    plt.show()
