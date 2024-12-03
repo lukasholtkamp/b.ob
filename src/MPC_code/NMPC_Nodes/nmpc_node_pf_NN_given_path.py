@@ -24,7 +24,8 @@ from builtin_interfaces.msg import Duration
 
 from .functions.path_planner import *
 
-from tensorflow.keras.models import load_model
+import torch
+from .functions.policy_model import PolicyModel
 
 import subprocess
 import re
@@ -103,12 +104,19 @@ class NMPCController(Node):
         self.ref_path = None
         self.global_path = None
 
-        self.model = load_model("/home/bertrandt/b.ob/src/nmpc_robot_controller/nmpc_robot_controller/functions/path_following_model.h5")
+        # self.model = load_model("/home/bertrandt/b.ob/src/nmpc_robot_controller/nmpc_robot_controller/functions/path_following_model.h5")
         # self.model = load_model("/home/ubuntu/b.ob/src/nmpc_robot_controller/nmpc_robot_controller/functions/path_following_model.h5")
+
+        self.pf_model = PolicyModel(input_dim=5, output_dim=3)  # Replace with your actual architecture
+        self.pf_model.load_state_dict(torch.load("/home/bertrandt/b.ob/src/MPC_code/IL/DPL/models/final_policy.pth"))
+        self.pf_model.eval()  # Set the model to evaluation mode
 
         # Load the CSV data
         self.csv_path = '/home/bertrandt/b.ob/src/nmpc_robot_controller/nmpc_robot_controller/functions/path_data_log_left.csv'  # Replace with the path to your CSV file
         self.path_points = self.load_csv_data(self.csv_path)
+
+        self.data_log = []  # Stores all the logged data
+        self.log_file_path = '/home/bertrandt/b.ob/src/MPC_code/path_fitting/closed_loop_nn_pf_1.csv'  # Update this path
 
     def get_current_state(self):
         # Start the ros2 topic echo process
@@ -218,14 +226,22 @@ class NMPCController(Node):
         # Create the reference trajectory function
         s = ca.MX.sym('s')
         self.reference_traj = ca.Function('f_s', [s], [f(self.global_path, s)])
-        self.new_goal_received = False
 
-        x = msg.pose.position.x
-        y = msg.pose.position.y
-        quaternion = [msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
-        _, _, theta = euler_from_quaternion(quaternion)
+        self.new_goal_received = False
+        self.initialized = True
         
-        self.goal = np.array([x, y, theta])
+        # Set self.goal to the final endpoint of the global path with theta = 0
+        final_position = self.global_path[-1].end_point
+        self.goal = np.array([final_position[0], final_position[1], 0.0])
+
+
+    def predict_policy(self, input_data):
+        # Convert the input data to a PyTorch tensor
+        input_tensor = torch.tensor(input_data, dtype=torch.float32)
+        # Perform the prediction
+        with torch.no_grad():
+            output = self.pf_model(input_tensor)
+        return output.numpy()  # Convert output to NumPy array for further processing
 
     def control_loop(self):
 
@@ -251,45 +267,62 @@ class NMPCController(Node):
         if self.global_path!=None:
             self.publish_reference_path()  # Publish the reference path once initialized
 
-        if self.global_path!=None and self.dt > 0 and goal_dist>0.2:
+        if self.global_path!=None and self.dt > 0 and goal_dist>0.1:
 
             x_hat, y_hat, theta_hat, s_hat, eta = T_z(self.global_path, self.current_state[0], self.current_state[1], self.current_state[2], self.s0)
 
-            if eta>=0:
-                input = np.array([[x_hat, y_hat, theta_hat, s_hat, eta]])  # Shape: (1, 5)
+            # Handle orientation flip for eta < 0
+            if eta >= 0:
+                input_data = [[x_hat, y_hat, theta_hat, s_hat, eta]]
             else:
-                input = np.array([[x_hat, -y_hat, -theta_hat, s_hat, -eta]])  # Shape: (1, 5)
+                input_data = [[x_hat, -y_hat, -theta_hat, s_hat, -eta]]
 
-            # Make predictions using the model
-            usol = self.model.predict(input)
+            usol = self.predict_policy(input_data)
+
             
-            if eta<0:
-                usol[0][1] *= -1
-                
-            Pt = 1.0
-            Pn = 1.0
+            # Adjust NN output based on eta
+            if eta < 0:
+                usol[0, 1] *= -1
 
-            en,et,phi = error(self.global_path,self.current_state,self.s0)
+
+            # Clip NN outputs to enforce constraints
+            usol = np.clip(usol, [0.01, -0.8, 0.01], [1, 0.8, 1])
+
+                
+            # Pt = 1.0
+            # Pn = 1.0
+
+            # en,et,phi = error(self.global_path,self.current_state,self.s0)
             
             # print(en)
             # print(et)
                 
-            usol[0][0]-= Pt*et
-            usol[0][1]-= Pn*en
+            # usol[0][0]-= Pt*et
+            # usol[0][1]-= Pn*en
 
-            usol = self.convert_u(usol[0])
+            # usol = self.convert_u(usol[0])
+            # usol = self.low_pass_filter(usol, self.old_vel)
 
             # print(usol)
-
-            self.publish_control(usol)
+            self.publish_control(usol[0])
             # print(usol)
             self.publish_reference_path()
 
-            self.w0 = usol[2]
+            self.w0 = usol[0][2]
             self.s0 += self.dt * self.w0
+
+            self.log_data(self.current_state, self.s0, usol[0], self.dt)
             
         else:
             self.stop_robot()
+            if self.initialized and goal_dist <= 0.1:
+                self.save_log_to_csv()  # Save the log when the robot reaches the goal
+
+    def log_data(self, state, s0, usol, time_elapsed):
+        """Log the current state, s0, usol, and time elapsed."""
+        x, y, theta = state
+        v, omega, w = usol
+        self.data_log.append([x, y, theta, s0, v, omega, w, time_elapsed])
 
     def stop_robot(self):
         # Publish zero velocity to stop the robot
@@ -339,6 +372,12 @@ class NMPCController(Node):
 
         self.ref_path_pub.publish(ref_path)
 
+    def low_pass_filter(self,usol, old_usol, alpha=0.2):
+        """Applies a low-pass filter to smooth the control output."""
+        usol[0] = alpha * usol[0] + (1 - alpha) * old_usol[0]
+        usol[1] = alpha * usol[1] + (1 - alpha) * old_usol[1]
+        return usol
+    
     def publish_control(self, control_input):
         twist_msg = Twist()
         twist_msg.linear.x = control_input[0]
@@ -392,6 +431,16 @@ class NMPCController(Node):
             writer.writerow(['x', 'y'])  # Header
             writer.writerows(self.data_log)
         self.get_logger().info(f'Data saved to {filename}')
+
+    def save_log_to_csv(self):
+        """Save the logged data to a CSV file."""
+        with open(self.log_file_path, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            # Write the header
+            writer.writerow(['x', 'y', 'theta', 's0', 'v', 'omega', 'w', 'time_elapsed'])
+            # Write the logged data
+            writer.writerows(self.data_log)
+        self.get_logger().info(f"Data log saved to {self.log_file_path}")
 
 
 
