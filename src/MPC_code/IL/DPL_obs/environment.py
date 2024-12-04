@@ -35,7 +35,15 @@ class SimpleEnvironment:
         self.step_count = 0
 
         # Randomly sample curvature, progress, and orientation
-        eta = np.random.uniform(0, 3)  # Curvature
+        
+        probability = 0.4  # Probability of generating obstacles (adjust as needed)
+        if np.random.rand() < probability:
+            # Generate obstacles
+            eta = np.random.uniform(0, 3)  # Curvature
+        else:
+            # No obstacles
+            eta = 0  # Curvature
+
         s = np.random.uniform(-0.4, 0.4)  # Path progress
         orientation = np.random.uniform(0, 2 * np.pi)  # Orientation
 

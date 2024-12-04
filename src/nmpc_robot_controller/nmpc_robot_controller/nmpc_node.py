@@ -2,7 +2,8 @@
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry, Path
-from geometry_msgs.msg import Twist, PoseStamped, Point, PoseWithCovarianceStamped
+from geometry_msgs.msg import Twist, PoseStamped, PoseWithCovarianceStamped
+from geometry_msgs.msg import Point as GeoPoint  # Avoid conflicts with sympy
 from sensor_msgs.msg import LaserScan
 import numpy as np
 from casadi import *
@@ -14,7 +15,6 @@ from tf_transformations import euler_from_quaternion
 import math
 from sklearn.linear_model import LinearRegression
 from scipy.linalg import block_diag
-import pandas as pd
 
 from obstacle_detector.msg import Obstacles
 
@@ -25,10 +25,19 @@ from builtin_interfaces.msg import Duration
 from .functions.path_planner import *
 
 import torch
-from .functions.policy_model import PolicyModel
+import torch.nn as nn
+from .functions.policy_model import PolicyModel  # Import your PyTorch policy model class
 
 import subprocess
 import re
+
+from rclpy.action import ActionClient
+from rclpy.duration import Duration
+from nav2_msgs.action import ComputePathToPose
+
+from sensor_msgs.msg import PointCloud2, PointField
+import sensor_msgs_py.point_cloud2 as pc2
+
 
 class NMPCController(Node):
 
@@ -37,7 +46,7 @@ class NMPCController(Node):
 
         # NMPC Parameters
         self.Ts = 0.3  # Sampling time
-        self.N = 20  # Prediction horizon
+        self.N = 60  # Prediction horizon
         self.nx = 4  # State dimension (x, y, theta,s)
         self.nu = 3  # Input dimension (v, omega, w)
 
@@ -61,17 +70,26 @@ class NMPCController(Node):
 
         # Other initializations
         # self.cmd_vel_pub = self.create_publisher(Twist, '/diffbot_base_controller/cmd_vel_unstamped', 10)
-        
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+
         self.ref_path_pub = self.create_publisher(Path, '/ref_path', 10)
         self.ol_path_pub = self.create_publisher(Path, '/ol_path', 10)
         self.amcl_pose_sub = self.create_subscription(PoseWithCovarianceStamped,'/amcl_pose',self.amcl_pose_callback,10)
 
+        self.global_path_sub = self.create_subscription(Path, '/plan', self.plan_callback, 10)
         self.goal_pose_sub = self.create_subscription(PoseStamped, '/goal_pose', self.goal_pose_callback, 10)
 
-        self.obs_sub = self.create_subscription(Obstacles, '/obstacles', self.obs_callback, 10)
-        self.max_obs = 2
-        self.obs_list = np.zeros((self.max_obs, 3))
+        # self.obs_sub = self.create_subscription(Obstacles, '/obstacles', self.obs_callback, 10)
+        self.obs_inflation = 0.22
+        self.obs_list = [
+            {"s": 15, "d": 0.2, "r": 0.15 + self.obs_inflation},
+            {"s": 23, "d": 0.1, "r": 0.17 + self.obs_inflation},
+            {"s": 30, "d": -0.2, "r": 0.2 + self.obs_inflation}
+        ]
+
+        # The positions (x, y) will be computed later when the goal is set
+        for obs in self.obs_list:
+            obs["x"], obs["y"] = None, None  # Placeholder for positions
 
         self.current_state = np.array([])
         self.goal = np.array([])
@@ -104,19 +122,106 @@ class NMPCController(Node):
         self.ref_path = None
         self.global_path = None
 
-        # self.model = load_model("/home/bertrandt/b.ob/src/nmpc_robot_controller/nmpc_robot_controller/functions/path_following_model.h5")
-        # self.model = load_model("/home/ubuntu/b.ob/src/nmpc_robot_controller/nmpc_robot_controller/functions/path_following_model.h5")
+        self.old_vel = None
 
-        self.pf_model = PolicyModel(input_dim=5, output_dim=3)  # Replace with your actual architecture
-        self.pf_model.load_state_dict(torch.load("/home/bertrandt/b.ob/src/MPC_code/IL/DPL/models/final_policy.pth"))
-        self.pf_model.eval()  # Set the model to evaluation mode
+        self.obs_position = None  # Replace with your desired position
+        self.obs_s = 20
+        self.obs_d = 0.1
+        self.obs_r = 0.12  # Set the radius
 
         # Load the CSV data
         self.csv_path = '/home/bertrandt/b.ob/src/nmpc_robot_controller/nmpc_robot_controller/functions/path_data_log_left.csv'  # Replace with the path to your CSV file
         self.path_points = self.load_csv_data(self.csv_path)
 
+        self.obs_position = None  # Replace with your desired position
+        self.obs_s = 35
+        self.obs_d = 0.58
+        self.obs_r = 0.0  # Set the radius
+
         self.data_log = []  # Stores all the logged data
-        self.log_file_path = '/home/bertrandt/b.ob/src/MPC_code/path_fitting/closed_loop_nn_pf_1.csv'  # Update this path
+        self.log_file_path = 'src/closed_loop_mpc_replan.csv'  # Update this path
+        
+        self.path_received = False  # Flag to indicate if a new path has been received
+        self.new_path_points = []  # Store the new path points from /plan
+
+        # Initialize parameters
+        self.safety_margin = 0.3  # Safety margin for obstacle avoidance
+        self.replan_threshold = 5.5  # Threshold for checking the reference trajectory point
+
+        self.reference_traj = None  # Reference trajectory function
+        self.replan_required = False  # Flag to indicate when replanning is needed
+
+
+        self.pointcloud_pub = self.create_publisher(PointCloud2, '/obstacle_pointcloud', 10)
+
+    def find_closest_obstacle(self):
+        """Find the closest obstacle to the current robot position."""
+        current_x, current_y = self.current_state[0], self.current_state[1]
+        closest_obs = min(
+            self.obs_list,
+            key=lambda obs: np.sqrt((current_x - obs["x"])**2 + (current_y - obs["y"])**2)
+        )
+        return np.array([closest_obs["x"], closest_obs["y"], closest_obs["r"]])
+    
+    def publish_obstacle(self):
+        """
+        Publish obstacles as PointCloud2 data for the obstacle layer.
+        """
+        if self.obs_position is None or len(self.obs_position) < 1:
+            self.get_logger().error("Obstacle position is not defined correctly.")
+            return
+
+        # Create a PointCloud2 message
+        pointcloud = PointCloud2()
+        pointcloud.header.stamp = self.get_clock().now().to_msg()
+        pointcloud.header.frame_id = "map"
+
+        # Extract the obstacle position and radius
+        obs_x, obs_y, obs_r = self.obs_position
+
+        obs_r -= 0.06
+
+        # Generate points to approximate the circular obstacle
+        points = []
+        num_points = 36  # Number of points to approximate the circle
+        for angle in np.linspace(0, 2 * np.pi, num_points):
+            x = obs_x + obs_r * np.cos(angle)
+            y = obs_y + obs_r * np.sin(angle)
+            z = 0.0  # Assume flat terrain
+            points.append((x, y, z))
+
+        # Convert points to PointCloud2 format
+        pointcloud = pc2.create_cloud_xyz32(pointcloud.header, points)
+
+        # Publish the PointCloud2 message
+        self.pointcloud_pub.publish(pointcloud)
+        
+    def publish_circle_marker(self, height=0.1, frame_id='map'):
+        for obs in self.obs_list:
+            marker = Marker()
+            marker.header.frame_id = frame_id
+            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.ns = 'obstacle_marker'
+            marker.id = self.marker_id
+            self.marker_id += 1
+            marker.type = Marker.CYLINDER
+            marker.action = Marker.ADD
+
+            marker.pose.position.x = obs["x"]
+            marker.pose.position.y = obs["y"]
+            marker.pose.position.z = 0.0  # Ground level
+            marker.pose.orientation.w = 1.0
+
+            marker.scale.x = 2 * (obs["r"]-self.obs_inflation)  # Diameter
+            marker.scale.y = 2 * (obs["r"]-self.obs_inflation)   # Diameter
+            marker.scale.z = height  # Thin cylinder
+
+            marker.color.r = 1.0
+            marker.color.g = 0.0
+            marker.color.b = 0.0
+            marker.color.a = 0.8
+
+            self.marker_publisher.publish(marker)
 
     def get_current_state(self):
         # Start the ros2 topic echo process
@@ -165,7 +270,7 @@ class NMPCController(Node):
 
         finally:
             process.stdout.close()
-
+    
     def load_csv_data(self, file_path):
         # Load CSV using pandas
         df = pd.read_csv(file_path)
@@ -188,33 +293,163 @@ class NMPCController(Node):
         self.current_state = np.array([x, y, theta])
 
 
-    def obs_callback(self, msg):
+    def plan_callback(self, msg: Path):
+        """
+        Capture the path from /plan. Process the first path immediately
+        and save subsequent paths for appending during replanning.
+        """
+        new_points = []
+        for pose in msg.poses:
+            x = pose.pose.position.x
+            y = pose.pose.position.y
+            quaternion = [
+                pose.pose.orientation.x,
+                pose.pose.orientation.y,
+                pose.pose.orientation.z,
+                pose.pose.orientation.w,
+            ]
+            _, _, theta = euler_from_quaternion(quaternion)
+            new_points.append((x, y, theta))
+        
 
-        # Initialize an array to store obstacle information
-        obs = np.zeros((len(msg.circles), 3))
+        if not self.path_points:
+            # Process the first path immediately
+            self.path_points = new_points
+            self.process_path()
+            x, y = get_deviated_point(self.global_path, self.obs_s, self.obs_d)
+            self.obs_list = np.array([[x,y,self.obs_r]])
+            self.obs_position = np.array([x,y,self.obs_r])
+        else:
+            # Save subsequent paths for appending during replanning
+            self.new_path_points = new_points
+            self.path_received = True
 
-        # Extract the x, y, radius for each circle and store it in the obs array
-        for i in range(len(msg.circles)):
-            obs[i] = [msg.circles[i].center.x, msg.circles[i].center.y, msg.circles[i].radius]
+    def process_path(self):
+        """
+        Refit the trajectory with the current path points and update the reference trajectory.
+        """
+        self.global_path, points = LSPB_fit(
+            np.array(self.path_points), self.segment_length, self.epsilon, self.v_max
+        )
 
-        # Calculate the difference between the obstacle positions and the current position
-        try:
-            diff = obs[:, :2] - np.tile(self.current_state[:2], (obs[:, :2].shape[0], 1))
+        # Update the reference trajectory
+        s = ca.MX.sym('s')
+        self.reference_traj = ca.Function('f_s', [s], [f(self.global_path, s)])
 
-            # Calculate the Euclidean distance
-            distances = np.linalg.norm(diff, axis=1)
+        self.get_logger().info("Path and reference trajectory updated.")
 
-            # Sort the obs array according to the distances
-            sorted_indices = np.argsort(distances)
-            obs_sorted = obs[sorted_indices]
+        # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
-            if obs_sorted.shape[0] < self.max_obs:
-                obs_sorted = np.vstack((obs_sorted, np.zeros((self.max_obs - obs_sorted.shape[0], 3))))
+        # ax1.plot(points[:,0],points[:,1],'ko')
 
-            self.obs_list = obs_sorted[:self.max_obs, :]
-            
-        except:
-            self.obs_list = np.zeros((self.max_obs, 3))
+        # for i, segment in enumerate(self.global_path):
+
+        #     if segment.segment_type == 'line':
+        #         s = np.linspace(segment.start_time, segment.end_time-0.01, 1000)
+        #         x_vals = []
+        #         y_vals = []
+
+        #         for s_value in s:
+        #             result = self.reference_traj(s_value)
+        #             x_vals.append(float(result[0]))
+        #             y_vals.append(float(result[1]))
+
+        #         ax1.plot(x_vals, y_vals, 'r-', label="Full Path using f_s")
+        #         ax1.set_title(f"Original Segment and Input Positions")
+        #         ax1.set_xlabel('x')
+        #         ax1.set_ylabel('y')
+        #         ax1.grid(True)
+
+        #         tfx = []
+        #         tfy = []
+
+        #         for i in range(len(x_vals)):
+        #             point = segment.inv_transform_p((x_vals[i],y_vals[i]))
+        #             tfx.append(point[0])
+        #             tfy.append(point[1])
+
+        #         ax2.plot(tfx,tfy,'g-')
+
+
+        #     if segment.segment_type == 'parabola':
+                
+        #         s = np.linspace(segment.start_time, segment.end_time-0.01, 1000)
+        #         x_vals = []
+        #         y_vals = []
+
+        #         for s_value in s:
+        #             result = self.reference_traj(s_value)
+        #             x_vals.append(float(result[0]))
+        #             y_vals.append(float(result[1]))
+
+        #         ax1.plot(x_vals, y_vals, 'b-', label="Full Path using f_s")
+        #         ax1.set_title(f"Original Segment and Input Positions")
+        #         ax1.set_xlabel('x')
+        #         ax1.set_ylabel('y')
+        #         ax1.grid(True)
+
+        #         tfx = []
+        #         tfy = []
+
+        #         for i in range(len(x_vals)):
+        #             point = segment.inv_transform_p((x_vals[i],y_vals[i]))
+        #             tfx.append(point[0])
+        #             tfy.append(point[1])
+
+        #         ax2.plot(tfx,tfy,'g-')
+
+        # plt.show()
+
+    def replan_path(self, start_index):
+        """
+        Replan the path by appending new path points after the specified start_index.
+        """
+        if not self.path_received:
+            self.get_logger().error("No new path received from /plan.")
+            return
+
+        # Append the new path points after the start_index
+        self.path_points = self.path_points[:start_index] + self.new_path_points
+
+        # Refit the trajectory and update the reference trajectory
+        self.process_path()
+
+        # Reset the new path flag
+        self.path_received = False
+
+    def check_update_path(self):
+        """
+        Check if the reference trajectory needs updating based on obstacle proximity.
+        """
+        ref_point = self.reference_traj(self.s0 + self.replan_threshold)
+
+        # Check for proximity to obstacles
+        for obs in self.obs_list:
+            obs_x, obs_y, obs_radius = obs
+            distance = np.sqrt((ref_point[0] - obs_x) ** 2 + (ref_point[1] - obs_y) ** 2)
+
+            if distance < obs_radius + self.safety_margin and obs_radius > 0:
+                self.get_logger().info(
+                    f"Obstacle detected at ({obs_x}, {obs_y}). Replanning triggered."
+                )
+                self.stop_robot()
+
+                # Find the closest point in the path to the reference point
+                start_index = self.find_closest_path_point(self.current_state)
+
+                # Trigger replanning
+                self.replan_path(start_index)
+                break
+
+    def find_closest_path_point(self, ref_point):
+        """
+        Find the index of the closest path point to the reference point.
+        """
+        distances = [
+            np.sqrt((point[0] - ref_point[0]) ** 2 + (point[1] - ref_point[1]) ** 2)
+            for point in self.path_points
+        ]
+        return np.argmin(distances)
 
     def goal_pose_callback(self, msg):
         # Use the CSV data instead of generating new path points
@@ -227,24 +462,41 @@ class NMPCController(Node):
         s = ca.MX.sym('s')
         self.reference_traj = ca.Function('f_s', [s], [f(self.global_path, s)])
 
+        self.ub_s = self.global_path[-1].end_time
         self.new_goal_received = False
-        self.initialized = True
-        
+
         # Set self.goal to the final endpoint of the global path with theta = 0
         final_position = self.global_path[-1].end_point
         self.goal = np.array([final_position[0], final_position[1], 0.0])
 
 
-    def predict_policy(self, input_data):
-        # Convert the input data to a PyTorch tensor
-        input_tensor = torch.tensor(input_data, dtype=torch.float32)
-        # Perform the prediction
-        with torch.no_grad():
-            output = self.pf_model(input_tensor)
-        return output.numpy()  # Convert output to NumPy array for further processing
+    def goal_pose_callback(self, msg):
+        self.new_goal_received = True
+
+        x = msg.pose.position.x
+        y = msg.pose.position.y
+        quaternion = [msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
+        _, _, theta = euler_from_quaternion(quaternion)
+        
+        self.goal = np.array([x, y, theta])
+
+    def gamma(self,eta):
+        # Define a small threshold to prevent division by zero
+        eta_safe = ca.fmax(eta, 1e-10)  # Prevents eta from being exactly zero
+
+        # Calculate non-zero eta case safely
+        sqrt_term = ca.sqrt(1 + (2 * eta_safe) ** 2)
+        arcsinh_term = ca.arcsinh(2 * eta_safe) / (2 * eta_safe)
+        
+        # Combine with if_else, guaranteeing no division by zero
+        result = ca.if_else(eta != 1e-10, 0.5 * (sqrt_term + arcsinh_term), 1)
+        return result
+
+    def g(self,v_max,eta):
+        return v_max/self.gamma(eta)
+
 
     def control_loop(self):
-
         now = self.get_clock().now()
 
         if self.start == 0:
@@ -254,75 +506,70 @@ class NMPCController(Node):
             self.dt = self.end - self.start
             self.start = self.end
 
-        if self.current_state.shape[0]<=0:
+        if self.current_state.shape[0] <= 0:
             self.get_current_state()
             self.stop_robot()
-            return  # If the transform is unavailable, skip this control loop iteration
+            return  # Skip this control loop iteration if no state
 
-        if self.goal.shape[0]>0:
-            goal_dist = self.dist(self.current_state,self.goal)
+        if self.goal.shape[0] > 0:
+            goal_dist = self.dist(self.current_state, self.goal)
         else:
             goal_dist = 0
 
-        if self.global_path!=None:
-            self.publish_reference_path()  # Publish the reference path once initialized
+        if self.global_path is not None:
+            self.publish_reference_path()  # Publish the reference path if available
 
-        if self.global_path!=None and self.dt > 0 and goal_dist>0.1:
+        if self.global_path is not None and self.dt > 0 and goal_dist > 0.1:
+            self.check_update_path()
+            self.publish_obstacle()
 
-            x_hat, y_hat, theta_hat, s_hat, eta = T_z(self.global_path, self.current_state[0], self.current_state[1], self.current_state[2], self.s0)
+            # Transform current state into the path-relative coordinates
+            x_hat, y_hat, theta_hat, s_hat, eta = T_z(
+                self.global_path,
+                self.current_state[0],
+                self.current_state[1],
+                self.current_state[2],
+                self.s0,
+            )
 
-            # Handle orientation flip for eta < 0
+            # Prepare model input
             if eta >= 0:
-                input_data = [[x_hat, y_hat, theta_hat, s_hat, eta]]
+                input_data = torch.tensor([[x_hat, y_hat, theta_hat, s_hat, eta]], dtype=torch.float32).to(self.device)
             else:
-                input_data = [[x_hat, -y_hat, -theta_hat, s_hat, -eta]]
+                input_data = torch.tensor([[x_hat, -y_hat, -theta_hat, s_hat, -eta]], dtype=torch.float32).to(self.device)
 
-            usol = self.predict_policy(input_data)
+            # Perform inference with PyTorch model
+            with torch.no_grad():
+                usol = self.model(input_data).cpu().numpy()[0]  # Get the first (and only) output
 
-            
-            # Adjust NN output based on eta
             if eta < 0:
-                usol[0, 1] *= -1
+                usol[1] *= -1  # Adjust angular velocity for inverted eta
 
+            # Apply feedback corrections to model predictions
+            en, et, phi = error(self.global_path, self.current_state, self.s0)
+            Pt = 1.0  # Tangential feedback gain
+            Pn = 1.0  # Normal feedback gain
 
-            # Clip NN outputs to enforce constraints
-            usol = np.clip(usol, [0.01, -0.8, 0.01], [1, 0.8, 1])
+            usol[0] -= Pt * et  # Correct linear velocity based on tangential error
+            usol[1] -= Pn * en  # Correct angular velocity based on normal error
 
-                
-            # Pt = 1.0
-            # Pn = 1.0
+            # Scale and adjust the control input
+            # usol = self.convert_u(usol)
+            usol = [np.clip(float(usol[0]),0,1),np.clip(float(usol[1]),-0.8,0.8),np.clip(float(usol[2]),0,1)]
 
-            # en,et,phi = error(self.global_path,self.current_state,self.s0)
-            
-            # print(en)
-            # print(et)
-                
-            # usol[0][0]-= Pt*et
-            # usol[0][1]-= Pn*en
+            # Publish the corrected control command
+            self.publish_control(usol)
 
-            # usol = self.convert_u(usol[0])
-            # usol = self.low_pass_filter(usol, self.old_vel)
-
-            # print(usol)
-            self.publish_control(usol[0])
-            # print(usol)
+            # Publish markers and reference path
+            self.publish_circle_marker()
             self.publish_reference_path()
 
-            self.w0 = usol[0][2]
-            self.s0 += self.dt * self.w0
-
-            self.log_data(self.current_state, self.s0, usol[0], self.dt)
-            
+            # Update state variables
+            self.w0 = usol[2]  # Update path progress rate
+            self.s0 += self.dt * self.w0  # Update path progress
         else:
             self.stop_robot()
-            if self.initialized and goal_dist <= 0.1:
-                self.save_log_to_csv()  # Save the log when the robot reaches the goal
 
-    def log_data(self, state, s0, usol, time_elapsed):
-        """Log the current state, s0, usol, and time elapsed."""
-        x, y, theta = state
-        v, omega, w = usol
-        self.data_log.append([x, y, theta, s0, v, omega, w, time_elapsed])
 
     def stop_robot(self):
         # Publish zero velocity to stop the robot
@@ -372,12 +619,6 @@ class NMPCController(Node):
 
         self.ref_path_pub.publish(ref_path)
 
-    def low_pass_filter(self,usol, old_usol, alpha=0.2):
-        """Applies a low-pass filter to smooth the control output."""
-        usol[0] = alpha * usol[0] + (1 - alpha) * old_usol[0]
-        usol[1] = alpha * usol[1] + (1 - alpha) * old_usol[1]
-        return usol
-    
     def publish_control(self, control_input):
         twist_msg = Twist()
         twist_msg.linear.x = control_input[0]
@@ -387,9 +628,9 @@ class NMPCController(Node):
     def convert_u(self,usol):
         u = [0,0,0]
 
-        u[0] = 0.02 + usol[0]*(0.15-0.02)
-        u[1] = np.sign(usol[1])*0.05 + usol[1]*(0.15-0.05)
-        u[2] = 0.8 * usol[2]
+        u[0] = 0.02 + np.clip(usol[0],0,1)*(0.15-0.02)
+        u[1] = np.sign(usol[1])*0.05 + np.clip(usol[1],-0.8,0.8)*(0.15-0.05)
+        u[2] = 0.9 * np.clip(usol[2],0,1)
 
         return u
 
@@ -431,16 +672,6 @@ class NMPCController(Node):
             writer.writerow(['x', 'y'])  # Header
             writer.writerows(self.data_log)
         self.get_logger().info(f'Data saved to {filename}')
-
-    def save_log_to_csv(self):
-        """Save the logged data to a CSV file."""
-        with open(self.log_file_path, mode='w', newline='') as file:
-            writer = csv.writer(file)
-            # Write the header
-            writer.writerow(['x', 'y', 'theta', 's0', 'v', 'omega', 'w', 'time_elapsed'])
-            # Write the logged data
-            writer.writerows(self.data_log)
-        self.get_logger().info(f"Data log saved to {self.log_file_path}")
 
 
 
