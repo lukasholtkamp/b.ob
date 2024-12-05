@@ -90,9 +90,7 @@ class NMPCController(Node):
         self.u0 = np.array([1, 0])
         self.w0 = 1
         self.s0 = 0
-
-        # Array to store x, y, theta, s values
-        self.data_log = []
+        self.s_real = 0
 
         self.segment_length = 20
         self.epsilon = 0.15
@@ -139,6 +137,11 @@ class NMPCController(Node):
 
 
         self.pointcloud_pub = self.create_publisher(PointCloud2, '/obstacle_pointcloud', 10)
+
+        self.data_log = []  # Stores all the logged data
+        self.log_file_path = "src/closed_loop_nn_pf_replan.csv"  # Update this path
+
+        self.path_log = []
 
     def publish_obstacle(self):
         """
@@ -329,6 +332,8 @@ class NMPCController(Node):
         if not self.path_points:
             # Process the first path immediately
             self.path_points = new_points
+            self.path_log = new_points
+            self.save_to_csv()
             self.process_path()
             x, y = get_deviated_point(self.global_path, self.obs_s, self.obs_d)
             self.obs_list = np.array([[x,y,self.obs_r]])
@@ -514,8 +519,9 @@ class NMPCController(Node):
 
         if self.global_path is not None:
             self.publish_reference_path()  # Publish the reference path if available
+            self.initialized = True
 
-        if self.global_path is not None and self.dt > 0 and goal_dist > 0.2:
+        if self.global_path is not None and self.dt > 0 and goal_dist > 0.1:
             self.check_update_path()
             self.publish_obstacle()
 
@@ -541,17 +547,20 @@ class NMPCController(Node):
             if eta < 0:
                 usol[1] *= -1  # Adjust angular velocity for inverted eta
 
-            # Apply feedback corrections to model predictions
-            en, et, phi = error(self.global_path, self.current_state, self.s0)
-            Pt = 1.0  # Tangential feedback gain
-            Pn = 1.0  # Normal feedback gain
+            # # Apply feedback corrections to model predictions
+            # en, et, phi = error(self.global_path, self.current_state, self.s0)
+            # Pt = 1.0  # Tangential feedback gain
+            # Pn = 1.0  # Normal feedback gain
 
-            usol[0] -= Pt * et  # Correct linear velocity based on tangential error
-            usol[1] -= Pn * en  # Correct angular velocity based on normal error
+            # usol[0] -= Pt * et  # Correct linear velocity based on tangential error
+            # usol[1] -= Pn * en  # Correct angular velocity based on normal error
 
             # Scale and adjust the control input
             # usol = self.convert_u(usol)
             usol = [np.clip(float(usol[0]),0,1),np.clip(float(usol[1]),-0.8,0.8),np.clip(float(usol[2]),0,1)]
+
+            usol_real = usol.copy()
+            self.s_real += self.dt * usol[2]
 
             # Publish the corrected control command
             self.publish_control(usol)
@@ -563,8 +572,32 @@ class NMPCController(Node):
             # Update state variables
             self.w0 = usol[2]  # Update path progress rate
             self.s0 += self.dt * self.w0  # Update path progress
+
+            # Log the data
+            self.log_data(self.current_state, self.s_real, usol_real, self.dt)
+
         else:
             self.stop_robot()
+            if self.initialized and goal_dist <= 0.15:
+                self.save_log_to_csv()  # Save the log when the robot reaches the goal
+
+    def log_data(self, state, s0, usol, time_elapsed):
+        """Log the current state, s0, usol, and time elapsed."""
+        x, y, theta = state
+        v, omega, w = usol
+        self.data_log.append([x, y, theta, s0, v, omega, w, time_elapsed])
+    
+    def save_log_to_csv(self):
+        """Save the logged data to a CSV file."""
+        with open(self.log_file_path, mode="w", newline="") as file:
+            writer = csv.writer(file)
+            # Write the header
+            writer.writerow(
+                ["x", "y", "theta", "s0", "v", "omega", "w", "time_elapsed"]
+            )
+            # Write the logged data
+            writer.writerows(self.data_log)
+        self.get_logger().info(f"Data log saved to {self.log_file_path}")
 
 
     def stop_robot(self):
@@ -626,7 +659,7 @@ class NMPCController(Node):
 
         u[0] = 0.02 + np.clip(usol[0],0,1)*(0.15-0.02)
         u[1] = np.sign(usol[1])*0.05 + np.clip(usol[1],-0.8,0.8)*(0.15-0.05)
-        u[2] = 0.9 * np.clip(usol[2],0,1)
+        u[2] = 0.95 * np.clip(usol[2],0,1)
 
         return u
 
@@ -661,12 +694,12 @@ class NMPCController(Node):
         twist_msg.angular.z = control_input[1]
         self.cmd_vel_pub.publish(twist_msg)
 
-    def save_to_csv(self, filename='path_data_log.csv'):
-        """Save the logged x, y, theta, s data to a CSV file."""
+    def save_to_csv(self, filename='src/plan_xy.csv'):
+        """Save the logged x, y"""
         with open(filename, mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(['x', 'y'])  # Header
-            writer.writerows(self.data_log)
+            writer.writerows(self.path_log)
         self.get_logger().info(f'Data saved to {filename}')
 
 

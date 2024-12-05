@@ -99,6 +99,8 @@ class NMPCController(Node):
         self.w0 = 1
         self.s0 = 0
 
+        self.s_real = 0
+
         self.segment_length = 20
         self.epsilon = 0.15
         self.v_max = 0.1
@@ -308,7 +310,7 @@ class NMPCController(Node):
             self.initialized
             and self.global_path != None
             and self.dt > 0
-            and goal_dist > 0.2
+            and goal_dist > 0.1
         ):
             self.x0 = np.append(self.current_state, np.array([self.s0]))
 
@@ -334,8 +336,11 @@ class NMPCController(Node):
                 [self.solver.get(i, "x") for i in range(self.ocp.dims.N + 1)]
             )
 
+            usol_real = usol.copy()
+            self.s_real += self.dt * usol[2]
+            
             usol = self.convert_u(usol)
-            usol = self.low_pass_filter(usol, self.old_vel)
+            # usol = self.low_pass_filter(usol, self.old_vel)
 
             # Publish results
             self.publish_control(usol)
@@ -349,11 +354,11 @@ class NMPCController(Node):
             self.old_vel = usol
 
             # Log the data
-            self.log_data(self.current_state, self.s0, usol, self.dt)
+            self.log_data(self.current_state, self.s_real, usol_real, self.dt)
 
         else:
             self.stop_robot()
-            if self.initialized and goal_dist <= 0.2:
+            if self.initialized and goal_dist <= 0.15:
                 self.save_log_to_csv()  # Save the log when the robot reaches the goal
 
     def log_data(self, state, s0, usol, time_elapsed):

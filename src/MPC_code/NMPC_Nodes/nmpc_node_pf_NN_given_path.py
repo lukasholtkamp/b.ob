@@ -80,6 +80,7 @@ class NMPCController(Node):
         self.u0 = np.array([1, 0])
         self.w0 = 1
         self.s0 = 0
+        self.s_real = 0
 
         # Array to store x, y, theta, s values
         self.data_log = []
@@ -288,6 +289,9 @@ class NMPCController(Node):
             # Clip NN outputs to enforce constraints
             usol = np.clip(usol, [0.01, -0.8, 0.01], [1, 0.8, 1])
 
+            usol_real = usol[0].copy()
+            self.s_real += self.dt * usol[0][2]
+
                 
             # Pt = 1.0
             # Pn = 1.0
@@ -300,18 +304,18 @@ class NMPCController(Node):
             # usol[0][0]-= Pt*et
             # usol[0][1]-= Pn*en
 
-            # usol = self.convert_u(usol[0])
-            # usol = self.low_pass_filter(usol, self.old_vel)
+            usol = self.convert_u(usol[0])
+            usol = self.low_pass_filter(usol, self.old_vel)
 
             # print(usol)
-            self.publish_control(usol[0])
+            self.publish_control(usol)
             # print(usol)
             self.publish_reference_path()
 
-            self.w0 = usol[0][2]
+            self.w0 = usol[2]
             self.s0 += self.dt * self.w0
 
-            self.log_data(self.current_state, self.s0, usol[0], self.dt)
+            self.log_data(self.current_state, self.s_real, usol_real, self.dt)
             
         else:
             self.stop_robot()
@@ -389,7 +393,7 @@ class NMPCController(Node):
 
         u[0] = 0.02 + usol[0]*(0.15-0.02)
         u[1] = np.sign(usol[1])*0.05 + usol[1]*(0.15-0.05)
-        u[2] = 0.8 * usol[2]
+        u[2] = 0.95 * usol[2]
 
         return u
 

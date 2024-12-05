@@ -202,7 +202,7 @@ class ObstacleAvoidanceController:
 
 if __name__ == "__main__":
     # File paths
-    model_path = os.path.join(MODELS_DIR, "policy_iteration_5.pth")
+    model_path = os.path.join(MODELS_DIR, "policy_iteration_8.pth")
     path_segments_file = os.path.join("paths", "path_segments_left.json")
 
     # Initialize the controller
@@ -212,7 +212,8 @@ if __name__ == "__main__":
     )
 
     # Simulate the policy
-    controller.simulate_policy_with_obstacles(obstacle_s=51.0, obstacle_deviation=0.2)
+    controller.simulate_policy_with_obstacles(obstacle_s=55.0, obstacle_deviation=-0.1)
+    # controller.simulate_policy_with_obstacles(obstacle_s=57.0, obstacle_deviation=-0.1)
 
     # Plot the results
     controller.plot_results()

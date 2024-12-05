@@ -198,9 +198,9 @@ if __name__ == "__main__":
     )
 
     # Plot settings
-    plt.title("Progression of Policy Iterations")
-    plt.xlabel("X")
-    plt.ylabel("Y")
+    # plt.title("Progression of Policy Iterations")
+    plt.xlabel("x [m]")
+    plt.ylabel("y [m]")
     plt.legend()
     plt.grid(True)
     plt.axis("equal")
