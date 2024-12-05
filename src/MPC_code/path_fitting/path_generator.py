@@ -1255,7 +1255,6 @@ if __name__ == "__main__":
     # controller1.finalize_plots()
 
 
-
     # # NN sim and Gazebo PF
     # controller2 = NMPCController(r1=0.0,r2=0.0,r3=0.0,infl=0.0)
 
@@ -1432,11 +1431,11 @@ if __name__ == "__main__":
     controller5.plot_error(
         csv_file="bob_closed_loop_mpc_pf.csv", 
         ref_function=f_s, 
-        label="MPC Policy (Real)", real=True
+        label="MPC Policy (Real)"
     )
     controller5.plot_control_inputs(
         csv_file="bob_closed_loop_mpc_pf.csv", 
-        label="MPC Policy (Real)", real=True
+        label="MPC Policy (Real)"
     )
 
     # Overlay CSV data for NN
@@ -1447,11 +1446,11 @@ if __name__ == "__main__":
     controller5.plot_error(
         csv_file="bob_closed_loop_nn_pf_host_comp.csv", 
         ref_function=f_s, 
-        label="NN Policy (Real)", real=True
+        label="NN Policy (Real)"
     )
     controller5.plot_control_inputs(
         csv_file="bob_closed_loop_nn_pf_host_comp.csv", 
-        label="NN Policy (Real)", real=True
+        label="NN Policy (Real)"
     )
 
     # Summarize NN Policy results
@@ -1479,11 +1478,11 @@ if __name__ == "__main__":
     # controller6.plot_error(
     #     csv_file="bob_closed_loop_mpc_pf_oa.csv", 
     #     ref_function=f_s, 
-    #     label="MPC Policy (Real)", real=True
+    #     label="MPC Policy (Real)"
     # )
     # controller6.plot_control_inputs(
     #     csv_file="bob_closed_loop_mpc_pf_oa.csv", 
-    #     label="MPC Policy (Real)", real=True
+    #     label="MPC Policy (Real)"
     # )
 
     # # Overlay CSV data for NN

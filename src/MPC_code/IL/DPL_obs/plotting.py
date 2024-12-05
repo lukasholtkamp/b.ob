@@ -212,8 +212,8 @@ if __name__ == "__main__":
     )
 
     # Simulate the policy
-    controller.simulate_policy_with_obstacles(obstacle_s=55.0, obstacle_deviation=-0.1)
-    # controller.simulate_policy_with_obstacles(obstacle_s=57.0, obstacle_deviation=-0.1)
+    # controller.simulate_policy_with_obstacles(obstacle_s=55.0, obstacle_deviation=-0.1)
+    controller.simulate_policy_with_obstacles(obstacle_s=57.0, obstacle_deviation=-0.1)
 
     # Plot the results
     controller.plot_results()
