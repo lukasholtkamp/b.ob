@@ -73,11 +73,10 @@ class NMPCController(Node):
         )
 
         # self.obs_sub = self.create_subscription(Obstacles, '/obstacles', self.obs_callback, 10)
-        self.obs_inflation = 0.22
+        self.obs_inflation = 0.3
         self.obs_list = [
-            {"s": 15, "d": 0.2, "r": 0.15 + self.obs_inflation},
-            {"s": 23, "d": 0.1, "r": 0.17 + self.obs_inflation},
-            {"s": 30, "d": -0.2, "r": 0.2 + self.obs_inflation},
+            {"s": 15, "d": 0.23, "r": 0.15 + self.obs_inflation},
+            {"s": 30, "d": -0.3, "r": 0.2 + self.obs_inflation},
         ]
 
         # self.obs_inflation = 0.0
@@ -135,7 +134,7 @@ class NMPCController(Node):
         self.obs_r = 0.0  # Set the radius
 
         self.data_log = []  # Stores all the logged data
-        self.log_file_path = "src/closed_loop_mpc_pf_oa.csv"  # Update this path
+        self.log_file_path = "src/bob_closed_loop_mpc_pf_oa_2.csv"  # Update this path
 
     def find_closest_obstacle(self):
         """Find the closest obstacle to the current robot position."""
@@ -338,7 +337,7 @@ class NMPCController(Node):
 
             usol_real = usol.copy()
             self.s_real += self.dt * usol[2]
-            
+
             usol = self.convert_u(usol)
             # usol = self.low_pass_filter(usol, self.old_vel)
 
