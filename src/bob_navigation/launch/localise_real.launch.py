@@ -22,19 +22,20 @@ from nav2_common.launch import HasNodeParams
 
 from pathlib import Path
 
+
 def generate_launch_description():
     """
     This function finds all need parameters for starting the SLAM node.
     return: a Launch Description with all needed arguments and the node
     """
-    pkg_navigation = os.path.join(Path.cwd(),"src","bob_navigation")
+    pkg_navigation = os.path.join(Path.cwd(), "src", "bob_navigation")
     use_sim_time = LaunchConfiguration("use_sim_time")
     slam_params_file = LaunchConfiguration("slam_params_file")
 
     default_params_file = os.path.join(
         pkg_navigation,
         "config",
-        "mapper_params_localisation.yaml",
+        "mapper_params_localisation_real.yaml",
     )
 
     declare_use_sim_time_argument = DeclareLaunchArgument(
@@ -84,7 +85,6 @@ def generate_launch_description():
         name="slam_toolbox",
         output="screen",
     )
-
 
     ld = LaunchDescription()
 

@@ -114,26 +114,26 @@ controller_server:
       min_vel_y: 0.0 # Min linear y velocity
       max_vel_x: 0.1 # Max linear x velocity
       max_vel_y: 0.0 # Max linear y velocity
-      max_vel_theta: 0.05 # Max angular velocity
+      max_vel_theta: 0.2 # Max angular velocity
       min_speed_xy: 0.0 # Min translational speed
       max_speed_xy: 0.1 # Max translational speed
-      min_speed_theta: 0.0 # Min angular speed
+      min_speed_theta: 0.02 # Min angular speed
       acc_lim_x: 2.5 # Max linear x acceleration
       acc_lim_y: 0.0 # Max linear y acceleration
-      acc_lim_theta: 2.0 # Max angular acceleration
+      acc_lim_theta: 0.5 # Max angular acceleration
       decel_lim_x: -2.5 # Max linear x deceleration
       decel_lim_y: 0.0 # Max linear y deceleration
-      decel_lim_theta: -3.2 # Max angular deceleration
+      decel_lim_theta: -0.5 # Max angular deceleration
       vx_samples: 20 # Linear x velocity samples
       vy_samples: 5 # Linear y velocity samples
       vtheta_samples: 10 # Angular velocity samples
-      sim_time: 1.0 # Simulation time for trajectories
+      sim_time: 2.0 # Simulation time for trajectories
       linear_granularity: 0.05 # Linear path granularity
       angular_granularity: 0.025 # Angular path granularity
       transform_tolerance: 0.5 # Max transform time tolerance
       xy_goal_tolerance: 0.25 # XY distance to goal tolerance
       trans_stopped_velocity: 0.1 # Threshold for stopping speed
-      short_circuit_trajectory_evaluation: True # Enable short-circuit evaluation
+      short_circuit_trajectory_evaluation: False # Enable short-circuit evaluation
       limit_vel_cmd_in_traj: False # Limit velocity in trajectory
       stateful: True # Keep state during planning
       critics: # Trajectory critics for evaluation
@@ -148,12 +148,12 @@ controller_server:
         ]
       BaseObstacle.scale: 1.0 # Obstacle avoidance weight
       PathAlign.scale: 16.0 # Path alignment weight
-      GoalAlign.scale: 16.0 # Goal alignment weight
-      PathDist.scale: 32.0 # Path distance weight
-      GoalDist.scale: 24.0 # Goal distance weight
+      GoalAlign.scale: 12.0 # Goal alignment weight
+      PathDist.scale: 10.0 # Path distance weight
+      GoalDist.scale: 10.0 # Goal distance weight
       RotateToGoal.scale: 10.0 # Rotate to goal weight
-      RotateToGoal.slowing_factor: 3.0 # Factor for slowing near goal
-      RotateToGoal.lookahead_time: -1.0 # Lookahead time for rotation
+      RotateToGoal.slowing_factor: 5.0 # Factor for slowing near goal
+      RotateToGoal.lookahead_time: 0.5 # Lookahead time for rotation
 
 local_costmap:
   local_costmap:
@@ -246,7 +246,7 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer" # Inflation layer plugin
         cost_scaling_factor: 4.0 # Cost growth near obstacles
-        inflation_radius: 0.2 # Radius for obstacle inflation
+        inflation_radius: 0.4 # Radius for obstacle inflation
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer" # Static layer plugin
         map_subscribe_transient_local: True # Subscribe locally to static map
@@ -334,15 +334,15 @@ waypoint_follower:
 
 velocity_smoother:
   ros__parameters:
-    use_sim_time: False # Use simulation time or not
-    smoothing_frequency: 20.0 # Velocity smoothing frequency
-    scale_velocities: False # Scale velocities or not
-    feedback: "OPEN_LOOP" # Velocity feedback mechanism
-    max_velocity: [1.0, 0.0, 1.0] # Max linear and angular velocities
-    min_velocity: [-1.0, 0.0, -1.0] # Min linear and angular velocities
-    max_accel: [6.0, 0.0, 6.0] # Max linear and angular acceleration
-    max_decel: [-6.0, 0.0, -6.0] # Max linear and angular deceleration
-    odom_topic: "odometry/filtered" # Odometry topic for feedback
-    odom_duration: 0.1 # Duration for odometry smoothing
-    deadband_velocity: [0.0, 0.0, 0.0] # Deadband velocity thresholds
-    velocity_timeout: 1.0 # Timeout for velocity commands
+    use_sim_time: False
+    smoothing_frequency: 10.0
+    scale_velocities: False
+    feedback: "CLOSED_LOOP" # Changed from OPEN_LOOP
+    max_velocity: [0.5, 0.0, 0.5] # Reduced max linear and angular speeds
+    min_velocity: [-0.5, 0.0, -0.5]
+    max_accel: [1.0, 0.0, 1.0] # Reduced acceleration
+    max_decel: [-1.0, 0.0, -1.0] # Reduced deceleration
+    odom_topic: "odometry/filtered"
+    odom_duration: 0.1
+    deadband_velocity: [0.0, 0.0, 0.0]
+    velocity_timeout: 1.0

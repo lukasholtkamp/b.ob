@@ -46,7 +46,7 @@ def generate_launch_description():
 
     lifecycle_nodes = ["map_server", "amcl"]
 
-    map_yaml = os.path.join(slam_dir, "map", "ba_map.yaml")
+    map_yaml = os.path.join(slam_dir, "map", "creative_room.yaml")
 
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
     # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
