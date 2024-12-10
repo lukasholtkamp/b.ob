@@ -71,10 +71,10 @@ class NMPCController(Node):
         self.T = 10
 
         # Other initializations
-        self.cmd_vel_pub = self.create_publisher(
-            Twist, "/diffbot_base_controller/cmd_vel_unstamped", 10
-        )
-        # self.cmd_vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
+        # self.cmd_vel_pub = self.create_publisher(
+        #     Twist, "/diffbot_base_controller/cmd_vel_unstamped", 10
+        # )
+        self.cmd_vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
 
         self.ref_path_pub = self.create_publisher(Path, "/ref_path", 10)
         self.ol_path_pub = self.create_publisher(Path, "/ol_path", 10)
@@ -129,11 +129,17 @@ class NMPCController(Node):
         self.obs_d = 0.1
         self.obs_r = 0.12  # Set the radius
 
+        self.obs_inflation = 0.3
+        self.obs_list = [
+            {"s": 15, "d": 0.23, "r": 0.15},
+            {"s": 30, "d": -0.3, "r": 0.2},
+        ]
+
         # Load PyTorch model
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )  # Use GPU if available
-        model_path = "/home/noorshawaf/NY/s/b.ob/src/MPC_code/IL/DPL/models/final_policy.pth"  # Replace with the actual path to your final policy
+        model_path = "/home/bertrandt/b.ob/src/MPC_code/IL/DPL/models/final_policy.pth"  # Replace with the actual path to your final policy
         self.model = PolicyModel(
             input_dim=5, output_dim=3
         )  # Adjust dimensions as per your model
@@ -158,83 +164,96 @@ class NMPCController(Node):
         )
 
         self.data_log = []  # Stores all the logged data
-        self.log_file_path = "src/bob_closed_loop_nn_pf_replan.csv"  # Update this path
+        self.log_file_path = "src/closed_loop_nn_pf_replan.csv"  # Update this path
 
         self.path_log = []
+        self.pc_publish_timer = self.create_timer(0.01, self.publish_obstacle)
 
     def publish_obstacle(self):
-        """
-        Publish obstacles as PointCloud2 data for the obstacle layer.
-        """
-        if self.obs_position is None or len(self.obs_position) < 1:
-            self.get_logger().error("Obstacle position is not defined correctly.")
+        if not self.obs_list:
+            return
+        if "x" not in self.obs_list[0]:
             return
 
-        # Create a PointCloud2 message
+        # Assuming at least two obstacles in self.obs_list
+        # This logic:
+        # - If s_real < obs_list[0]['s']: Publish only the first obstacle
+        # - If s_real >= obs_list[0]['s']: Publish only the second obstacle
+        # You can extend this logic for more obstacles if needed.
+
         pointcloud = PointCloud2()
         pointcloud.header.stamp = self.get_clock().now().to_msg()
         pointcloud.header.frame_id = "map"
 
-        # Extract the obstacle position and radius
-        obs_x, obs_y, obs_r = self.obs_position
-
-        obs_r -= 0.06
-
-        # Generate points to approximate the circular obstacle
         points = []
-        num_points = 36  # Number of points to approximate the circle
-        for angle in np.linspace(0, 2 * np.pi, num_points):
-            x = obs_x + obs_r * np.cos(angle)
-            y = obs_y + obs_r * np.sin(angle)
-            z = 0.0  # Assume flat terrain
-            points.append((x, y, z))
+        num_points = 36  # Points per obstacle circle
 
-        # Convert points to PointCloud2 format
-        pointcloud = pc2.create_cloud_xyz32(pointcloud.header, points)
+        if self.s_real < self.obs_list[0]["s"]:
+            # Publish the first obstacle only
+            obs = self.obs_list[0]
+            obs_x = obs["x"]
+            obs_y = obs["y"]
+            obs_r = obs["r"] - 0.06
+            for angle in np.linspace(0, 2 * np.pi, num_points, endpoint=False):
+                x = obs_x + obs_r * np.cos(angle)
+                y = obs_y + obs_r * np.sin(angle)
+                z = 0.0
+                points.append((x, y, z))
+        else:
+            # Once we've passed the s of the first obstacle, publish the second obstacle
+            # Adjust index or logic as needed if you have more obstacles
+            if len(self.obs_list) > 1:
+                obs = self.obs_list[1]
+                obs_x = obs["x"]
+                obs_y = obs["y"]
+                obs_r = obs["r"] - 0.06
+                for angle in np.linspace(0, 2 * np.pi, num_points, endpoint=False):
+                    x = obs_x + obs_r * np.cos(angle)
+                    y = obs_y + obs_r * np.sin(angle)
+                    z = 0.0
+                    points.append((x, y, z))
 
-        # Publish the PointCloud2 message
-        self.pointcloud_pub.publish(pointcloud)
+        if points:
+            pointcloud = pc2.create_cloud_xyz32(pointcloud.header, points)
+            self.pointcloud_pub.publish(pointcloud)
 
-    def publish_circle_marker(self, height=0.1, frame_id="map"):
-        """
-        Publish a circle or cylinder marker at a given position with a specified radius.
 
-        :param position: Tuple (x, y, z) representing the center position of the circle.
-        :param radius: Radius of the circle.
-        :param height: Height of the cylinder (default is 0.1 for a thin circle).
-        :param frame_id: Frame ID for the marker (default is 'map').
-        """
-        marker = Marker()
-        marker.header.frame_id = frame_id
-        marker.header.stamp = self.get_clock().now().to_msg()
-        marker.ns = "obstacle_marker"
-        marker.id = self.marker_id
-        self.marker_id += 1
-        marker.type = Marker.CYLINDER
-        marker.action = Marker.ADD
 
-        # Set the pose of the marker
-        marker.pose.position.x = self.obs_position[0]
-        marker.pose.position.y = self.obs_position[1]
-        marker.pose.position.z = 0.0  # Adjust as needed
-        marker.pose.orientation.x = 0.0
-        marker.pose.orientation.y = 0.0
-        marker.pose.orientation.z = 0.0
-        marker.pose.orientation.w = 1.0
+    def publish_circle_marker(self):
+        if not self.obs_list:
+            return
 
-        # Set the scale (diameter in x and y, and height)
-        marker.scale.x = 2 * self.obs_r  # Diameter
-        marker.scale.y = 2 * self.obs_r  # Diameter
-        marker.scale.z = height  # Height for cylinder visualization
+        marker_id = 0
+        for obs in self.obs_list:
+            obs_x = obs["x"]
+            obs_y = obs["y"]
+            obs_r = obs["r"]
 
-        # Set the color (RGBA)
-        marker.color.r = 0.0
-        marker.color.g = 1.0
-        marker.color.b = 0.0
-        marker.color.a = 0.8  # Transparency
+            marker = Marker()
+            marker.header.frame_id = "map"
+            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.ns = "obstacle_marker"
+            marker.id = marker_id
+            marker_id += 1
+            marker.type = Marker.CYLINDER
+            marker.action = Marker.ADD
 
-        # Publish the marker
-        self.marker_publisher.publish(marker)
+            marker.pose.position.x = obs_x
+            marker.pose.position.y = obs_y
+            marker.pose.position.z = 0.0
+            marker.pose.orientation.w = 1.0
+
+            marker.scale.x = 2 * obs_r
+            marker.scale.y = 2 * obs_r
+            marker.scale.z = 0.1
+
+            marker.color.r = 0.0
+            marker.color.g = 1.0
+            marker.color.b = 0.0
+            marker.color.a = 0.8
+
+            self.marker_publisher.publish(marker)
+
 
     def get_current_state(self):
         # Start the ros2 topic echo process
@@ -366,9 +385,6 @@ class NMPCController(Node):
             self.path_log = new_points
             self.save_to_csv()
             self.process_path()
-            x, y = get_deviated_point(self.global_path, self.obs_s, self.obs_d)
-            self.obs_list = np.array([[x, y, self.obs_r]])
-            self.obs_position = np.array([x, y, self.obs_r])
         else:
             # Save subsequent paths for appending during replanning
             self.new_path_points = new_points
@@ -385,9 +401,16 @@ class NMPCController(Node):
         # Update the reference trajectory
         s = ca.MX.sym("s")
         self.reference_traj = ca.Function("f_s", [s], [f(self.global_path, s)])
-
         self.get_logger().info("Path and reference trajectory updated.")
 
+        # Compute obstacle positions only once if they are not already computed
+        # This ensures we do not update them as the path changes later.
+        # Check if obs_list doesn't have "x" and "y" keys. Compute if needed.
+        for obs in self.obs_list:
+            if "x" not in obs or "y" not in obs:
+                obs_x, obs_y = get_deviated_point(self.global_path, obs["s"], obs["d"])
+                obs["x"] = obs_x
+                obs["y"] = obs_y
         # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
         # ax1.plot(points[:,0],points[:,1],'ko')
@@ -472,26 +495,24 @@ class NMPCController(Node):
     def check_update_path(self):
         """
         Check if the reference trajectory needs updating based on obstacle proximity.
+        Now handles multiple obstacles from self.obs_list.
         """
+        if self.reference_traj is None:
+            return
+
         ref_point = self.reference_traj(self.s0 + self.replan_threshold)
 
-        # Check for proximity to obstacles
         for obs in self.obs_list:
-            obs_x, obs_y, obs_radius = obs
-            distance = np.sqrt(
-                (ref_point[0] - obs_x) ** 2 + (ref_point[1] - obs_y) ** 2
-            )
+            obs_x, obs_y = get_deviated_point(self.global_path, obs["s"], obs["d"])
+            obs_radius = obs["r"]
+            distance = np.sqrt((ref_point[0] - obs_x) ** 2 + (ref_point[1] - obs_y) ** 2)
 
             if distance < obs_radius + self.safety_margin and obs_radius > 0:
                 self.get_logger().info(
-                    f"Obstacle detected at ({obs_x}, {obs_y}). Replanning triggered."
+                    f"Obstacle detected near s={obs['s']}, d={obs['d']}. Replanning triggered."
                 )
                 self.stop_robot()
-
-                # Find the closest point in the path to the reference point
                 start_index = self.find_closest_path_point(self.current_state)
-
-                # Trigger replanning
                 self.replan_path(start_index)
                 break
 
@@ -519,6 +540,8 @@ class NMPCController(Node):
         _, _, theta = euler_from_quaternion(quaternion)
 
         self.goal = np.array([x, y, theta])
+
+        print(self.goal)
 
     def gamma(self, eta):
         # Define a small threshold to prevent division by zero
@@ -561,7 +584,6 @@ class NMPCController(Node):
 
         if self.global_path is not None and self.dt > 0 and goal_dist > 0.1:
             self.check_update_path()
-            self.publish_obstacle()
 
             # Transform current state into the path-relative coordinates
             x_hat, y_hat, theta_hat, s_hat, eta = T_z(
@@ -610,7 +632,7 @@ class NMPCController(Node):
             usol_real = usol.copy()
             self.s_real += self.dt * usol[2]
 
-            usol = self.convert_u(usol)
+            # usol = self.convert_u(usol)
 
             # Publish the corrected control command
             self.publish_control(usol)
@@ -746,7 +768,7 @@ class NMPCController(Node):
         """Save the logged x, y"""
         with open(filename, mode="w", newline="") as file:
             writer = csv.writer(file)
-            writer.writerow(["x", "y"])  # Header
+            writer.writerow(["x", "y","theta"])  # Header
             writer.writerows(self.path_log)
         self.get_logger().info(f"Data saved to {filename}")
 

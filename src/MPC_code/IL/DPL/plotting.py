@@ -6,6 +6,18 @@ from paths.transform import T_z
 import torch
 from policy_model import PolicyModel
 
+from matplotlib import rcParams
+# Configure PGF for LaTeX export
+rcParams.update({
+    "pgf.texsystem": "pdflatex",  # Use pdflatex or xelatex
+    "text.usetex": True,          # Enable LaTeX text rendering
+    "font.family": "serif",       # Match LaTeX document fonts
+    "pgf.preamble": [
+        r"\usepackage{amsmath}",  # Use additional LaTeX packages if needed
+    ],
+    'font.size': 18
+})
+
 
 class PathFollowingController:
     def __init__(
@@ -52,13 +64,12 @@ class PathFollowingController:
         return result
 
     def simulate_policy_until_goal(self):
-        """Simulate the policy until within tolerance of the goal position."""
         iteration = 0
         while (
             np.linalg.norm(self.current_state[:2] - self.goal_position) > self.tolerance
             and iteration < self.max_steps
         ):
-            # Transform the current state to the path-following frame
+            # Transform current state
             x_hat, y_hat, theta_hat, s_hat, eta = T_z(
                 self.path_segments,
                 self.current_state[0],
@@ -67,38 +78,39 @@ class PathFollowingController:
                 self.current_state[3],
             )
 
-            # Prepare the input for the policy model
+            # Prepare input
             if eta >= 0:
                 model_input = np.array([[x_hat, y_hat, theta_hat, s_hat, eta]])
             else:
                 model_input = np.array([[x_hat, -y_hat, -theta_hat, s_hat, -eta]])
 
-            # Convert input to PyTorch tensor and predict
+            # Predict
             model_input_tensor = torch.tensor(model_input, dtype=torch.float32)
             usol = self.model(model_input_tensor).detach().numpy()
 
-            # Adjust control outputs if eta < 0
+            # Adjust if eta < 0
             if eta < 0:
                 usol[0][1] *= -1
 
-            # Clip the control outputs
+            # Clip controls
             usol[0][0] = np.clip(usol[0][0], 0, 1)
             usol[0][1] = np.clip(usol[0][1], -0.8, 0.8)
             usol[0][2] = np.clip(usol[0][2], 0, 1)
 
-            # Simulate the next state
-            self.current_state = self.simulate_kinematic_step(
-                self.current_state, usol[0]
-            )
+            # Simulate step
+            self.current_state = self.simulate_kinematic_step(self.current_state, usol[0])
 
-            # Save trajectory
-            self.closed_loop_trajectory.append(self.current_state[:3])
+            # Store full state now, including s
+            # current_state: [x, y, theta, s]
+            self.closed_loop_trajectory.append(self.current_state.copy())
+
             iteration += 1
 
         if iteration >= self.max_steps:
             print("Simulation stopped: Maximum number of iterations reached.")
         else:
             print("Simulation stopped: Goal reached within tolerance.")
+
 
     def simulate_kinematic_step(self, state, control):
         """Simulate the next state of the system using kinematic equations."""
@@ -166,7 +178,7 @@ if __name__ == "__main__":
     path_segments_file = "paths/path_segments_left.json"
 
     # Colors for each model's trajectory
-    colors = ["blue", "orange", "purple", "green"]
+    colors = ["blue", "orange", "purple", "cyan"]
     labels = ["Iteration 1", "Iteration 4", "Iteration 7", "Iteration 10"]
 
     # Create a plot
@@ -178,7 +190,7 @@ if __name__ == "__main__":
     ref_path = np.array([controller.f_s(s_val).full().flatten()[:2] for s_val in s_values])
 
     # Plot the reference path
-    plt.plot(ref_path[:, 0], ref_path[:, 1], "g--", label="Reference Path")
+    plt.plot(ref_path[:, 0], ref_path[:, 1], "g-", label="Reference Path")
 
     # Simulate and plot each model's trajectory
     for model_path, color, label in zip(model_paths, colors, labels):
@@ -187,15 +199,29 @@ if __name__ == "__main__":
         closed_loop = np.array(controller.closed_loop_trajectory)
 
         # Plot the trajectory
-        plt.plot(closed_loop[:, 0], closed_loop[:, 1], "-", color=color, label=label)
+        plt.plot(closed_loop[:, 0], closed_loop[:, 1], "--", color=color, label=label)
 
-    # Mark the goal position
-    plt.scatter(
-        controller.goal_position[0],
-        controller.goal_position[1],
-        color="red",
-        label="Goal Position",
-    )
+        # After plotting the reference path
+        start_x, start_y = ref_path[0, 0], ref_path[0, 1]
+        end_x, end_y = ref_path[-1, 0], ref_path[-1, 1]
+
+        # Plot markers for start and end
+        plt.plot(start_x, start_y, 'bo')  # Green point at start
+        plt.plot(end_x, end_y, 'ro')      # Red point at end
+
+        # Add text labels underneath both points
+        offset = 0.2  # Adjust as needed for desired spacing
+        plt.text(
+            start_x, start_y - offset, "Start",
+            fontsize=18, color='black', horizontalalignment='center', verticalalignment='top',
+            bbox=dict(facecolor='white', alpha=0.8, edgecolor='none')
+        )
+        plt.text(
+            end_x, end_y - offset, "End",
+            fontsize=18, color='black', horizontalalignment='center', verticalalignment='top',
+            bbox=dict(facecolor='white', alpha=0.8, edgecolor='none')
+        )
+    
 
     # Plot settings
     # plt.title("Progression of Policy Iterations")
@@ -204,4 +230,43 @@ if __name__ == "__main__":
     plt.legend()
     plt.grid(True)
     plt.axis("equal")
-    plt.show()
+
+    plt.savefig("DAgger_itter_pf.pgf", bbox_inches='tight')  # Export to PGF for LaTeX integration
+
+
+    # plt.show()
+        # Generate paths for iterations 1 through 10
+    iterations = range(1, 11)
+    model_paths = [f"models/policy_iteration_{i}.pth" for i in iterations]
+
+    MSE_values = []
+
+    for i, model_path in zip(iterations, model_paths):
+        controller = PathFollowingController(model_path, path_segments_file)
+        controller.simulate_policy_until_goal()
+        closed_loop = np.array(controller.closed_loop_trajectory)  # Nx4: x, y, theta, s
+
+        # Compute MSE
+        errors = []
+        for state in closed_loop:
+            x, y, theta, s_val = state
+            ref_point = controller.f_s(s_val).full().flatten()[:2]
+            ref_x, ref_y = ref_point
+            error_sq = (x - ref_x)**2 + (y - ref_y)**2
+            errors.append(error_sq)
+
+        mse = np.mean(errors)
+        MSE_values.append(mse)
+        print(f"Iteration {i}: MSE = {mse}")
+
+    # Plot MSE vs Iteration on a log scale
+    plt.figure(figsize=(8, 6))
+    plt.semilogy(iterations, MSE_values, marker='o', linestyle='--', color='blue', label='MSE')
+    plt.xlabel("Iteration")
+    plt.ylabel(r"log$_{10}$(MSE)")
+    # plt.title("MSE Over Iterations (1 through 10) - Log Scale")
+    # plt.grid(True, which="both", linestyle='--')
+
+    # Save the MSE plot as PGF
+    plt.savefig("MSE_iterations.pgf", bbox_inches='tight')
+    # plt.show()

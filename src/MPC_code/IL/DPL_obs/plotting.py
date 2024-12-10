@@ -73,7 +73,7 @@ class ObstacleAvoidanceController:
         """
         # Define the obstacle along the path
         self.obs_position = get_deviated_point(self.path_segments, obstacle_s, obstacle_deviation)
-        self.obs_r = 0.2  # Example obstacle radius
+        self.obs_r = 0.17  # Example obstacle radius
         self.obs_inflation = 0.2  # Safety margin around the obstacle
 
         # Reset trajectory and simulation parameters
@@ -202,7 +202,7 @@ class ObstacleAvoidanceController:
 
 if __name__ == "__main__":
     # File paths
-    model_path = os.path.join(MODELS_DIR, "policy_iteration_8.pth")
+    model_path = os.path.join(MODELS_DIR, "policy_iteration_15.pth")
     path_segments_file = os.path.join("paths", "path_segments_left.json")
 
     # Initialize the controller
@@ -212,8 +212,8 @@ if __name__ == "__main__":
     )
 
     # Simulate the policy
-    # controller.simulate_policy_with_obstacles(obstacle_s=55.0, obstacle_deviation=-0.1)
-    controller.simulate_policy_with_obstacles(obstacle_s=57.0, obstacle_deviation=-0.1)
+    controller.simulate_policy_with_obstacles(obstacle_s=56, obstacle_deviation=-0.1)
+    # controller.simulate_policy_with_obstacles(obstacle_s=58.0, obstacle_deviation=0.1)
 
     # Plot the results
     controller.plot_results()

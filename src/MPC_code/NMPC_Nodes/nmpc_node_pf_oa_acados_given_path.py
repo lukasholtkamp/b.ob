@@ -57,11 +57,11 @@ class NMPCController(Node):
         self.T = 10
 
         # Other initializations
-        self.cmd_vel_pub = self.create_publisher(
-            Twist, "/diffbot_base_controller/cmd_vel_unstamped", 10
-        )
+        # self.cmd_vel_pub = self.create_publisher(
+        #     Twist, "/diffbot_base_controller/cmd_vel_unstamped", 10
+        # )
 
-        # self.cmd_vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
+        self.cmd_vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
         self.ref_path_pub = self.create_publisher(Path, "/ref_path", 10)
         self.ol_path_pub = self.create_publisher(Path, "/ol_path", 10)
         self.amcl_pose_sub = self.create_subscription(
@@ -125,7 +125,7 @@ class NMPCController(Node):
         self.old_vel = None
 
         # Load the CSV data
-        self.csv_path = "/home/noorshawaf/NY/s/b.ob/src/nmpc_robot_controller/nmpc_robot_controller/functions/path_data_log_left.csv"  # Replace with the path to your CSV file
+        self.csv_path = "/home/bertrandt/b.ob/src/nmpc_robot_controller/nmpc_robot_controller/functions/path_data_log_left.csv"  # Replace with the path to your CSV file
         self.path_points = self.load_csv_data(self.csv_path)
 
         self.obs_position = None  # Replace with your desired position
@@ -134,7 +134,7 @@ class NMPCController(Node):
         self.obs_r = 0.0  # Set the radius
 
         self.data_log = []  # Stores all the logged data
-        self.log_file_path = "src/bob_closed_loop_mpc_pf_oa_2.csv"  # Update this path
+        self.log_file_path = "src/closed_loop_mpc_pf_oa_2.csv"  # Update this path
 
     def find_closest_obstacle(self):
         """Find the closest obstacle to the current robot position."""
@@ -338,7 +338,7 @@ class NMPCController(Node):
             usol_real = usol.copy()
             self.s_real += self.dt * usol[2]
 
-            usol = self.convert_u(usol)
+            # usol = self.convert_u(usol)
             # usol = self.low_pass_filter(usol, self.old_vel)
 
             # Publish results

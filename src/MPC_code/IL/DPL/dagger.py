@@ -64,7 +64,7 @@ dataset_actions = train_controls.tolist()  # Initialize with pre-collected contr
 # Logging data for analysis
 trajectory_logs = []  # To store state-action trajectories and differences
 
-num_iterations = 10  # Number of DAgger iterations
+num_iterations = 15  # Number of DAgger iterations
 new_samples_per_iteration = 20000  # Limit the number of new samples per iteration
 
 for iteration in range(num_iterations):
@@ -136,7 +136,7 @@ for iteration in range(num_iterations):
         train_dataset, batch_size=batch_size, shuffle=True
     )
 
-    for epoch in range(7):  # Train for 7 epochs per iteration
+    for epoch in range(20):  # Train for 7 epochs per iteration
         for batch_states, batch_actions in train_loader:
             optimizer.zero_grad()
             predictions = policy(batch_states)
