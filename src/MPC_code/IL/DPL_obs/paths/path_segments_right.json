@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 [
     {
         "start_point": [
@@ -1560,3 +1561,8 @@
         ]
     }
 ]
+=======
+version https://git-lfs.github.com/spec/v1
+oid sha256:b4d20adc90bd3af67c0137751ebf90a27dcf41c830c3712db996d7135e82938f
+size 39197
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097

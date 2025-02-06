@@ -150,11 +150,19 @@ for iteration in range(num_iterations):
     dataset_states.extend(iteration_states)
     dataset_actions.extend(iteration_actions)
 
+<<<<<<< HEAD
     # Limit dataset size to avoid memory issues
     if len(dataset_states) > 200000:
         dataset_states = dataset_states[-200000:]
         dataset_actions = dataset_actions[-200000:]
         logging.info("Dataset size limited to the most recent 200,000 samples.")
+=======
+    # # Limit dataset size to avoid memory issues
+    # if len(dataset_states) > 200000:
+    #     dataset_states = dataset_states[-200000:]
+    #     dataset_actions = dataset_actions[-200000:]
+    #     logging.info("Dataset size limited to the most recent 200,000 samples.")
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
 
     # Convert to tensors and prepare DataLoader
     aggregated_states_tensor = torch.tensor(dataset_states, dtype=torch.float32)

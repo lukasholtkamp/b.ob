@@ -431,7 +431,7 @@ class NMPCController(Node):
 
         u[0] = 0.02 + np.clip(usol[0],0,1)*(0.15-0.02)
         u[1] = np.sign(usol[1])*0.05 + np.clip(usol[1],-0.8,0.8)*(0.15-0.05)
-        u[2] = 0.8 * np.clip(usol[2],0,1)
+        u[2] = 0.95 * np.clip(usol[2],0,1)
 
         return u
 

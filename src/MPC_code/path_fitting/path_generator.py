@@ -18,6 +18,7 @@ from transform import *
 from path_segments_save import *
 from plotting import *
 
+<<<<<<< HEAD
 # # Configure PGF for LaTeX export
 # rcParams.update({
 #     "pgf.texsystem": "pdflatex",  # Use pdflatex or xelatex
@@ -27,10 +28,26 @@ from plotting import *
 #         r"\usepackage{amsmath}",  # Use additional LaTeX packages if needed
 #     ]
 # })
+=======
+# Configure PGF for LaTeX export
+rcParams.update({
+    "pgf.texsystem": "pdflatex",  # Use pdflatex or xelatex
+    "text.usetex": True,          # Enable LaTeX text rendering
+    "font.family": "serif",       # Match LaTeX document fonts
+    "pgf.preamble": [
+        r"\usepackage{amsmath}",  # Use additional LaTeX packages if needed
+    ],
+    'font.size': 18
+})
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
 
 def LSPB_fit(n,epsilon,v_max=0.1):
 
-    file_path = '/home/bertrandt/b.ob/src/MPC_code/path_fitting/path_data_log_2.csv'
+    # file_path = '/home/bertrandt/b.ob/src/MPC_code/path_fitting/path_data_log_right.csv'
+    # file_path = '/home/bertrandt/b.ob/src/MPC_code/path_fitting/replan_sim/plan_right_xy.csv'
+    file_path = '/home/bertrandt/b.ob/src/MPC_code/path_fitting/replan_real/plan_xy.csv'
+
+
 
     # Get the selected waypoints and their original indices
     original_indices, selected_waypoints, waypoints = select_waypoints_with_indices(file_path, n)
@@ -412,6 +429,7 @@ f_s = ca.Function('f_s', [s], [selected_result])
 # T_z_with_random_s_per_segment_with_transform_plot(path_segments, f_s,v_max=0.1,eps=0.15)
 
 # from matplotlib.lines import Line2D
+<<<<<<< HEAD
 
 # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
@@ -426,7 +444,25 @@ f_s = ca.Function('f_s', [s], [selected_result])
 # original_indices, selected_waypoints, waypoints = select_waypoints_with_indices(file_path, 20)
 
 # ax1.plot(waypoints[:, 0], waypoints[:, 1], color='orange', alpha=0.7, linewidth=2)
+=======
 
+# fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6), constrained_layout=True)
+
+# # circle = plt.Circle((4, 3.5), 0.5, color='blue', fill=False)
+# # ax1.plot(points[:,0], points[:,1], 'r-', label="Full Path using f_s")
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
+
+# # ax1.add_patch(circle)
+
+# file_path = '/home/bertrandt/b.ob/src/MPC_code/path_fitting/path_data_log_right.csv'
+
+# # Get the selected waypoints and their original indices
+# original_indices, selected_waypoints, waypoints = select_waypoints_with_indices(file_path, 20)
+
+# ax1.plot(waypoints[:, 0], waypoints[:, 1], color='orange', alpha=0.7, linewidth=2)
+
+
+# etas = []
 
 # for i, segment in enumerate(path_segments):
 
@@ -455,6 +491,12 @@ f_s = ca.Function('f_s', [s], [selected_result])
 #                 tfy.append(point[1])
 
 #             ax2.plot(tfx,tfy,'r-')
+<<<<<<< HEAD
+=======
+
+#             etas.append(segment.eta)
+
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
 
 
 #         if segment.segment_type == 'parabola':
@@ -481,10 +523,16 @@ f_s = ca.Function('f_s', [s], [selected_result])
 #             ax2.plot(tfx,tfy,'b-')
 
 #             # print(segment.eta)
+#             etas.append(segment.eta)
 
 
+<<<<<<< HEAD
 # ax1.set_xlabel('x (m)')
 # ax1.set_ylabel('y (m)')
+=======
+# ax1.set_xlabel('x [m]')
+# ax1.set_ylabel('y [m]')
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
 # ax1.grid(True)
 
 # # Create custom legend entries
@@ -498,15 +546,25 @@ f_s = ca.Function('f_s', [s], [selected_result])
 # ax1.legend(
 #     custom_lines,
 #     ['Original Waypoints', 'Straight Line Segments', 'Parabolic Segments'],
+<<<<<<< HEAD
 #     loc='upper left',  # Position the legend
 #     fontsize=10,        # Set the font size
+=======
+#     loc='lower left',  # Position the legend
+#     fontsize=1,        # Set the font size
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
 #     frameon=True,       # Add a box around the legend
 #     framealpha=0.8,     # Adjust transparency of the legend box
 #     edgecolor='black'   # Set the border color of the legend box
 # )
 
+<<<<<<< HEAD
 # ax2.set_xlabel('\^x (m)')
 # ax2.set_ylabel('\^y (m)')
+=======
+# ax2.set_xlabel('\^x [m]')
+# ax2.set_ylabel('\^y [m]')
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
 # ax2.grid(True)
 
 # # Create custom legend entries
@@ -519,18 +577,39 @@ f_s = ca.Function('f_s', [s], [selected_result])
 # ax2.legend(
 #     custom_lines,
 #     ['Transformed Straight Line Segments', 'Transformed Parabolic Segments'],
+<<<<<<< HEAD
 #     loc='upper left',  # Position the legend
 #     fontsize=10,        # Set the font size
+=======
+#     loc='lower left',  # Position the legend
+#     fontsize=14,        # Set the font size
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
 #     frameon=True,       # Add a box around the legend
 #     framealpha=0.8,     # Adjust transparency of the legend box
 #     edgecolor='black'   # Set the border color of the legend box
 # )
 
 
+<<<<<<< HEAD
 
 
 # # Save as PGF file
 # plt.savefig("plots/path_plot.pgf", bbox_inches='tight')  # Export to PGF for LaTeX integration
+=======
+# # plt.figure()
+
+# # # Create a histogram
+# # plt.hist(etas, bins=10, edgecolor='black', alpha=0.7)
+
+# # # Add labels and title
+# # plt.xlabel(r'$\eta$')
+# # plt.ylabel('Frequency')
+
+# # Save as PGF file
+# plt.savefig("plots/path_plot_2.pgf",bbox_inches='tight')  # Export to PGF for LaTeX integration
+# # plt.savefig("plots/etas_2.pgf", bbox_inches='tight')  # Export to PGF for LaTeX integration
+
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
 
 # # plt.show()
 
@@ -571,7 +650,7 @@ class CollisionPenaltyLayer(tf.keras.layers.Layer):
         return scaled_penalty
 
 class NMPCController:
-    def __init__(self):
+    def __init__(self, r1=0.15,r2=0.17,r3=0.2,infl=0.3):
         # NMPC Parameters
         self.Ts = 0.3  # Sampling time
         self.Ts_sim = 0.05  # Smaller simulation step time
@@ -588,6 +667,7 @@ class NMPCController:
         self.u0 = np.array([1, 0])
         self.w0 = 1
 
+<<<<<<< HEAD
         self.obs_inflation = 0.22
         self.obs_list = [
             {"s": 15, "d": 0.2, "r": 0.15 + self.obs_inflation},
@@ -602,6 +682,26 @@ class NMPCController:
         #     {"s": 32, "d": -0.2, "r": 0}
         # ]
 
+=======
+        self.obs_inflation = infl
+        self.obs_list = [
+            {"s": 15, "d": -0.23, "r": r1 + self.obs_inflation},
+            {"s": 30, "d": -0.3, "r": r3 + self.obs_inflation},
+        ]
+
+        # self.obs_inflation = infl
+        # self.obs_list = [
+        #     {"s": 20, "d": 0.1, "r": 0.12 + self.obs_inflation}
+        # ]
+
+        # self.obs_inflation = 0
+        # self.obs_list = [
+        #     {"s": 55, "d": 0.01, "r": 0},
+        #     {"s": 15, "d": 0.1, "r": 0},
+        #     {"s": 32, "d": -0.2, "r": 0}
+        # ]
+
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
         # Compute obstacle positions and add to the list
         for obs in self.obs_list:
             obs["x"], obs["y"] = get_deviated_point(path_segments, obs["s"], obs["d"])
@@ -621,6 +721,67 @@ class NMPCController:
         self.pf_model.load_state_dict(torch.load("/home/bertrandt/b.ob/src/MPC_code/IL/DPL/models/final_policy.pth"))
         self.pf_model.eval()  # Set the model to evaluation mode
 
+<<<<<<< HEAD
+=======
+        self.plot_initialized = False
+        self.ref_plotted = False
+        self.state_ref_plotted = False
+
+
+    def initialize_plots(self):
+        """Initialize separate figures for overlaying results."""
+        if not self.plot_initialized:
+            # Create figure for trajectories
+            self.fig_traj = plt.figure(figsize=(10, 8))
+            self.ax_traj = self.fig_traj.add_subplot(1, 1, 1)
+            # self.ax_traj.set_title("Trajectories")
+            self.ax_traj.set_xlabel("x [m]")
+            self.ax_traj.set_ylabel("y [m]")
+            self.ax_traj.grid()
+
+            # Create figure for Cartesian error
+            self.fig_error = plt.figure(figsize=(10, 8))
+            self.ax_error = self.fig_error.add_subplot(1, 1, 1)
+            # self.ax_error.set_title("Cartesian Error vs. s0")
+            self.ax_error.set_xlabel(r"$\theta$")
+            self.ax_error.set_ylabel(r"log$_{10}$(Cartesian Error) [m]")
+
+            # Create figure for X state
+            self.fig_states = plt.figure(figsize=(10, 8))
+            self.ax_python_states_x = self.fig_states.add_subplot(4, 1, 1)
+            self.ax_python_states_x.set_ylabel("x [m]")
+
+            self.ax_python_states_y = self.fig_states.add_subplot(4, 1, 2)
+            self.ax_python_states_y.set_ylabel("y [m]")
+            self.ax_python_states_y.set_xlabel(r"$\theta$")
+
+            self.ax_gazebo_states_x = self.fig_states.add_subplot(4, 1, 3)
+            self.ax_gazebo_states_x.set_ylabel("x [m]")
+
+            self.ax_gazebo_states_y = self.fig_states.add_subplot(4, 1, 4)
+            self.ax_gazebo_states_y.set_ylabel("y [m]")
+            self.ax_gazebo_states_y.set_xlabel(r"$\theta$")
+
+            # Control Inputs
+            self.fig_control = plt.figure(figsize=(10, 8))
+            self.ax_python_control = self.fig_control.add_subplot(2, 1, 1)
+            self.ax_python_control.set_ylabel("Control Input Values")
+            self.ax_python_control.set_xlabel(r"$\theta$")
+
+            self.ax_gazebo_control = self.fig_control.add_subplot(2, 1, 2)
+            self.ax_gazebo_control.set_ylabel("Control Input Values")
+            self.ax_gazebo_control.set_xlabel(r"$\theta$")
+
+            
+            self.fig_control_single = plt.figure(figsize=(10, 8))
+            self.ax_control = self.fig_control_single.add_subplot(1, 1, 1)
+            self.ax_control.set_ylabel("Control Input Values")
+            self.ax_control.set_xlabel(r"$\theta$")
+
+
+            self.plot_initialized = True
+
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
 
     def predict_policy(self, input_data):
         # Convert the input data to a PyTorch tensor
@@ -754,51 +915,6 @@ class NMPCController:
 
         return ocp
 
-
-    def run_mpc(self):
-        self.solver.set(0, "p", self.obs_list.flatten())
-        self.solver.set(0, "lbx", self.current_state)
-        self.solver.set(0, "ubx", self.current_state)
-
-        status = self.solver.solve()
-
-        if status != 0:
-            print(f"ACADOS returned status {status}")
-
-        usol = self.solver.get(0, "u")
-        x_opt = [self.solver.get(i, "x") for i in range(self.N + 1)]
-        return usol, x_opt
-
-
-    def plot_results(self, x_opt):
-        # Plot the reference path
-        s_values = np.linspace(0, path_segments[-1].end_time, 500)
-        ref_path = np.array([f_s(s).full().flatten() for s in s_values])
-        
-        plt.figure(figsize=(10, 10))
-        
-        # Plot reference path
-        plt.plot(ref_path[:, 0], ref_path[:, 1], 'g--', label='Reference Path')
-
-        # Plot obstacles
-        for obs in self.obs_list:
-            circle = plt.Circle((obs[0], obs[1]), obs[2], color='red', alpha=0.5)
-            plt.gca().add_patch(circle)
-
-        # Plot x_opt trajectory
-        x_opt = np.array(x_opt)
-        plt.plot(x_opt[:, 0], x_opt[:, 1], 'b-', label='Optimal Trajectory')
-
-        # Plot settings
-        plt.scatter(self.initial_point[0], self.initial_point[1], color='black', label='Start Point')
-        plt.title('Reference Path, Obstacles, and Optimal Trajectory')
-        plt.xlabel('X')
-        plt.ylabel('Y')
-        plt.legend()
-        plt.grid(True)
-        plt.axis('equal')
-        plt.show()
-
     def simulate_kinematic_step(self, state, control, Ts):
         x, y, theta, s = state
         v, omega = control[:2]
@@ -807,12 +923,22 @@ class NMPCController:
         theta_next = theta + Ts * omega
         s_next = s + Ts * control[2]  # Increment s using the third control input (w)
         return np.array([x_next, y_next, theta_next, s_next])
+<<<<<<< HEAD
     
 
     def run_mpc_loop(self):
         self.closed_loop_controls = []  # Store control inputs
         solver_times = []  # Store solver times for each iteration
 
+=======
+
+    def run_mpc_loop(self):
+        closed_loop_controls = []  # Store control inputs
+        closed_loop_trajectory = []
+        solver_times = []  # Store solver times for each iteration
+
+
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
         while np.linalg.norm(self.current_state[:2] - self.final_position[:2]) > 0.1:
             # Find the closest obstacle
             closest_obs = self.find_closest_obstacle()
@@ -828,12 +954,19 @@ class NMPCController:
             start_time = time.time()
             status = self.solver.solve()
             end_time = time.time()
+<<<<<<< HEAD
             solver_time = end_time - start_time
             solver_times.append(solver_time)
+=======
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
 
             if status != 0:
-                print(f"ACADOS returned status {status}")
-                break
+                print(f"ACADOS returned status {status}. Exiting loop.")
+                break  # Exit loop on solver failure
+
+            # Store solver time
+            solver_time = end_time - start_time
+            solver_times.append(solver_time)
 
             usol = self.solver.get(0, "u")
             x_opt = [self.solver.get(i, "x") for i in range(self.N + 1)]
@@ -843,6 +976,7 @@ class NMPCController:
             self.s0 = self.current_state[3]
 
             # Store the full state (x, y, theta, s)
+<<<<<<< HEAD
             self.closed_loop_trajectory.append(self.current_state.copy())
 
             # Store the control inputs
@@ -860,15 +994,16 @@ class NMPCController:
                  ["Worst Case", f"{worst_time:.6f}"]]
         print(tabulate(table, headers="firstrow", tablefmt="grid"))
 
+=======
+            closed_loop_trajectory.append(self.current_state.copy())
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
 
-    def run_mpc_loop_n(self, n=50):
-        plt.figure(figsize=(10, 10))
+            # Store the control inputs
+            closed_loop_controls.append(usol.copy())
 
-        for _ in range(n):
-            self.solver.set(0, "p", self.obs_list.flatten())
-            self.solver.set(0, "lbx", self.current_state)
-            self.solver.set(0, "ubx", self.current_state)
+        return closed_loop_trajectory,closed_loop_controls,solver_times
 
+<<<<<<< HEAD
             status = self.solver.solve()
 
             if status != 0:
@@ -1001,6 +1136,9 @@ class NMPCController:
 
 
     def run_NN_obs_n(self,n=50):
+=======
+    def run_NN_obs(self,n=50):
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
 
         for _ in range(n):
 
@@ -1046,8 +1184,14 @@ class NMPCController:
         """
         Run the closed-loop control using the path-following neural network (NN).
         """
+<<<<<<< HEAD
         self.closed_loop_controls = []  # Store control inputs
         self.solver_times = []  # Store inference times
+=======
+        closed_loop_controls = []  # Store control inputs
+        solver_times = []  # Store inference times
+        closed_loop_trajectory = [] 
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
 
         while np.linalg.norm(self.current_state[:2] - self.final_position[:2]) > 0.1:
             # Prepare inputs for the NN
@@ -1070,7 +1214,11 @@ class NMPCController:
             usol = self.predict_policy(input_data)
             end_time = time.time()
 
+<<<<<<< HEAD
             self.solver_times.append(end_time - start_time)
+=======
+            solver_times.append(end_time - start_time)
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
 
             # Adjust NN output based on eta
             if eta < 0:
@@ -1083,6 +1231,7 @@ class NMPCController:
             self.current_state = self.simulate_kinematic_step(self.current_state, usol[0], self.Ts_sim)
 
             # Log the closed-loop trajectory
+<<<<<<< HEAD
             self.closed_loop_trajectory.append(self.current_state.copy())
             # Log the control inputs and s0
             self.closed_loop_controls.append(usol[0].copy())
@@ -1129,13 +1278,495 @@ class NMPCController:
         # Optionally return the statistics for further use
         return {"mean": mean_time, "std": std_time, "worst": worst_time}
 
+=======
+            closed_loop_trajectory.append(self.current_state.copy())
+            # Log the control inputs and s0
+            closed_loop_controls.append(usol[0].copy())
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
 
+        return closed_loop_trajectory,closed_loop_controls,solver_times
+
+    def plot_trajectory(self, csv_file=None, trajectory=None, label=None, plt_obs=False):
+        """
+        Plot the trajectory of a closed-loop solution or a CSV file.
+        If `csv_file` is provided, plot the CSV data.
+        If `trajectory` is provided, plot the given trajectory data.
+        If `plt_obs` is True, plot the obstacles from `self.obs_list`.
+        """
+        if not self.plot_initialized:
+            self.initialize_plots()
+
+        if not self.ref_plotted:
+            # Plot the reference path
+            s_values = np.linspace(0, path_segments[-1].end_time, 500)
+            ref_path = np.array([f_s(s).full().flatten()[:2] for s in s_values])
+            self.ax_traj.plot(ref_path[:, 0], ref_path[:, 1], 'g-', label="Reference Path")
+
+            # Add a green marker at the start of the reference path
+            start_x, start_y = ref_path[0, 0], ref_path[0, 1]
+            self.ax_traj.plot(start_x, start_y, 'bo')  # Green circle at start
+            # Add text "Start" further above the start point
+            self.ax_traj.text(
+                start_x, start_y - 0.3, "Start",
+                color='black',
+                fontsize=18,
+                verticalalignment='bottom',
+                horizontalalignment='center',
+                bbox=dict(facecolor='white', alpha=0.8, edgecolor='none')
+            )
+
+            # Add a red marker at the end of the reference path
+            end_x, end_y = ref_path[-1, 0], ref_path[-1, 1]
+            self.ax_traj.plot(end_x, end_y, 'ro')  # Red circle at end
+            # Add text "End" further below the end point
+            self.ax_traj.text(
+                end_x, end_y + 0.3, "End",
+                color='black',
+                fontsize=18,
+                verticalalignment='top',
+                horizontalalignment='center',
+                bbox=dict(facecolor='white', alpha=0.8, edgecolor='none')
+            )
+
+            self.ref_plotted = True
+
+            if plt_obs:
+                # Plot the obstacles from `self.obs_list`
+                for obs in self.obs_list:
+                    obs_x, obs_y = get_deviated_point(path_segments, obs["s"], obs["d"])
+                    circle = plt.Circle((obs_x, obs_y), obs["r"] - self.obs_inflation, color="red", alpha=0.5)
+                    self.ax_traj.add_patch(circle)
+
+
+
+        if csv_file:
+            # Plot the trajectory from a CSV file
+            csv_data = self.load_csv_data(csv_file)
+            self.ax_traj.plot(
+                csv_data[:, 0], csv_data[:, 1],
+                label=label or "Gazebo Solution", linestyle="--",color="orange"
+            )
+        elif trajectory is not None:
+            # Plot the given trajectory
+            trajectory = np.array(trajectory)
+            if trajectory.ndim != 2 or trajectory.shape[1] < 2:
+                print(f"Invalid trajectory format: expected 2D array, got shape {trajectory.shape}")
+                return
+            self.ax_traj.plot(
+                trajectory[:, 0], trajectory[:, 1],
+                label=label or "Closed-Loop Solution", linestyle="--"
+            )
+        else:
+            print("No trajectory data provided for plotting.")
+
+        # Add labels and grid
+        self.ax_traj.set_xlabel("x [m]")
+        self.ax_traj.set_ylabel("y [m]")
+        self.ax_traj.legend()
+        self.ax_traj.grid()
+
+    def plot_states(self, csv_file=None, trajectory=None, label=None, plt_obs=False,real=False):
+        """
+        Plot the trajectory of a closed-loop solution or a CSV file.
+        If `csv_file` is provided, plot the CSV data.
+        If `trajectory` is provided, plot the given trajectory data.
+        If `plt_obs` is True, plot the obstacles from `self.obs_list`.
+        """
+        if not self.plot_initialized:
+            self.initialize_plots()
+
+        if not self.state_ref_plotted:
+            # Plot the reference path
+            s_values = np.linspace(0, path_segments[-1].end_time, 500)
+            ref_path = np.array([f_s(s).full().flatten()[:2] for s in s_values])
+            ref_x = ref_path[:, 0]
+            ref_y = ref_path[:, 1]
+
+            self.ax_python_states_x.plot(s_values,ref_x)
+            self.ax_python_states_y.plot(s_values,ref_y)
+
+            self.ax_gazebo_states_x.plot(s_values,ref_x)
+            self.ax_gazebo_states_y.plot(s_values,ref_y)
+
+            self.state_ref_plotted = True
+
+        if csv_file:
+            if not real:
+                # Plot the trajectory from a CSV file
+                csv_data = self.load_csv_data(csv_file)
+                gaz_x = csv_data[:, 0]
+                gaz_y = csv_data[:, 1]
+                s_vals = csv_data[:, 3]
+                self.ax_gazebo_states_x.plot(s_vals,gaz_x)
+                self.ax_gazebo_states_y.plot(s_vals,gaz_y)
+            else:
+                # Plot the trajectory from a CSV file
+                csv_data = self.load_csv_data(csv_file)
+                gaz_x = csv_data[:, 0]
+                gaz_y = csv_data[:, 1]
+                s_vals = csv_data[:, 3]
+
+                if "NN" in label:
+                    self.ax_gazebo_states_x.plot(s_vals,gaz_x)
+                    self.ax_gazebo_states_y.plot(s_vals,gaz_y)
+                elif "MPC" in label:
+                    self.ax_python_states_x.plot(s_vals,gaz_x)
+                    self.ax_python_states_y.plot(s_vals,gaz_y)
+
+        elif trajectory is not None:
+            # Plot the given trajectory
+            trajectory = np.array(trajectory)
+            if trajectory.ndim != 2 or trajectory.shape[1] < 2:
+                print(f"Invalid trajectory format: expected 2D array, got shape {trajectory.shape}")
+                return
+            
+            py_x = trajectory[:, 0]
+            py_y = trajectory[:, 1]
+            s_vals = [state[3] for state in trajectory]
+
+            self.ax_python_states_x.plot(s_vals,py_x)
+            self.ax_python_states_y.plot(s_vals,py_y)
+
+        else:
+            print("No trajectory data provided for plotting.")
+
+    def plot_error(self, ref_function, csv_file=None, trajectory=None, label=None, real=False):
+        """
+        Plot Cartesian error vs. path progress parameter (s).
+        If `csv_file` is provided, use the CSV data.
+        If `trajectory` is provided, use the given trajectory data.
+        """
+        if csv_file:
+            csv_data = self.load_csv_data(csv_file)
+            s_values = csv_data[:, 3]  # Assuming s0 is the fourth column
+
+            errors = [
+                np.sqrt((csv_data[i, 0] - ref_function(csv_data[i, 3]).full().flatten()[0])**2 +
+                        (csv_data[i, 1] - ref_function(csv_data[i, 3]).full().flatten()[1])**2)
+                for i in range(len(s_values))
+            ]
+            self.ax_error.plot(
+                s_values, np.array(errors).ravel(),
+                label=label or "Gazebo Data",color="orange"
+            )
+        elif trajectory is not None:
+            s_values = [state[3] for state in trajectory]
+            errors = [
+                np.sqrt((state[0] - ref_function(state[3]).full().flatten()[0])**2 +
+                        (state[1] - ref_function(state[3]).full().flatten()[1])**2)
+                for state in trajectory
+            ]
+            self.ax_error.plot(
+                s_values, np.array(errors).ravel(),
+                label=label or "Closed-Loop Solution"
+            )
+        else:
+            print("No error data provided for plotting.")
+            return
+
+        # Set the y-axis to a logarithmic scale
+        self.ax_error.set_yscale('log')
+
+
+    def plot_control_inputs(self, csv_file=None, controls=None, trajectory=None, label=None, real=False,single=False):
+        """
+        Plot control inputs vs. path progress parameter (s).
+        If `csv_file` is provided, plot the CSV data.
+        If `controls` and `trajectory` are provided, use the given data.
+        """
+        # Assign distinct colors to each control input
+        v_color = '#d62728'          # red for v
+        omega_color = '#9467bd'      # purple for ω
+        w_color = 'c'    # purple for w
+
+        if csv_file:
+            # Load data from CSV
+            if not real:
+                if not single:
+                    csv_data = self.load_csv_data(csv_file)
+                    s_values = csv_data[:, 3]  # Assuming s0 is the fourth column
+                    v_values = csv_data[:, 4]  # Assuming v is the fifth column
+                    omega_values = csv_data[:, 5]  # Assuming omega is the sixth column
+                    w_values = csv_data[:, 6]  # Assuming w is the seventh column
+
+                    self.ax_gazebo_control.plot(s_values, v_values, label=r"v [m/s]("+label+")",linestyle='dashed',color=v_color)
+                    self.ax_gazebo_control.plot(s_values, omega_values, label=r"$\omega$ [rad/s]("+label+")",linestyle='dashed',color=omega_color)
+                    self.ax_gazebo_control.plot(s_values, w_values, label=r"$w [s^{-1}]$("+label+")",linestyle='dashed',color=w_color)
+                else:
+                    csv_data = self.load_csv_data(csv_file)
+                    s_values = csv_data[:, 3]  # Assuming s0 is the fourth column
+                    v_values = csv_data[:, 4]  # Assuming v is the fifth column
+                    omega_values = csv_data[:, 5]  # Assuming omega is the sixth column
+                    w_values = csv_data[:, 6]  # Assuming w is the seventh column
+
+                    self.ax_control.plot(s_values, v_values, label=r"v [m/s]("+label+")",linestyle='solid',color=v_color)
+                    self.ax_control.plot(s_values, omega_values, label=r"$\omega$ [rad/s]("+label+")",linestyle='solid',color=omega_color)
+                    self.ax_control.plot(s_values, w_values, label=r"$w [s^{-1}]$("+label+")",linestyle='solid',color=w_color)
+
+            else:
+                csv_data = self.load_csv_data(csv_file)
+                s_values = csv_data[:, 3]  # Assuming s0 is the fourth column
+                v_values = csv_data[:, 4]  # Assuming v is the fifth column
+                omega_values = csv_data[:, 5]  # Assuming omega is the sixth column
+                w_values = csv_data[:, 6]  # Assuming w is the seventh column
+
+                if not single:
+
+                    if "NN" in label:
+                        self.ax_gazebo_control.plot(s_values, v_values, label=r"v [m/s]("+label+")",linestyle='dashed',color=v_color)
+                        self.ax_gazebo_control.plot(s_values, omega_values, label=r"$\omega$ [rad/s]("+label+")",linestyle='dashed',color=omega_color)
+                        self.ax_gazebo_control.plot(s_values, w_values, label=r"$w [s^{-1}]$("+label+")",linestyle='dashed',color=w_color)
+                    elif "MPC" in label:
+                        self.ax_python_control.plot(s_values, v_values, label=r"v [m/s]("+label+")",linestyle='solid',color=v_color)
+                        self.ax_python_control.plot(s_values, omega_values, label=r"$\omega$ [rad/s]("+label+")",linestyle='solid',color=omega_color)
+                        self.ax_python_control.plot(s_values, w_values, label=r"$w [s^{-1}]$("+label+")",linestyle='solid',color=w_color)
+
+                else:
+                    csv_data = self.load_csv_data(csv_file)
+                    s_values = csv_data[:, 3]  # Assuming s0 is the fourth column
+                    v_values = csv_data[:, 4]  # Assuming v is the fifth column
+                    omega_values = csv_data[:, 5]  # Assuming omega is the sixth column
+                    w_values = csv_data[:, 6]  # Assuming w is the seventh column
+
+                    self.ax_control.plot(s_values, v_values, label=r"v [m/s]("+label+")",linestyle='solid',color=v_color)
+                    self.ax_control.plot(s_values, omega_values, label=r"$\omega$ [rad/s]("+label+")",linestyle='solid',color=omega_color)
+                    self.ax_control.plot(s_values, w_values, label=r"$w [s^{-1}]$("+label+")",linestyle='solid',color=w_color)
+
+        elif controls is not None and trajectory is not None:
+            # Ensure the trajectory and controls lengths match
+            s_values = [state[3] for state in trajectory]
+            controls = np.array(controls)
+
+            if len(s_values) != controls.shape[0]:
+                print(f"Mismatch between s_values ({len(s_values)}) and controls ({controls.shape[0]}).")
+                return
+
+            # Plot the control inputs with chosen colors
+            self.ax_python_control.plot(
+                s_values, controls[:, 0],
+                color=v_color,
+                label=r"v [m/s]("+label+")"
+            )
+            self.ax_python_control.plot(
+                s_values, controls[:, 1],
+                color=omega_color,
+                label=r"$\omega$ [rad/s]("+label+")"
+            )
+            self.ax_python_control.plot(
+                s_values, controls[:, 2],
+                color=w_color,
+                label=r"$w [s^{-1}]$("+label+")"
+            )
+        else:
+            print("No control input data or trajectory provided for plotting.")
+
+
+    def finalize_plots(self,a,b,c,single=False,Real=False):
+        """Add legends and show the combined plot."""
+        self.ax_traj.legend(loc='center left',
+            fontsize=18,        # Set the font size
+            frameon=True,       # Add a box around the legend
+            framealpha=0.8,     # Adjust transparency of the legend box
+            edgecolor='black'   # Set the border color of the legend box
+        )
+        if single or Real:
+            self.ax_error.legend(loc='lower right',
+                fontsize=18,        # Set the font size
+                frameon=True,       # Add a box around the legend
+                framealpha=0.8,     # Adjust transparency of the legend box
+                edgecolor='black'   # Set the border color of the legend box
+            )
+        else:
+            self.ax_error.legend(loc='upper right',
+                fontsize=18,        # Set the font size
+                frameon=True,       # Add a box around the legend
+                framealpha=0.8,     # Adjust transparency of the legend box
+                edgecolor='black'   # Set the border color of the legend box
+            )
+
+        self.ax_gazebo_control.legend(
+            loc='upper left',
+            bbox_to_anchor=(1.05, 1),
+            fontsize=18,
+            frameon=True,
+            framealpha=0.8,
+            edgecolor='black'
+        )
+
+        self.ax_python_control.legend(
+            loc='upper left',
+            bbox_to_anchor=(1.05, 1),
+            fontsize=18,
+            frameon=True,
+            framealpha=0.8,
+            edgecolor='black'
+        )
+
+        self.ax_control.legend(
+            loc='upper left',
+            bbox_to_anchor=(1.05, 1),
+            fontsize=18,
+            frameon=True,
+            framealpha=0.8,
+            edgecolor='black'
+        )
+
+        # plt.tight_layout()
+        self.ax_traj.grid(visible=True)
+
+        self.fig_traj.savefig("plots/"+a, bbox_inches='tight')  # Export to PGF for LaTeX integration
+        self.fig_error.savefig("plots/"+b, bbox_inches='tight')  # Export to PGF for LaTeX integration
+
+        # self.fig_states.subplots_adjust(hspace=0.5)
+        # self.fig_states.savefig("plots/NN_Replan_Real_PF_states.pgf", bbox_inches='tight')  # Export to PGF for LaTeX integration
+
+        if not single:
+            self.fig_control.subplots_adjust(hspace=0.5)
+            self.fig_control.savefig("plots/"+c, bbox_inches='tight')  # Export to PGF for LaTeX integration
+        else:
+            self.fig_control_single.savefig("plots/"+c, bbox_inches='tight')  # Export to PGF for LaTeX integration
+
+
+        # plt.show()
+
+
+    def load_csv_data(self, file_path):
+        """Load CSV data for overlay."""
+        data = np.loadtxt(file_path, delimiter=",", skiprows=1)
+        return data
+    
+    def analyze_timing_data(self, timing_array=None, csv_file=None, label=None):
+        """
+        Analyze timing data and generate a table of statistics.
+        If `timing_array` is provided, use that data.
+        If `csv_file` is provided, use the CSV data.
+        Otherwise, use internal solver times.
+        """
+        if timing_array is not None:
+            times = timing_array
+        elif csv_file:
+            csv_data = self.load_csv_data(csv_file)
+            times = csv_data[:, -1]  # Assuming the last column contains time data
+        else:
+            times = self.solver_times
+
+        if len(times)==0:
+            print(f"No timing data available for {label or 'Simulation'}.")
+            return
+
+        # Compute statistics
+        mean_time = np.mean(times)*10**3
+        std_time = np.std(times)*10**3
+        worst_time = np.max(times)*10**3
+
+        # Prepare the table
+        table = [
+            ["Metric", "Time (ms)"],
+            ["Mean", f"{mean_time:.7f}"],
+            ["Standard Deviation", f"{std_time:.7f}"],
+            ["Worst Case", f"{worst_time:.7f}"],
+        ]
+
+        print(f"\nTiming Data for {label or 'Simulation'}:")
+        print(tabulate(table, headers="firstrow", tablefmt="grid"))
+
+        # Optionally return the statistics
+        return {"mean": mean_time, "std": std_time, "worst": worst_time}
+
+        
+    def analyze_error_data(self, ref_function, csv_file=None, trajectory=None, label=None):
+        """
+        Analyze Cartesian error data and generate a summary table.
+        If `csv_file` is provided, use the CSV data; otherwise, use `trajectory`.
+        """
+        if csv_file:
+            csv_data = self.load_csv_data(csv_file)
+            s_values = csv_data[:, 3]  # Assuming s0 is the fourth column
+            errors = [
+                np.sqrt((csv_data[i, 0] - ref_function(csv_data[i, 3]).full().flatten()[0])**2 +
+                        (csv_data[i, 1] - ref_function(csv_data[i, 3]).full().flatten()[1])**2)
+                for i in range(len(s_values))
+            ]
+        elif trajectory is not None:
+            trajectory = np.array(trajectory)  # Convert to NumPy array if not already
+            s_values = [state[3] for state in trajectory]
+            errors = [
+                np.sqrt((trajectory[i, 0] - ref_function(s_values[i]).full().flatten()[0])**2 +
+                        (trajectory[i, 1] - ref_function(s_values[i]).full().flatten()[1])**2)
+                for i in range(len(s_values))
+            ]
+        else:
+            raise ValueError("No valid data provided for error analysis.")
+
+        # Compute statistics
+        mean_error = np.mean(errors)
+        max_error = np.max(errors)
+
+        # Prepare the table
+        table = [
+            ["Metric", "Error (m)"],
+            ["Mean", f"{mean_error:.3f}"],
+            ["Max", f"{max_error:.3f}"],
+        ]
+
+        print(f"\nError Data for {label or 'Simulation'}:")
+        print(tabulate(table, headers="firstrow", tablefmt="grid"))
+
+        # Optionally return the statistics
+        return {"mean_error": mean_error, "max_error": max_error}
+
+    def calculate_and_display_min_distances(self,trajectory=None, csv_file=None):
+        """
+        Calculate the smallest distances to each obstacle and display them in a table.
+
+        Args:
+            trajectory (list of tuples): [(x, y), ...] representing robot positions.
+            csv_file (str): Path to the CSV file containing trajectory data.
+            path_segments (list): List of path segments.
+            obs_list (list of dicts): [{"s": obs_s, "d": obs_d, "r": obs_r}, ...].
+            obs_inflation (float): Inflation radius for obstacles.
+
+        Returns:
+            None
+        """
+        if trajectory is not None:
+            # Use provided trajectory
+            robot_trajectory = np.array(trajectory)[:, :2]
+        elif csv_file:
+            # Load trajectory from CSV
+            csv_data = np.loadtxt(csv_file, delimiter=",", skiprows=1)
+            robot_trajectory = csv_data[:, :2]
+        else:
+            raise ValueError("Either 'trajectory' or 'csv_file' must be provided.")
+
+        min_distances = []
+
+        for obs in self.obs_list:
+            # Get the obstacle's actual position
+            obs_x, obs_y = get_deviated_point(path_segments, obs["s"], obs["d"])
+            obs_r = obs["r"] - self.obs_inflation  # Adjust radius by inflation
+
+            # Calculate distances from the robot trajectory to the obstacle
+            distances = [
+                np.sqrt((robot_x - obs_x) ** 2 + (robot_y - obs_y) ** 2) - obs_r
+                for robot_x, robot_y in robot_trajectory
+            ]
+            # Append the smallest distance for this obstacle
+            min_distances.append(max(0, min(distances)))  # Ensure no negative distances
+
+        # Prepare the table
+        table = [["Obstacle ID", "Min Distance (m)"]]
+        for i, min_distance in enumerate(min_distances):
+            table.append([f"Obstacle {i + 1}", f"{min_distance:.3f}"])
+
+        # Display the table
+        print("\nMinimum Distances to Obstacles:")
+        print(tabulate(table, headers="firstrow", tablefmt="grid"))
+   
+    
 if __name__ == "__main__":
-    controller = NMPCController()
-    # usol, x_opt = controller.run_mpc()
-    # print("Optimal control input:", usol)
-    # print("Optimal state trajectory:", x_opt)
 
+<<<<<<< HEAD
     # Plot results
     # controller.plot_results(x_opt)
 
@@ -1147,3 +1778,457 @@ if __name__ == "__main__":
     # controller.plot_closed_loop(csv_file="closed_loop_mpc_1.csv")
     # controller.analyze_timing_data(csv_file="closed_loop_mpc_1.csv")
 
+=======
+    # # MPC sim and Gazebo PF
+    # controller1 = NMPCController(r1=0.0,r2=0.0,r3=0.0,infl=0.0)
+
+    # # Initialize plots
+    # controller1.initialize_plots()
+
+
+    # # Run MPC simulation
+    # mpc_trajectory, mpc_controls, mpc_times = controller1.run_mpc_loop()
+    # if mpc_trajectory and mpc_controls:
+    #     controller1.plot_trajectory(
+    #         trajectory=mpc_trajectory, 
+    #         label="NMPC Policy (Python)"
+    #     )
+    #     controller1.plot_error(
+    #         trajectory=mpc_trajectory, 
+    #         ref_function=f_s, 
+    #         label="NMPC Policy (Python)"
+    #     )
+    #     controller1.plot_control_inputs(
+    #         controls=mpc_controls, 
+    #         trajectory=mpc_trajectory, 
+    #         label="NMPC Policy (Python)"
+    #     )
+    #     controller1.plot_states(
+    #         trajectory=mpc_trajectory, 
+    #         label="NMPC Policy (Python)")
+    # else:
+    #     print("NMPC Policy simulation produced no valid data.")
+
+    # # Overlay CSV data for MPC
+    # controller1.plot_trajectory(
+    #     csv_file="closed_loop_mpc_pf_right.csv", 
+    #     label="NMPC Policy (Gazebo)"
+    # )
+    # controller1.plot_error(
+    #     csv_file="closed_loop_mpc_pf_right.csv", 
+    #     ref_function=f_s, 
+    #     label="NMPC Policy (Gazebo)"
+    # )
+    # controller1.plot_control_inputs(
+    #     csv_file="closed_loop_mpc_pf_right.csv", 
+    #     label="NMPC Policy (Gazebo)"
+    # )
+    # controller1.plot_states(
+    #     csv_file="closed_loop_mpc_pf_right.csv", 
+    #     label="NMPC Policy (Gazebo)"
+    # )
+
+    # # # Summarize NMPC Policy results
+    # print("\n=== NMPC Policy Results PF ===")
+    # controller1.analyze_timing_data(timing_array=mpc_times, label="NMPC Policy (Python)")
+    # controller1.analyze_error_data(ref_function=f_s, trajectory=mpc_trajectory, label="NMPC Policy (Python)")
+    # controller1.analyze_timing_data(csv_file="closed_loop_mpc_pf_right.csv", label="NMPC Policy (Gazebo)")
+    # controller1.analyze_error_data(ref_function=f_s, csv_file="closed_loop_mpc_pf_right.csv", label="NMPC Policy (Gazebo)")
+
+    # # Finalize plots
+    # controller1.finalize_plots("MPC_sim_and_Gazebo_PF_traj_right.pgf","MPC_sim_and_Gazebo_PF_error_right.pgf","MPC_sim_and_Gazebo_PF_control_inputs_right.pgf")
+
+
+    # # NN sim and Gazebo PF
+    # controller2 = NMPCController(r1=0.0,r2=0.0,r3=0.0,infl=0.0)
+
+    # # Initialize plots
+    # controller2.initialize_plots()
+
+    # # Run NN simulation
+    # nn_trajectory, nn_controls, nn_times = controller2.run_NN_pf()
+    # if nn_trajectory and nn_controls:
+    #     controller2.plot_trajectory(
+    #         trajectory=nn_trajectory, 
+    #         label="NN Policy (Python)"
+    #     )
+    #     controller2.plot_error(
+    #         trajectory=nn_trajectory, 
+    #         ref_function=f_s, 
+    #         label="NN Policy (Python)"
+    #     )
+    #     controller2.plot_control_inputs(
+    #         controls=nn_controls, 
+    #         trajectory=nn_trajectory, 
+    #         label="NN Policy (Python)"
+    #     )
+    #     controller2.plot_states(
+    #         trajectory=nn_trajectory, 
+    #         label="NN Policy (Python)"
+    #     )
+    # else:
+    #     print("NN Policy simulation produced no valid data.")
+
+    # # Overlay CSV data for NN
+    # controller2.plot_trajectory(
+    #     csv_file="closed_loop_nn_pf_right.csv", 
+    #     label="NN Policy (Gazebo)"
+    # )
+    # controller2.plot_error(
+    #     csv_file="closed_loop_nn_pf_right.csv", 
+    #     ref_function=f_s, 
+    #     label="NN Policy (Gazebo)"
+    # )
+    # controller2.plot_control_inputs(
+    #     csv_file="closed_loop_nn_pf_right.csv", 
+    #     label="NN Policy (Gazebo)"
+    # )
+    # controller2.plot_states(
+    #     csv_file="closed_loop_nn_pf_right.csv", 
+    #     label="NN Policy (Gazebo)"
+    # )
+
+    # # # Summarize NN Policy results
+    # print("\n=== NN Policy Results PF ===")
+    # controller2.analyze_timing_data(timing_array=nn_times, label="NN Policy (Python)")
+    # controller2.analyze_error_data(ref_function=f_s, trajectory=nn_trajectory, label="NN Policy (Python)")
+    # controller2.analyze_timing_data(csv_file="closed_loop_nn_pf_right.csv", label="NN Policy (Gazebo)")
+    # controller2.analyze_error_data(ref_function=f_s, csv_file="closed_loop_nn_pf_right.csv", label="NN Policy (Gazebo)")
+
+    # # Finalize plots
+    # controller2.finalize_plots("NN_sim_and_Gazebo_PF_traj_right.pgf","NN_sim_and_Gazebo_PF_error_right.pgf","NN_sim_and_Gazebo_PF_control_inputs_right.pgf")
+
+
+    # # MPC sim and Gazebo PF+OA
+    # controller3 = NMPCController()
+
+    # # Initialize plots
+    # controller3.initialize_plots()
+
+    # # Run MPC simulation
+    # mpc_trajectory, mpc_controls, mpc_times = controller3.run_mpc_loop()
+    # if mpc_trajectory and mpc_controls:
+    #     controller3.plot_trajectory(
+    #         trajectory=mpc_trajectory, 
+    #         label="NMPC Policy (Python)",plt_obs=True
+    #     )
+    #     controller3.plot_error(
+    #         trajectory=mpc_trajectory, 
+    #         ref_function=f_s, 
+    #         label="NMPC Policy (Python)"
+    #     )
+    #     controller3.plot_control_inputs(
+    #         controls=mpc_controls, 
+    #         trajectory=mpc_trajectory, 
+    #         label="NMPC Policy (Python)"
+    #     )
+    #     controller3.plot_states(
+    #         trajectory=mpc_trajectory, 
+    #         label="NMPC Policy (Python)"
+    #     )
+    # else:
+    #     print("NMPC Policy simulation produced no valid data.")
+
+    # # Overlay CSV data for MPC
+    # controller3.plot_trajectory(
+    #     csv_file="closed_loop_mpc_pf_oa_right.csv", 
+    #     label="NMPC Policy (Gazebo)",plt_obs=True
+    # )
+    # controller3.plot_error(
+    #     csv_file="closed_loop_mpc_pf_oa_right.csv", 
+    #     ref_function=f_s, 
+    #     label="NMPC Policy (Gazebo)"
+    # )
+    # controller3.plot_control_inputs(
+    #     csv_file="closed_loop_mpc_pf_oa_right.csv", 
+    #     label="NMPC Policy (Gazebo)"
+    # )
+    # controller3.plot_states(
+    #     csv_file="closed_loop_mpc_pf_oa_right.csv", 
+    #     label="NMPC Policy (Gazebo)"
+    # )
+
+
+    # # Summarize NMPC Policy results
+    # print("\n=== NMPC Policy Results PF+OA ===")
+    # controller3.analyze_timing_data(timing_array=mpc_times, label="NMPC Policy (Python)")
+    # controller3.analyze_error_data(ref_function=f_s, trajectory=mpc_trajectory, label="NMPC Policy (Python)")
+    # controller3.calculate_and_display_min_distances(trajectory=mpc_trajectory)
+    
+    # controller3.analyze_timing_data(csv_file="closed_loop_mpc_pf_oa_right.csv", label="NMPC Policy (Gazebo)")
+    # controller3.analyze_error_data(ref_function=f_s, csv_file="closed_loop_mpc_pf_oa_right.csv", label="NMPC Policy (Gazebo)")
+    # controller3.calculate_and_display_min_distances(csv_file="closed_loop_mpc_pf_oa_right.csv")
+
+
+    # # Finalize plots
+    # controller3.finalize_plots("MPC_sim_and_Gazebo_PF_OA_traj_right.pgf","MPC_sim_and_Gazebo_PF_OA_error_right.pgf","MPC_sim_and_Gazebo_PF_OA_control_inputs_right.pgf")
+
+
+    # # # NN sim and Gazebo PF+OA
+    # # # controller4 = NMPCController()
+
+    # # # # Initialize plots
+    # # # controller4.initialize_plots()
+
+    # # # # simulation
+    # # # nn_trajectory, nn_controls, nn_times = controller4.run_NN_obs()
+    # # # if nn_trajectory and nn_controls:
+    # # #     controller4.plot_trajectory(
+    # # #         trajectory=nn_trajectory, 
+    # # #         label="NN Policy (Python)"
+    # # #     )
+    # # #     controller4.plot_error(
+    # # #         trajectory=nn_trajectory, 
+    # # #         ref_function=f_s, 
+    # # #         label="NN Policy (Python)"
+    # # #     )
+    # # #     controller4.plot_control_inputs(
+    # # #         controls=nn_controls, 
+    # # #         trajectory=nn_trajectory, 
+    # # #         label="NN Policy (Python)"
+    # # #     )
+    # # # else:
+    # # #     print("NN Policy simulation produced no valid data.")
+
+    # # # # Overlay CSV data for NN
+    # # # controller4.plot_trajectory(
+    # # #     csv_file="closed_loop_nn_pf.csv", 
+    # # #     label="NN Policy (Gazebo)"
+    # # # )
+    # # # controller4.plot_error(
+    # # #     csv_file="closed_loop_nn_pf.csv", 
+    # # #     ref_function=f_s, 
+    # # #     label="NN Policy (Gazebo)"
+    # # # )
+    # # # controller4.plot_control_inputs(
+    # # #     csv_file="closed_loop_nn_pf.csv", 
+    # # #     label="NN Policy (Gazebo)"
+    # # # )
+
+    # # # # Summarize NN Policy results
+    # # # print("\n=== NN Policy Results ===")
+    # # # controller4.analyze_timing_data(timing_array=nn_times, label="NN Policy (Python)")
+    # # # controller4.analyze_error_data(ref_function=f_s, trajectory=nn_trajectory, label="NN Policy (Python)")
+    # # # controller4.analyze_timing_data(csv_file="closed_loop_nn_pf.csv", label="NN Policy (Gazebo)")
+    # # # controller4.analyze_error_data(ref_function=f_s, csv_file="closed_loop_nn_pf.csv", label="NN Policy (Gazebo)")
+
+    # # # # Finalize plots
+    # # # controller4.finalize_plots()
+
+    # # Real MPC+NN PF
+    # controller5 = NMPCController()
+
+    # # Initialize plots
+    # controller5.initialize_plots()
+
+    # # Overlay CSV data for MPC
+    # controller5.plot_trajectory(
+    #     csv_file="bob_closed_loop_mpc_pf.csv", 
+    #     label="NMPC Policy (Real)"
+    # )
+    # controller5.plot_error(
+    #     csv_file="bob_closed_loop_mpc_pf.csv", 
+    #     ref_function=f_s, 
+    #     label="NMPC Policy (Real)"
+    # )
+    # controller5.plot_control_inputs(
+    #     csv_file="bob_closed_loop_mpc_pf.csv", 
+    #     label="NMPC Policy (Real)",real=True
+    # )
+    # controller5.plot_states(
+    #     csv_file="bob_closed_loop_mpc_pf.csv", 
+    #     label="NMPC Policy (Real)",real=True
+    # )
+
+    # # Overlay CSV data for NN
+    # controller5.plot_trajectory(
+    #     csv_file="bob_closed_loop_nn_pf_host_comp.csv", 
+    #     label="NN Policy (Real)"
+    # )
+    # controller5.plot_error(
+    #     csv_file="bob_closed_loop_nn_pf_host_comp.csv", 
+    #     ref_function=f_s, 
+    #     label="NN Policy (Real)"
+    # )
+    # controller5.plot_control_inputs(
+    #     csv_file="bob_closed_loop_nn_pf_host_comp.csv", 
+    #     label="NN Policy (Real)",real=True
+    # )
+    # controller5.plot_states(
+    #     csv_file="bob_closed_loop_nn_pf_host_comp.csv", 
+    #     label="NN Policy (Real)",real=True
+    # )
+
+    # # Summarize NN Policy results
+    # print("\n=== Real Robot Policy Results ===")
+    # controller5.analyze_timing_data(csv_file="bob_closed_loop_mpc_pf.csv", label="NMPC Policy (Real)")
+    # controller5.analyze_error_data(ref_function=f_s, csv_file="bob_closed_loop_mpc_pf.csv", label="NMPC Policy (Real)")
+    # controller5.analyze_timing_data(csv_file="bob_closed_loop_nn_pf_host_comp.csv", label="NN Policy (Real)")
+    # controller5.analyze_error_data(ref_function=f_s, csv_file="bob_closed_loop_nn_pf_host_comp.csv", label="NN Policy (Real)")
+
+    # # Finalize plots
+    # # controller5.finalize_plots("MPC_NN_Real_PF_traj.pgf","MPC_NN_Real_PF_error.pgf","MPC_NN_Real_PF_control_inputs.pgf",Real=True)
+
+
+    # # Real MPC+NN PF+OA
+    # controller6 = NMPCController()
+
+    # # Initialize plots
+    # controller6.initialize_plots()
+
+    # # Overlay CSV data for MPC
+    # controller6.plot_trajectory(
+    #     csv_file="bob_closed_loop_mpc_pf_oa_2.csv", 
+    #     label="NMPC Policy (Real)",plt_obs=True
+    # )
+    # controller6.plot_error(
+    #     csv_file="bob_closed_loop_mpc_pf_oa_2.csv", 
+    #     ref_function=f_s, 
+    #     label="NMPC Policy (Real)",real=True
+    # )
+    # controller6.plot_control_inputs(
+    #     csv_file="bob_closed_loop_mpc_pf_oa_2.csv", 
+    #     label="NMPC Policy (Real)",real=True,single=True
+    # )
+    # controller6.plot_states(
+    #     csv_file="bob_closed_loop_mpc_pf_oa_2.csv", 
+    #     label="NMPC Policy (Real)",real=True
+    # )
+
+
+    # # # Overlay CSV data for NN
+    # # controller6.plot_trajectory(
+    # #     csv_file="bob_closed_loop_nn_pf_oa_host_comp.csv", 
+    # #     label="NN Policy (Real)"
+    # # )
+    # # controller6.plot_error(
+    # #     csv_file="bob_closed_loop_nn_pf_oa_host_comp.csv", 
+    # #     ref_function=f_s, 
+    # #     label="NN Policy (Real)", real=True
+    # # )
+    # # controller6.plot_control_inputs(
+    # #     csv_file="bob_closed_loop_nn_pf_oa_host_comp.csv", 
+    # #     label="NN Policy (Real)", real=True
+    # # )
+
+    # # # Summarize NN Policy results
+    # print("\n=== Real Robot Policy Results ===")
+    # controller6.analyze_timing_data(csv_file="bob_closed_loop_mpc_pf_oa_2.csv", label="NMPC Policy (Real)")
+    # controller6.analyze_error_data(ref_function=f_s, csv_file="bob_closed_loop_mpc_pf_oa_2.csv", label="NMPC Policy (Real)")
+    # controller6.calculate_and_display_min_distances(csv_file="bob_closed_loop_mpc_pf_oa_2.csv")
+
+    # controller6.analyze_timing_data(csv_file="bob_closed_loop_nn_pf_oa_host_comp.csv", label="NN Policy (Real)")
+    # controller6.analyze_error_data(ref_function=f_s, csv_file="bob_closed_loop_nn_pf_oa_host_comp.csv", label="NN Policy (Real)")
+
+    # Finalize plots
+    # controller6.finalize_plots("MPC_NN_Real_PF_OA_traj.pgf","MPC_NN_Real_PF_OA_error.pgf","MPC_NN_Real_PF_OA_control_inputs.pgf",single=True)
+
+
+    # NN Real Replan
+    controller7 = NMPCController()
+
+    # Initialize plots
+    controller7.initialize_plots()
+
+    # Overlay CSV data for MPC
+    controller7.plot_trajectory(
+        csv_file="replan_real/bob_closed_loop_nn_pf_replan.csv", 
+        label="NMPC Policy Replan (Real)",plt_obs=True
+    )
+    controller7.plot_error(
+        csv_file="replan_real/bob_closed_loop_nn_pf_replan.csv", 
+        ref_function=f_s, 
+        label="NMPC Policy Replan (Real)",real=True
+    )
+    controller7.plot_control_inputs(
+        csv_file="replan_real/bob_closed_loop_nn_pf_replan.csv", 
+        label="NMPC Policy Replan (Real)",real=True,single=True
+    )
+    controller7.plot_states(
+        csv_file="replan_real/bob_closed_loop_nn_pf_replan.csv", 
+        label="NMPC Policy Replan (Real)",real=True
+    )
+
+
+    # # # Overlay CSV data for NN
+    # # controller6.plot_trajectory(
+    # #     csv_file="bob_closed_loop_nn_pf_oa_host_comp.csv", 
+    # #     label="NN Policy (Real)"
+    # # )
+    # # controller6.plot_error(
+    # #     csv_file="bob_closed_loop_nn_pf_oa_host_comp.csv", 
+    # #     ref_function=f_s, 
+    # #     label="NN Policy (Real)", real=True
+    # # )
+    # # controller6.plot_control_inputs(
+    # #     csv_file="bob_closed_loop_nn_pf_oa_host_comp.csv", 
+    # #     label="NN Policy (Real)", real=True
+    # # )
+
+    # # # Summarize NN Policy results
+    print("\n=== Real Robot Policy Results ===")
+    controller7.analyze_timing_data(csv_file="replan_real/bob_closed_loop_nn_pf_replan.csv", label="NMPC Policy Replan (Real)")
+    controller7.analyze_error_data(ref_function=f_s, csv_file="replan_real/bob_closed_loop_nn_pf_replan.csv", label="NMPC Policy Replan (Real)")
+    controller7.calculate_and_display_min_distances(csv_file="replan_real/bob_closed_loop_nn_pf_replan.csv")
+
+    # # # controller6.analyze_timing_data(csv_file="bob_closed_loop_nn_pf_oa_host_comp.csv", label="NN Policy (Real)")
+    # # # controller6.analyze_error_data(ref_function=f_s, csv_file="bob_closed_loop_nn_pf_oa_host_comp.csv", label="NN Policy (Real)")
+
+    # # Finalize plots    
+    # controller7.finalize_plots("NN_Replan_Real_PF_traj.pgf","NN_Replan_Real_PF_error.pgf","NN_Replan_Real_PF_control_inputs.pgf",single=True)
+
+
+    # # NN Gazebo Replan
+    # controller8 = NMPCController()
+
+    # # Initialize plots
+    # controller8.initialize_plots()
+
+    # # Overlay CSV data for MPC
+    # controller8.plot_trajectory(
+    #     csv_file="replan_sim/closed_loop_nn_pf_right_replan.csv", 
+    #     label="NN Replan (Gazebo)",plt_obs=True
+    # )
+    # controller8.plot_error(
+    #     csv_file="replan_sim/closed_loop_nn_pf_right_replan.csv", 
+    #     ref_function=f_s, 
+    #     label="NN Replan (Gazebo)"
+    # )
+    # controller8.plot_control_inputs(
+    #     csv_file="replan_sim/closed_loop_nn_pf_right_replan.csv", 
+    #     label="NN Replan (Gazebo)",real=True,single=True
+    # )
+    # controller8.plot_states(
+    #     csv_file="replan_sim/closed_loop_nn_pf_right_replan.csv", 
+    #     label="NN Replan (Gazebo)",real=True
+    # )
+
+
+    # # # # Overlay CSV data for NN
+    # # # controller8.plot_trajectory(
+    # # #     csv_file="bob_closed_loop_nn_pf_oa_host_comp.csv", 
+    # # #     label="NN Policy (Real)"
+    # # # )
+    # # # controller8.plot_error(
+    # # #     csv_file="bob_closed_loop_nn_pf_oa_host_comp.csv", 
+    # # #     ref_function=f_s, 
+    # # #     label="NN Policy (Real)", real=True
+    # # # )
+    # # # controller8.plot_control_inputs(
+    # # #     csv_file="bob_closed_loop_nn_pf_oa_host_comp.csv", 
+    # # #     label="NN Policy (Real)", real=True
+    # # # )
+
+    # # # Summarize NN Policy results
+    # print("\n=== Real Robot Policy Results ===")
+    # controller8.analyze_timing_data(csv_file="replan_sim/closed_loop_nn_pf_right_replan.csv", label="NN Replan (Gazebo)")
+    # controller8.analyze_error_data(ref_function=f_s, csv_file="replan_sim/closed_loop_nn_pf_right_replan.csv", label="NN Replan (Gazebo)")
+    # controller8.calculate_and_display_min_distances(csv_file="replan_sim/closed_loop_nn_pf_right_replan.csv")
+
+    # # controller8.analyze_timing_data(csv_file="bob_closed_loop_nn_pf_oa_host_comp.csv", label="NN Policy (Real)")
+    # # controller8.analyze_error_data(ref_function=f_s, csv_file="bob_closed_loop_nn_pf_oa_host_comp.csv", label="NN Policy (Real)")
+
+    # # Finalize plots    
+    # controller8.finalize_plots("NN_Replan_Gazebo_PF_traj_right.pgf","NN_Replan_Gazebo_PF_error_right.pgf","NN_Replan_Gazebo_PF_control_inputs_right.pgf",single=True)
+
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097

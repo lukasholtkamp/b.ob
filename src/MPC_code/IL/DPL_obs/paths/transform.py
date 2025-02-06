@@ -349,7 +349,11 @@ def T_z_obs(path_segments, x, y, current_orientation, s, obs_x, oby_y,obs_r):
     transformed_obs_x = transformed_obs[0]
     transformed_obs_y = transformed_obs[1]
 
+<<<<<<< HEAD
     if (transformed_obs_x<(-0.4-obs_r) or transformed_obs_x>(0.4+obs_r)) or (transformed_obs_y<(-0.65-obs_r) or transformed_obs_y>(0.65+obs_r)) :
+=======
+    if (transformed_obs_x<(-0.2-obs_r) or transformed_obs_x>(0.2+obs_r)) or (transformed_obs_y<(-0.2-obs_r) or transformed_obs_y>(0.2+obs_r)) :
+>>>>>>> cc283d6fdfbbbdfa046669c571a33c9f1e9ed097
         relevant_flag = False
     else:
         relevant_flag = True
